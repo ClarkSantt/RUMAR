@@ -29,6 +29,8 @@ it('mantém a navegação agrupada e o item ativo identificável', async () => {
   expect(screen.getByRole('button', { name: 'Tarefas' }).getAttribute('aria-current')).toBe('page');
   await userEvent.setup().click(screen.getByRole('button', { name: 'Finanças' }));
   expect(onNavigate).toHaveBeenCalledWith('finance');
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Revisões' }));
+  expect(onNavigate).toHaveBeenCalledWith('review');
 });
 
 it('persiste recolhimento sem perder nomes, atalhos ou navegação por teclado', async () => {

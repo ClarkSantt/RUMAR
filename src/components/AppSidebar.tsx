@@ -14,6 +14,7 @@ import {
   NotebookPen,
   Plus,
   Repeat,
+  ScrollText,
   Search,
   Settings2,
   Target,
@@ -35,6 +36,7 @@ export type SidebarPage =
   | 'finance'
   | 'thoughts'
   | 'timeline'
+  | 'review'
   | 'settings';
 
 const groups = [
@@ -69,6 +71,7 @@ const groups = [
     items: [
       { id: 'thoughts', label: 'Pensamentos', Icon: NotebookPen },
       { id: 'timeline', label: 'Timeline', Icon: History },
+      { id: 'review', label: 'Revisões', Icon: ScrollText },
     ],
   },
 ] as const;
@@ -130,17 +133,6 @@ export function AppSidebar({
       </div>
       <div className="sidebar-actions">
         <button
-          className="capture-button"
-          onClick={onAdd}
-          disabled={!ready}
-          aria-label="Adicionar (Ctrl+Espaço)"
-          title={collapsed ? 'Adicionar (Ctrl+Espaço)' : undefined}
-        >
-          <Plus size={18} />
-          <span className="sidebar-label">Adicionar</span>
-          <kbd className="sidebar-label">Ctrl+Espaço</kbd>
-        </button>
-        <button
           className="settings-link search-link"
           onClick={onSearch}
           disabled={!ready}
@@ -150,6 +142,16 @@ export function AppSidebar({
           <Search size={18} />
           <span className="sidebar-label">Buscar</span>
           <kbd className="sidebar-label">Ctrl+K</kbd>
+        </button>
+        <button
+          className="capture-button"
+          onClick={onAdd}
+          disabled={!ready}
+          aria-label="Adicionar (Ctrl+Espaço)"
+          title="Adicionar (Ctrl+Espaço)"
+        >
+          <Plus size={18} />
+          <span className="sidebar-label">Adicionar</span>
         </button>
       </div>
       <nav aria-label="Navegação principal">
@@ -161,7 +163,11 @@ export function AppSidebar({
                 key={id}
                 aria-label={id === 'inbox' && inboxCount > 0 ? `Inbox, ${inboxCount} itens` : label}
                 title={collapsed ? label : undefined}
-                aria-current={activePage === id ? 'page' : undefined}
+                aria-current={
+                  activePage === id || (id === 'review' && activePage === 'monthly-review')
+                    ? 'page'
+                    : undefined
+                }
                 onClick={() => onNavigate(id)}
               >
                 <Icon size={18} aria-hidden="true" />

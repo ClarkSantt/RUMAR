@@ -1,0 +1,267 @@
+/* Presentation only: Tasks and Inbox retain their existing data and actions. */
+@layer components {
+  .tasks-page,
+  .inbox-page {
+    max-width: 1120px;
+  }
+  .module-header {
+    margin-bottom: 28px;
+  }
+  .module-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .module-heading-icon {
+    display: grid;
+    flex: 0 0 44px;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-surface);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .module-heading h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 650;
+    line-height: 1.22;
+  }
+  .module-heading h1 + p {
+    margin: 4px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+  .tasks-page .primary-button {
+    min-height: 40px;
+  }
+  .tasks-tabs {
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 4px;
+    width: fit-content;
+    max-width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-surface);
+    background: var(--color-surface);
+    overflow-x: auto;
+  }
+  .tasks-tabs button {
+    min-height: 36px;
+    padding: 7px 13px;
+    border: 0;
+    border-radius: var(--radius-control);
+    white-space: nowrap;
+  }
+  .tasks-tabs button:hover {
+    background: var(--color-hover);
+  }
+  .tasks-tabs [aria-current='page'] {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .tasks-panel {
+    padding: 20px 24px 22px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .tasks-panel-heading,
+  .inbox-list-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .tasks-panel-heading {
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .tasks-panel-heading h2,
+  .inbox-list-heading h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 620;
+  }
+  .tasks-panel-heading p,
+  .tasks-panel-heading > span,
+  .inbox-list-heading > span {
+    margin: 4px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 12.5px;
+  }
+  .tasks-panel .task-list {
+    margin: 0;
+  }
+  .tasks-panel .task-row {
+    min-height: 58px;
+    padding: 4px 2px;
+    border-radius: 0;
+  }
+  .tasks-panel .task-open {
+    padding: 9px 4px;
+  }
+  .tasks-panel .task-title {
+    font-size: 14px;
+  }
+  .tasks-panel .task-meta {
+    font-size: 12.5px;
+  }
+  .tasks-panel .quick-entry {
+    margin-top: 18px;
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-subtle);
+  }
+  .tasks-panel .empty-state {
+    padding-block: 36px;
+  }
+  .tasks-panel .date-group {
+    margin-top: 24px;
+  }
+  .tasks-panel .date-group h2 {
+    margin-bottom: 4px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+  .inbox-capture {
+    padding: 20px 24px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .inbox-capture h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 620;
+  }
+  .inbox-capture .quick-entry {
+    align-items: flex-start;
+    margin: 0;
+    padding: 12px;
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-subtle);
+  }
+  .inbox-capture .quick-entry textarea {
+    min-height: 88px;
+    resize: vertical;
+  }
+  .inbox-capture .entry-submit {
+    align-self: flex-end;
+  }
+  .inbox-capture .input-hint {
+    margin: 10px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 12.5px;
+  }
+  .inbox-list-heading {
+    margin-top: 32px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border-strong);
+  }
+  .inbox-list {
+    margin: 0;
+  }
+  .inbox-row {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px 4px;
+  }
+  .inbox-row:hover {
+    background: var(--color-hover);
+  }
+  .inbox-row-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-control);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .inbox-row-body {
+    min-width: 0;
+  }
+  .inbox-content {
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 550;
+    line-height: 1.5;
+  }
+  .inbox-actions {
+    justify-content: space-between;
+    margin-top: 5px;
+  }
+  .inbox-actions .convert-button {
+    padding-left: 0;
+    font-size: 12.5px;
+  }
+  .inbox-more {
+    position: relative;
+  }
+  .inbox-more summary {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-control);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    list-style: none;
+  }
+  .inbox-more summary::-webkit-details-marker {
+    display: none;
+  }
+  .inbox-more summary:hover,
+  .inbox-more[open] summary {
+    background: var(--color-hover);
+    color: var(--color-text);
+  }
+  .inbox-more-menu {
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    top: 40px;
+    display: grid;
+    gap: 2px;
+    min-width: 230px;
+    padding: 6px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-surface);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-md);
+  }
+  .inbox-more-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: var(--radius-control);
+    text-align: left;
+    font-size: 12.5px;
+  }
+  .inbox-more-menu button:hover {
+    background: var(--color-hover);
+  }
+  .inbox-more-menu .danger {
+    color: var(--color-danger);
+  }
+  @media (max-width: 900px) {
+    .module-header {
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .tasks-panel,
+    .inbox-capture {
+      padding-inline: 16px;
+    }
+    .tasks-panel .task-open {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 3px;
+    }
+  }
+}

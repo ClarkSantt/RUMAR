@@ -2,20 +2,30 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AppSidebar } from '../../src/components/AppSidebar';
 import { Home } from '../../src/features/home/Home';
+import { InboxPage } from '../../src/features/inbox/Inbox';
+import { Tasks } from '../../src/features/tasks/Tasks';
 import type { RumoStore } from '../../src/hooks/useRumo';
 import type { Snapshot, Task } from '../../src/types/models';
 import '../../src/styles/global.css';
 import '../../src/styles/visual-foundation.css';
+import '../../src/styles/tasks-inbox.css';
 
 const today = '2026-10-04';
-function task(id: string, title: string, date: string, completed = false): Task {
+function task(
+  id: string,
+  title: string,
+  date: string,
+  completed = false,
+  priority: Task['priority'] = 'normal',
+  dueTime: string | null = null,
+): Task {
   return {
     id,
     title,
     description: '',
-    priority: 'normal',
+    priority,
     due_date: date,
-    due_time: null,
+    due_time: dueTime,
     status: completed ? 'completed' : 'pending',
     recurrence: null,
     created_at: date,
@@ -29,9 +39,9 @@ function task(id: string, title: string, date: string, completed = false): Task 
 const data: Snapshot = {
   tasks: [
     task('1', 'Revisar prioridades da semana', today, true),
-    task('2', 'Separar documentos para o projeto', today),
-    task('3', 'Caminhar por 30 minutos', today),
-    task('4', 'Responder mensagem importante', today),
+    task('2', 'Separar documentos para o projeto', today, false, 'high', '09:30'),
+    task('3', 'Caminhar por 30 minutos', today, false, 'normal', '18:00'),
+    task('4', 'Responder mensagem importante', today, false, 'normal', '14:00'),
     task('5', 'Organizar notas', '2026-10-03'),
   ],
   subtasks: [],
@@ -40,7 +50,7 @@ const data: Snapshot = {
   inbox: [
     {
       id: 'i1',
-      content: 'Ideia',
+      content: 'Criar um espaço para planejar a semana com menos distrações.',
       status: 'pending',
       created_at: today,
       updated_at: today,
@@ -48,7 +58,7 @@ const data: Snapshot = {
     },
     {
       id: 'i2',
-      content: 'Lembrete',
+      content: 'Revisar documentos antes da próxima reunião.',
       status: 'pending',
       created_at: today,
       updated_at: today,
@@ -59,10 +69,11 @@ const data: Snapshot = {
 };
 const store = { data, busy: false, run: async () => true } as unknown as RumoStore;
 function Preview() {
+  const screen = new URLSearchParams(window.location.search).get('screen') ?? 'home';
   return (
     <div className="app-shell">
       <AppSidebar
-        activePage="home"
+        activePage={screen}
         inboxCount={2}
         ready
         onNavigate={() => {}}
@@ -71,85 +82,93 @@ function Preview() {
       />
       <main id="main" tabIndex={-1}>
         <div className="content">
-          <div className="home-layout">
-            <div className="home-primary">
-              <Home
-                store={store}
-                now={new Date(2026, 9, 4, 10)}
-                onOpen={() => {}}
-                onInbox={() => {}}
-                onReview={() => {}}
-              />
-            </div>
-            <aside className="home-rail" aria-label="Continuidade do dia">
-              <section className="secondary-section">
-                <div className="section-heading">
-                  <h2>Agenda de hoje</h2>
-                  <button className="text-button">Ver dia</button>
+          {screen === 'tasks' && (
+            <Tasks store={store} day={today} onOpen={() => {}} onCreate={() => {}} />
+          )}
+          {screen === 'inbox' && <InboxPage store={store} />}
+          {screen === 'home' && (
+            <>
+              <div className="home-layout">
+                <div className="home-primary">
+                  <Home
+                    store={store}
+                    now={new Date(2026, 9, 4, 10)}
+                    onOpen={() => {}}
+                    onInbox={() => {}}
+                    onReview={() => {}}
+                  />
                 </div>
-                <button className="review-line">
-                  <span>11:30</span>
-                  <strong>Próximo · Planejar a semana</strong>
-                </button>
-                <button className="review-line">
-                  <span>16:00</span>
-                  <strong>Próximo · Caminhada</strong>
-                </button>
-              </section>
-              <section className="habit-section">
-                <div className="habit-heading">
-                  <h2>Hábitos de hoje</h2>
-                </div>
-                <div className="habit-list">
-                  <article className="habit-row">
-                    <div className="habit-row-main">
-                      <input type="checkbox" aria-label="Ler" /> <strong>Ler</strong>
+                <aside className="home-rail" aria-label="Continuidade do dia">
+                  <section className="secondary-section">
+                    <div className="section-heading">
+                      <h2>Agenda de hoje</h2>
+                      <button className="text-button">Ver dia</button>
                     </div>
-                    <p>0 de 1 hoje</p>
-                  </article>
-                  <article className="habit-row">
-                    <div className="habit-row-main">
-                      <input type="checkbox" aria-label="Água" checked readOnly />{' '}
-                      <strong>Água</strong>
+                    <button className="review-line">
+                      <span>11:30</span>
+                      <strong>Próximo · Planejar a semana</strong>
+                    </button>
+                    <button className="review-line">
+                      <span>16:00</span>
+                      <strong>Próximo · Caminhada</strong>
+                    </button>
+                  </section>
+                  <section className="habit-section">
+                    <div className="habit-heading">
+                      <h2>Hábitos de hoje</h2>
                     </div>
-                    <p>Meta de hoje registrada</p>
-                  </article>
-                </div>
-              </section>
-              <section className="habit-section">
-                <div className="habit-heading">
-                  <h2>Rotinas de hoje</h2>
-                </div>
-                <div className="habit-list">
-                  <article className="habit-row">
-                    <strong>Rotina da manhã</strong>
-                    <p>3 de 4 etapas</p>
-                  </article>
-                </div>
-              </section>
-              <section className="secondary-section">
-                <div className="section-heading">
-                  <h2>Treino</h2>
-                  <button className="text-button">Abrir</button>
-                </div>
-                <p>Treino de força · 5 exercícios</p>
-              </section>
-            </aside>
-          </div>
-          <div className="home-more">
-            <section className="secondary-section">
-              <div className="section-heading">
-                <h2>Em andamento</h2>
+                    <div className="habit-list">
+                      <article className="habit-row">
+                        <div className="habit-row-main">
+                          <input type="checkbox" aria-label="Ler" /> <strong>Ler</strong>
+                        </div>
+                        <p>0 de 1 hoje</p>
+                      </article>
+                      <article className="habit-row">
+                        <div className="habit-row-main">
+                          <input type="checkbox" aria-label="Água" checked readOnly />{' '}
+                          <strong>Água</strong>
+                        </div>
+                        <p>Meta de hoje registrada</p>
+                      </article>
+                    </div>
+                  </section>
+                  <section className="habit-section">
+                    <div className="habit-heading">
+                      <h2>Rotinas de hoje</h2>
+                    </div>
+                    <div className="habit-list">
+                      <article className="habit-row">
+                        <strong>Rotina da manhã</strong>
+                        <p>3 de 4 etapas</p>
+                      </article>
+                    </div>
+                  </section>
+                  <section className="secondary-section">
+                    <div className="section-heading">
+                      <h2>Treino</h2>
+                      <button className="text-button">Abrir</button>
+                    </div>
+                    <p>Treino de força · 5 exercícios</p>
+                  </section>
+                </aside>
               </div>
-              <p>Projeto pessoal · próxima etapa</p>
-            </section>
-            <section className="secondary-section">
-              <div className="section-heading">
-                <h2>Alimentação</h2>
+              <div className="home-more">
+                <section className="secondary-section">
+                  <div className="section-heading">
+                    <h2>Em andamento</h2>
+                  </div>
+                  <p>Projeto pessoal · próxima etapa</p>
+                </section>
+                <section className="secondary-section">
+                  <div className="section-heading">
+                    <h2>Alimentação</h2>
+                  </div>
+                  <p>Resumo do dia</p>
+                </section>
               </div>
-              <p>Resumo do dia</p>
-            </section>
-          </div>
+            </>
+          )}
         </div>
       </main>
     </div>

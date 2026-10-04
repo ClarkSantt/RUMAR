@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowRight, Pencil, Trash2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowRight, Ellipsis, Inbox, Pencil, Trash2 } from 'lucide-react';
 import { Dialog } from '../../components/Dialog';
 import { EmptyState } from '../../components/EmptyState';
 import { QuickEntry } from '../../components/QuickEntry';
@@ -8,6 +8,7 @@ import type { InboxItem } from '../../types/models';
 import { getDatabase } from '../../lib/database/connection';
 import { convertInboxTo } from './conversions';
 function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
+  const more = useRef<HTMLDetailsElement>(null);
   const [editing, setEditing] = useState(false),
     [draft, setDraft] = useState(item.content);
   async function remove() {
@@ -19,55 +20,80 @@ function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
   }
   return (
     <article className="inbox-row">
-      <div className="inbox-content">{item.content}</div>
-      <div className="inbox-actions">
-        {(['project', 'thought'] as const).map((target) => (
+      <span className="inbox-row-icon" aria-hidden="true">
+        <Inbox size={18} />
+      </span>
+      <div className="inbox-row-body">
+        <div className="inbox-content">{item.content}</div>
+        <div className="inbox-actions">
           <button
-            key={target}
-            className="text-button"
+            className="text-button convert-button"
             disabled={store.busy}
             onClick={() =>
               void store.run(
-                async () => convertInboxTo(await getDatabase(), item.id, target),
-                target === 'project' ? 'Transformado em projeto.' : 'Transformado em pensamento.',
+                (repo) => repo.convertInbox(item.id),
+                'Transformado em tarefa. Disponível em Tarefas → Todas.',
               )
             }
           >
-            Transformar em {target === 'project' ? 'projeto' : 'pensamento'}
+            <span>Transformar em tarefa</span>
+            <ArrowRight size={16} />
           </button>
-        ))}
-        <button
-          className="text-button convert-button"
-          disabled={store.busy}
-          onClick={() =>
-            void store.run(
-              (repo) => repo.convertInbox(item.id),
-              'Transformado em tarefa. Disponível em Tarefas → Todas.',
-            )
-          }
-        >
-          <span>Transformar em tarefa</span>
-          <ArrowRight size={16} />
-        </button>
-        <button
-          className="icon-button"
-          disabled={store.busy}
-          onClick={() => {
-            setDraft(item.content);
-            setEditing(true);
-          }}
-          aria-label={`Editar ${item.content}`}
-        >
-          <Pencil size={15} />
-        </button>
-        <button
-          className="icon-button"
-          disabled={store.busy}
-          onClick={() => void remove()}
-          aria-label={`Excluir ${item.content}`}
-        >
-          <Trash2 size={15} />
-        </button>
+          <details
+            ref={more}
+            className="inbox-more"
+            onKeyDown={(event) => {
+              if (event.key !== 'Escape') return;
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.open = false;
+              event.currentTarget.querySelector('summary')?.focus();
+            }}
+          >
+            <summary aria-label={`Mais ações para ${item.content}`} title="Mais ações">
+              <Ellipsis size={18} />
+            </summary>
+            <div className="inbox-more-menu">
+              {(['project', 'thought'] as const).map((target) => (
+                <button
+                  key={target}
+                  disabled={store.busy}
+                  onClick={() => {
+                    if (more.current) more.current.open = false;
+                    void store.run(
+                      async () => convertInboxTo(await getDatabase(), item.id, target),
+                      target === 'project'
+                        ? 'Transformado em projeto.'
+                        : 'Transformado em pensamento.',
+                    );
+                  }}
+                >
+                  Transformar em {target === 'project' ? 'projeto' : 'pensamento'}
+                </button>
+              ))}
+              <button
+                disabled={store.busy}
+                onClick={() => {
+                  if (more.current) more.current.open = false;
+                  setDraft(item.content);
+                  setEditing(true);
+                }}
+              >
+                <Pencil size={15} /> Editar
+              </button>
+              <button
+                className="danger"
+                disabled={store.busy}
+                onClick={() => {
+                  if (more.current) more.current.open = false;
+                  void remove();
+                }}
+              >
+                <Trash2 size={15} /> Excluir
+              </button>
+            </div>
+          </details>
+        </div>
       </div>
       {editing && (
         <Dialog
@@ -116,23 +142,34 @@ function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
 export function InboxPage({ store }: { store: RumoStore }) {
   const items = store.data!.inbox;
   return (
-    <>
-      <header className="page-header">
-        <p className="eyebrow">TIRE DA CABEÇA. GUARDE AQUI.</p>
-        <h1>
-          Inbox <span className="heading-count">{items.length}</span>
-        </h1>
-        <p>Capture agora. Organize quando fizer sentido.</p>
+    <section className="inbox-page">
+      <header className="page-header module-header">
+        <div className="module-heading">
+          <span className="module-heading-icon" aria-hidden="true">
+            <Inbox size={22} />
+          </span>
+          <div>
+            <h1>Inbox</h1>
+            <p>Capture agora. Organize quando fizer sentido.</p>
+          </div>
+        </div>
       </header>
-      <QuickEntry
-        placeholder="Capturar alguma coisa…"
-        multiline
-        busy={store.busy}
-        onSave={(content) => store.run((repo) => repo.createInbox(content), 'Guardado no Inbox.')}
-      />
-      <p className="input-hint">
-        Enter para salvar <span>·</span> Shift + Enter para nova linha
-      </p>
+      <section className="inbox-capture" aria-label="Nova captura">
+        <h2>O que está na sua mente?</h2>
+        <QuickEntry
+          placeholder="Capture uma ideia, tarefa ou lembrete…"
+          multiline
+          busy={store.busy}
+          onSave={(content) => store.run((repo) => repo.createInbox(content), 'Guardado no Inbox.')}
+        />
+        <p className="input-hint">
+          Enter para salvar <span>·</span> Shift + Enter para nova linha
+        </p>
+      </section>
+      <div className="inbox-list-heading">
+        <h2>Para organizar</h2>
+        <span>{items.length === 1 ? '1 captura' : `${items.length} capturas`}</span>
+      </div>
       <div className="inbox-list">
         {items.length ? (
           items.map((item) => <InboxRow key={item.id} item={item} store={store} />)
@@ -143,7 +180,7 @@ export function InboxPage({ store }: { store: RumoStore }) {
           />
         )}
       </div>
-    </>
+    </section>
   );
 }
 export function Capture({ store, onClose }: { store: RumoStore; onClose: () => void }) {

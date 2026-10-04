@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { ListTodo, Plus } from 'lucide-react';
 import type { RumoStore } from '../../hooks/useRumo';
 import type { Snapshot, TaskOccurrence } from '../../types/models';
 import { allTasks, completedTasks, todayTasks, upcomingTasks } from './domain';
@@ -64,19 +64,23 @@ export function Tasks({
             : completedTasks(data);
   const groups = view === 'Próximas' ? [...new Set(rows.map((r) => r.date!))] : [];
   return (
-    <>
-      <header className="page-header header-with-action">
-        <div>
-          <p className="eyebrow">ESPAÇO PARA O QUE IMPORTA</p>
-          <h1>Tarefas</h1>
-          <p>Organize o que vem pela frente.</p>
+    <section className="tasks-page">
+      <header className="page-header header-with-action module-header">
+        <div className="module-heading">
+          <span className="module-heading-icon" aria-hidden="true">
+            <ListTodo size={22} />
+          </span>
+          <div>
+            <h1>Tarefas</h1>
+            <p>Transforme planos em progresso.</p>
+          </div>
         </div>
         <button className="primary-button" onClick={onCreate}>
           <Plus size={17} />
           Nova tarefa
         </button>
       </header>
-      <nav className="tabs" aria-label="Visualizações de tarefas">
+      <nav className="tabs tasks-tabs" aria-label="Visualizações de tarefas">
         {tabs.map((tab) => (
           <button
             key={tab}
@@ -87,47 +91,70 @@ export function Tasks({
           </button>
         ))}
       </nav>
-      {view === 'Próximas' && (
-        <p className="view-note">Recorrências dos próximos 30 dias e todas as tarefas futuras.</p>
-      )}
-      {loading && <p role="status">Carregando histórico…</p>}
-      {historyError && <p role="alert">{historyError}</p>}
-      {view !== 'Concluídas' && (
-        <QuickEntry
-          placeholder={
-            view === 'Hoje' ? 'Adicionar tarefa para hoje…' : 'Adicionar tarefa sem data…'
-          }
-          busy={store.busy}
-          onSave={(title) =>
-            store.run(
-              (repo) =>
-                repo.createTask({
-                  title,
-                  description: '',
-                  priority: 'normal',
-                  due_date: view === 'Hoje' ? day : null,
-                  due_time: null,
-                  recurrence: null,
-                }),
-              'Tarefa adicionada.',
-            )
-          }
-        />
-      )}
-      {!loading &&
-        !historyError &&
-        (groups.length ? (
-          groups.map((date) => (
-            <section className="date-group" key={date}>
-              <h2>
-                {fullDate(date)} <span>{formatDate(date)}</span>
-              </h2>
-              <TaskList rows={rows.filter((r) => r.date === date)} store={store} onOpen={onOpen} />
-            </section>
-          ))
-        ) : (
-          <TaskList rows={rows} store={listStore} onOpen={onOpen} showDate={view !== 'Hoje'} />
-        ))}
-    </>
+      <div className="tasks-panel">
+        <div className="tasks-panel-heading">
+          <div>
+            <h2>{view}</h2>
+            <p>
+              {loading
+                ? 'Carregando histórico…'
+                : rows.length === 1
+                  ? '1 tarefa'
+                  : `${rows.length} tarefas`}
+            </p>
+          </div>
+          {view === 'Hoje' && rows.length > 0 && (
+            <span>
+              {rows.filter((row) => row.completed).length} de {rows.length} concluídas
+            </span>
+          )}
+        </div>
+        {view === 'Próximas' && (
+          <p className="view-note">Recorrências dos próximos 30 dias e todas as tarefas futuras.</p>
+        )}
+        {loading && <p role="status">Carregando histórico…</p>}
+        {historyError && <p role="alert">{historyError}</p>}
+        {!loading &&
+          !historyError &&
+          (groups.length ? (
+            groups.map((date) => (
+              <section className="date-group" key={date}>
+                <h2>
+                  {fullDate(date)} <span>{formatDate(date)}</span>
+                </h2>
+                <TaskList
+                  rows={rows.filter((r) => r.date === date)}
+                  store={store}
+                  onOpen={onOpen}
+                />
+              </section>
+            ))
+          ) : (
+            <TaskList rows={rows} store={listStore} onOpen={onOpen} showDate={view !== 'Hoje'} />
+          ))}
+        {view !== 'Concluídas' && (
+          <QuickEntry
+            placeholder={
+              view === 'Hoje' ? 'Adicionar tarefa para hoje…' : 'Adicionar tarefa sem data…'
+            }
+            busy={store.busy}
+            onSave={(title) =>
+              store.run(
+                (repo) =>
+                  repo.createTask({
+                    title,
+                    description: '',
+                    priority: 'normal',
+                    due_date: view === 'Hoje' ? day : null,
+                    due_time: null,
+                    recurrence: null,
+                  }),
+                'Tarefa adicionada.',
+              )
+            }
+          />
+        )}
+      </div>
+    </section>
   );
 }

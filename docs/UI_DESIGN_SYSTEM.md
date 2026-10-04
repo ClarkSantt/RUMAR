@@ -11,7 +11,7 @@ This document is the visual reference for UI migration after Phase 1. It describ
 
 ## Colors
 
-Semantic tokens live in `src/styles/visual-foundation.css`. Light surfaces use `#F6F7F9`, white and `#F0F2F5`; dark surfaces use `#171A1F`, `#1F232A` and `#252A32`. The main blue is `#4169A8` light and `#9ABAF0` dark. Text and border tokens provide secondary and tertiary levels. Success, warning and danger each have a foreground and soft surface token. `--color-focus-ring` is separate from content color. Legacy aliases (`--surface`, `--primary`, etc.) remain while older screens migrate.
+Semantic tokens live in `src/styles/visual-foundation.css`. Light surfaces use `#F5F7FB`, white and `#F8FAFD`; dark surfaces use `#171A1F`, `#1F232A` and `#252A32`. The main blue is `#2869C8` light and `#9ABAF0` dark. Text and border tokens provide secondary and tertiary levels. Success, warning and danger each have a foreground and soft surface token. `--color-focus-ring` is separate from content color. Legacy aliases (`--surface`, `--primary`, etc.) remain while older screens migrate.
 
 Use semantic tokens for new UI. Do not use `--color-primary-soft` or `--accent` as text. Check normal-text contrast in both themes before introducing a new combination.
 
@@ -55,6 +55,12 @@ The same information hierarchy applies in both themes. Dark surfaces are charcoa
 
 The local preview harness in `scripts/ui-preview/` renders synthetic data only. From the repository root, run `npx vite --host 127.0.0.1 --port 4175`, then `node scripts/ui-preview/capture.mjs` in another terminal. Screenshots are written to the Git-ignored `artifacts/ui-phase1/` directory. This checks layout and themes without starting a Tauri binary or opening personal SQLite data.
 
+For Tasks and Inbox, run `node scripts/ui-preview/capture-tasks-inbox.mjs`. It captures both themes at 900×620, 1280×720, 1366×768, 1440×900, 1920×1080 and 2560×1440 under the ignored `artifacts/ui-tasks-inbox/` directory and rejects horizontal overflow or page errors.
+
+## Mockup translation: Tasks and Inbox
+
+The approved concepts guide contextual headers, compact tabs, light list rows, prominent Inbox capture and restrained blue accents. The implementation keeps the existing four task views, QuickEntry, task drawer, conversions, editing, deletion and undo behavior. It does not add conceptual task filters, Inbox item types or a new database-backed master/detail route. Less frequent Inbox actions live in a keyboard-accessible disclosure menu; converting to a task remains visible on the row. The task drawer remains the existing editing surface so no behavior is lost.
+
 ## Do / don't
 
 | Do                                                       | Don't                                       |
@@ -73,8 +79,8 @@ The local preview harness in `scripts/ui-preview/` renders synthetic data only. 
 | Shell      | DONE    |
 | Sidebar    | DONE    |
 | Home       | DONE    |
-| Tasks      | PENDING |
-| Inbox      | PENDING |
+| Tasks      | DONE    |
+| Inbox      | DONE    |
 | Projects   | PENDING |
 | Objectives | PENDING |
 | Habits     | PENDING |
