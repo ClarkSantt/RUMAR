@@ -6,7 +6,7 @@ Essa licença não altera as licenças de componentes e dados de terceiros.
 ## TACO
 
 O catálogo alimentar embutido em `src-tauri/migrations/0004_nutrition.sql`
-deriva da *Tabela Brasileira de Composição de Alimentos — TACO*, 4ª edição,
+deriva da _Tabela Brasileira de Composição de Alimentos — TACO_, 4ª edição,
 NEPA/UNICAMP, 2011. A publicação original permite reprodução total ou parcial
 desde que a fonte seja citada. Fonte e condições:
 <https://nepa.unicamp.br/publicacoes/tabela-taco-pdf/>.
