@@ -1,0 +1,109 @@
+name: Windows local MSIX structural validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  msix:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            services/rumo-finance-gateway/package-lock.json
+
+      - name: Install desktop dependencies
+        run: npm ci
+
+      - name: Validate desktop
+        run: |
+          npx prettier --check .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run lint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Install and test mocked gateway
+        working-directory: services/rumo-finance-gateway
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Set up stable Rust MSVC
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc --profile minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup default stable-x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup target add x86_64-pc-windows-msvc --toolchain stable-x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Stage bundled local gateway runtime
+        run: node scripts/stage-finance-gateway.mjs
+
+      - name: Check and test Rust
+        working-directory: src-tauri
+        run: |
+          cargo check --locked
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo test --locked
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build isolated local executable and bundled local gateway
+        env:
+          RUMO_CREDENTIAL_NAMESPACE: RUMAR-Local-v180
+          RUMO_AUTOSTART_NAME: RUMAR Local
+        run: npm run desktop:build -- --config src-tauri/local.msix.conf.json --no-bundle
+
+      - name: Validate bundled Node signature
+        run: |
+          $node = 'src-tauri/target/release/finance-gateway/node.exe'
+          $signature = Get-AuthenticodeSignature -LiteralPath $node
+          if ($signature.Status -ne 'Valid') { throw "Bundled Node signature: $($signature.Status)" }
+          Write-Output 'Bundled Node Authenticode signature: Valid'
+
+      - name: Package unsigned local MSIX candidate
+        run: ./scripts/build-local-msix.ps1 -Version 1.8.0.1
+
+      - name: Inspect package structure without installation
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $package = @(Get-ChildItem 'artifacts/local-msix/RUMAR_*_x64.msix' -File)
+          if ($package.Count -ne 1) { throw 'Expected exactly one MSIX.' }
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($package[0].FullName)
+          try {
+            $names = @($archive.Entries | ForEach-Object FullName)
+            foreach ($required in @('AppxManifest.xml', 'rumar.exe', 'finance-gateway/node.exe', 'finance-gateway/src/server.mjs')) {
+              if ($required -notin $names) { throw "MSIX entry missing: $required" }
+            }
+          } finally { $archive.Dispose() }
+          Write-Output 'Local MSIX structure: PASS; package was not installed or executed.'
+
+      - name: Upload private unsigned local structural artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rumar-local-msix-unsigned-structural-${{ github.run_number }}
+          path: artifacts/local-msix/RUMAR_*_x64.msix
+          if-no-files-found: error
+          retention-days: 7

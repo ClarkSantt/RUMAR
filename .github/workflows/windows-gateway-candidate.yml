@@ -1,0 +1,83 @@
+name: Windows gateway candidate build
+
+on:
+  workflow_dispatch:
+    inputs:
+      gateway_url:
+        description: 'Public HTTPS origin of the Sandbox-only gateway (no path or credentials)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Verify HTTPS Sandbox gateway before embedding its origin
+        env:
+          GATEWAY_URL: ${{ inputs.gateway_url }}
+        run: |
+          $uri = [Uri]$env:GATEWAY_URL
+          if ($uri.Scheme -ne 'https' -or $uri.Port -ne 443 -or
+              $uri.AbsoluteUri.TrimEnd('/') -ne $env:GATEWAY_URL.TrimEnd('/') -or
+              $uri.AbsolutePath -ne '/' -or $uri.Query -or $uri.Fragment -or $uri.UserInfo -or
+              $uri.Host -in @('localhost', '127.0.0.1', '::1')) {
+            throw 'A public HTTPS origin without path, query, or credentials is required.'
+          }
+          $health = Invoke-RestMethod -Uri "$env:GATEWAY_URL/health" -Method Get -TimeoutSec 15
+          if ($health.status -ne 'ok' -or $health.environment -ne 'sandbox') {
+            throw 'Gateway health is not a healthy Sandbox endpoint.'
+          }
+          Write-Output 'Public HTTPS Sandbox gateway health verified.'
+      - name: Install desktop dependencies
+        run: npm ci
+      - name: Validate desktop
+        run: |
+          npx prettier --check .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run lint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Set up stable Rust MSVC
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc --profile minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup default stable-x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build production-identifier desktop with Sandbox gateway origin
+        env:
+          RUMO_FINANCE_GATEWAY_URL: ${{ inputs.gateway_url }}
+        run: npm run desktop:build
+      - name: Verify package and hashes
+        run: |
+          $app = Get-Item -LiteralPath 'src-tauri/target/release/rumo.exe' -ErrorAction Stop
+          $installers = @(Get-ChildItem -LiteralPath 'src-tauri/target/release/bundle/nsis' -Filter 'RUMO_*_x64-setup.exe' -File)
+          if ($installers.Count -ne 1) { throw 'Expected one NSIS installer.' }
+          foreach ($file in @($app) + $installers) {
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+            Write-Output "$($file.Name) | bytes=$($file.Length) | SHA256=$hash"
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rumo-gateway-sandbox-candidate-${{ github.run_number }}
+          path: |
+            src-tauri/target/release/rumo.exe
+            src-tauri/target/release/bundle/nsis/RUMO_*_x64-setup.exe
+          if-no-files-found: error
+          retention-days: 7

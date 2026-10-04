@@ -1,0 +1,104 @@
+name: Windows isolated native smoke build
+
+on:
+  workflow_dispatch:
+    inputs:
+      diagnose_migration:
+        description: 'Log the full SQLite startup error in this isolated build'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install desktop dependencies
+        run: npm ci
+
+      - name: Set up stable Rust MSVC
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc --profile minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup default stable-x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup target add x86_64-pc-windows-msvc --toolchain stable-x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Enable isolated SQLite startup diagnostics
+        if: inputs.diagnose_migration
+        run: |
+          $path = 'src/hooks/useRumo.ts'
+          $source = Get-Content -LiteralPath $path -Raw
+          $before = "console.error('RUMO: falha ao abrir SQLite', error instanceof Error ? error.name : 'erro');"
+          $after = "console.error('RUMO: falha ao abrir SQLite', error);"
+          if (-not $source.Contains($before)) { throw 'SQLite startup log site changed' }
+          [System.IO.File]::WriteAllText((Resolve-Path $path), $source.Replace($before, $after))
+
+      - name: Build only the isolated validation executable
+        env:
+          RUMO_CREDENTIAL_NAMESPACE: RUMO-Smoke-v180
+          RUMO_AUTOSTART_NAME: RUMO Smoke Validation
+        run: npm run desktop:build -- --config src-tauri/validation.native.conf.json --no-bundle
+
+      - name: Verify identity and create artifact manifest
+        run: |
+          $config = Get-Content -LiteralPath 'src-tauri/validation.native.conf.json' -Raw | ConvertFrom-Json
+          if ($config.identifier -ne 'com.rumo.validation.native.v180') { throw 'Invalid smoke identity' }
+          if ($config.productName -ne 'RUMO Smoke') { throw 'Invalid smoke product name' }
+          $built = Get-Item -LiteralPath 'src-tauri/target/release/rumo.exe' -ErrorAction Stop
+          $destination = Join-Path $built.DirectoryName 'RUMO-Smoke.exe'
+          Move-Item -LiteralPath $built.FullName -Destination $destination -ErrorAction Stop
+          $runtime = Join-Path $built.DirectoryName 'finance-gateway'
+          if (-not (Test-Path -LiteralPath (Join-Path $runtime 'node.exe') -PathType Leaf)) { throw 'Bundled Node runtime missing' }
+          if (-not (Test-Path -LiteralPath (Join-Path $runtime 'src/server.mjs') -PathType Leaf)) { throw 'Bundled gateway source missing' }
+          $app = Get-Item -LiteralPath $destination -ErrorAction Stop
+          $binary = [System.IO.File]::ReadAllBytes($app.FullName)
+          $utf8 = [System.Text.Encoding]::UTF8.GetString($binary)
+          $utf16 = [System.Text.Encoding]::Unicode.GetString($binary)
+          if (-not ($utf8.Contains($config.identifier) -or $utf16.Contains($config.identifier))) { throw 'Smoke identifier not found in executable' }
+          if ($utf8.Contains('com.rumo.desktop') -or $utf16.Contains('com.rumo.desktop')) { throw 'Production identifier found in smoke executable' }
+          $hash = (Get-FileHash -LiteralPath $app.FullName -Algorithm SHA256).Hash
+          New-Item -ItemType Directory -Path 'artifacts' -Force | Out-Null
+          [pscustomobject]@{
+            identifier = $config.identifier
+            productName = $config.productName
+            credentialNamespace = 'RUMO-Smoke-v180'
+            autostartName = 'RUMO Smoke Validation'
+            gatewayUrl = 'http://127.0.0.1:8787'
+            managedGateway = $true
+            commit = '${{ github.sha }}'
+            version = '1.6.0'
+            filename = $app.Name
+            bytes = $app.Length
+            sha256 = $hash
+          } | ConvertTo-Json | Set-Content -LiteralPath 'artifacts/native-smoke-build.json' -Encoding utf8
+          Write-Output "$($app.Name) | bytes=$($app.Length) | SHA256=$hash"
+
+      - name: Upload isolated validation binary and manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: rumo-native-smoke-isolated-${{ github.run_number }}
+          path: |
+            src-tauri/target/release/RUMO-Smoke.exe
+            src-tauri/target/release/finance-gateway/
+            artifacts/native-smoke-build.json
+          if-no-files-found: error
+          retention-days: 7

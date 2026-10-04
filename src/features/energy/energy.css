@@ -1,0 +1,44 @@
+@layer components {
+  .energy-panel {
+    min-width: 0;
+    margin-block: var(--space-6, 24px);
+  }
+  .energy-values {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+    gap: 16px;
+  }
+  .energy-values dt {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .energy-values dd {
+    margin: 4px 0;
+    font-weight: 600;
+  }
+  .energy-form {
+    display: grid;
+    gap: 12px;
+  }
+  .energy-form label,
+  .energy-activity label {
+    display: grid;
+    gap: 6px;
+  }
+  .energy-form label:has(input[type='checkbox']) {
+    display: block;
+  }
+  .energy-activity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 12px;
+  }
+  .energy-week {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+  }
+}

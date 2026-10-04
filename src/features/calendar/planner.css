@@ -1,0 +1,283 @@
+@layer components {
+  .planner-toolbar [hidden] {
+    display: none;
+  }
+  .planner-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .planner-toolbar > strong {
+    flex: 1;
+    font-size: 13px;
+    min-width: 180px;
+    text-transform: capitalize;
+  }
+  .planner-views {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .planner-views button {
+    padding: 6px 9px;
+    font-size: 12px;
+    border-radius: 5px;
+  }
+  .planner-views button[aria-pressed='true'] {
+    background: var(--hover);
+    color: var(--primary);
+  }
+  .planner-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 205px;
+    gap: 16px;
+  }
+  .planner-layout.panel-hidden {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .planner-scroll {
+    overflow: auto;
+    max-height: calc(100vh - 240px);
+    min-height: 350px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    overscroll-behavior: contain;
+  }
+  .planner-sheet {
+    position: relative;
+  }
+  .planner-head {
+    display: grid;
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .planner-head strong {
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 12px;
+    border-left: 1px solid var(--border);
+  }
+  .planner-head [aria-current] {
+    color: var(--primary);
+  }
+  .planner-all-day {
+    display: grid;
+    border-bottom: 1px solid var(--border);
+    min-height: 52px;
+  }
+  .planner-all-day > small {
+    padding: 10px 4px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .planner-all-day > div {
+    min-width: 0;
+    padding: 4px;
+    border-left: 1px solid var(--border);
+  }
+  .planner-all-day button {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+    font-size: 11px;
+    padding: 4px;
+    background: var(--hover);
+    margin-bottom: 3px;
+    border-radius: 4px;
+  }
+  .planner-grid {
+    display: grid;
+  }
+  .planner-hours {
+    position: relative;
+  }
+  .planner-hours span {
+    position: absolute;
+    left: 6px;
+    font-size: 10px;
+    color: var(--muted);
+    transform: translateY(-50%);
+  }
+  .planner-column {
+    position: relative;
+    border-left: 1px solid var(--border);
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 17px,
+      var(--border) 18px,
+      transparent 19px,
+      transparent 71px,
+      var(--border) 72px
+    );
+    cursor: crosshair;
+  }
+  .planner-column:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+  .planner-block {
+    position: absolute;
+    z-index: 2;
+    border-left: 3px solid var(--primary);
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+    cursor: grab;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .planner-block.source-workout {
+    border-color: var(--muted);
+    background: var(--hover);
+  }
+  .planner-block.source-routine {
+    border-color: var(--muted);
+  }
+  .planner-block.source-custom {
+    border-color: var(--muted);
+  }
+  .planner-block.is-completed {
+    opacity: 0.72;
+  }
+  .planner-block.is-completed strong {
+    text-decoration: line-through;
+  }
+  .planner-block-open {
+    width: 100%;
+    height: 100%;
+    padding: 5px 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    overflow: hidden;
+    font-size: 12px;
+    gap: 2px;
+    cursor: pointer;
+  }
+  .planner-block-open strong {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .planner-block-open small {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .planner-resize {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    cursor: ns-resize;
+    touch-action: none;
+    display: flex;
+    justify-content: center;
+    background: transparent;
+  }
+  .planner-now {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--primary);
+    z-index: 3;
+    pointer-events: none;
+  }
+  .planner-now span {
+    position: absolute;
+    right: 3px;
+    top: -13px;
+    color: var(--primary);
+    font-size: 9px;
+    background: var(--surface);
+  }
+  .planner-unscheduled {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    align-self: start;
+    max-height: calc(100vh - 240px);
+    overflow: auto;
+  }
+  .planner-unscheduled h2 {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .planner-unscheduled select {
+    width: 100%;
+    margin: 8px 0;
+  }
+  .planner-candidate {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+    cursor: grab;
+    overflow-wrap: anywhere;
+  }
+  .planner-candidate button {
+    align-self: flex-start;
+  }
+  .focus-return {
+    position: fixed;
+    bottom: 22px;
+    right: 25px;
+    z-index: 9;
+    box-shadow: var(--shadow);
+  }
+  .focus-content {
+    text-align: center;
+    padding: 24px;
+  }
+  .focus-content h3 {
+    font-size: 22px;
+    margin: 18px 0;
+  }
+  .focus-timer {
+    font-size: 64px;
+    line-height: 1.2;
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    display: block;
+    margin: 24px 0;
+  }
+  .focus-content .subtasks {
+    text-align: left;
+  }
+  .focus-content .form-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 1400px) {
+    .planner-layout {
+      grid-template-columns: minmax(0, 1fr) 175px;
+    }
+    .planner-toolbar {
+      gap: 5px;
+    }
+    .planner-views button {
+      padding: 6px;
+    }
+    .planner-unscheduled {
+      padding: 10px;
+    }
+  }
+}

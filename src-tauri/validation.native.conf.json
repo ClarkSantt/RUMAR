@@ -1,0 +1,7 @@
+{
+  "identifier": "com.rumo.validation.native.v180",
+  "productName": "RUMO Smoke",
+  "app": {
+    "windows": [{ "title": "RUMO Smoke" }]
+  }
+}

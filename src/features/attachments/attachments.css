@@ -1,0 +1,48 @@
+@layer components {
+  .attachments-section {
+    margin-top: var(--space-6);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 0;
+  }
+  .attachments-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+  .attachments-header h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--subheading);
+  }
+  .attachments-list {
+    list-style: none;
+    margin: var(--space-3) 0 0;
+    padding: 0;
+  }
+  .attachments-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-2) 0;
+    border-top: 1px solid var(--border);
+  }
+  .attachments-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .attachments-size {
+    color: var(--muted);
+    white-space: nowrap;
+    font-size: var(--caption);
+  }
+}

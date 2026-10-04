@@ -1,0 +1,28 @@
+.automation-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3, 12px);
+}
+.automation-list li {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 12px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.automation-list li > div:first-child {
+  flex: 1;
+  min-width: 180px;
+  overflow-wrap: anywhere;
+}
+.automation-list p {
+  margin: 4px 0;
+}
+.automation-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}

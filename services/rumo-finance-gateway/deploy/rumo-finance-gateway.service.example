@@ -1,0 +1,22 @@
+[Unit]
+Description=RUMO Finance Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rumo-gateway
+Group=rumo-gateway
+WorkingDirectory=/opt/rumo-finance-gateway
+EnvironmentFile=/etc/rumo-finance-gateway/env
+ExecStart=/usr/bin/node src/server.mjs
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/rumo-finance-gateway
+
+[Install]
+WantedBy=multi-user.target

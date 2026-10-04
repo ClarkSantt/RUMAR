@@ -1,0 +1,22 @@
+{
+  "identifier": "main-window",
+  "description": "Janela local do RUMAR e banco SQLite",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-destroy",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "core:window:allow-unminimize",
+    "core:window:allow-is-visible",
+    "autostart:default",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "sql:default",
+    "sql:allow-execute",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "notification:default"
+  ]
+}

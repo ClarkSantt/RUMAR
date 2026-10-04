@@ -1,0 +1,133 @@
+name: Windows native validation
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Frontend, Rust and Tauri on Windows
+    runs-on: windows-2022
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            services/rumo-finance-gateway/package-lock.json
+
+      - name: Install desktop dependencies from lockfile
+        run: npm ci
+
+      - name: Check desktop formatting
+        run: npx prettier --check .
+
+      - name: Lint desktop
+        run: npm run lint
+
+      - name: Typecheck desktop
+        run: npm run typecheck
+
+      - name: Test desktop with local fakes
+        run: npm test
+
+      - name: Test redacted smoke diagnostics
+        run: node --test scripts/safe-diagnostics.spec.mjs
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Audit desktop dependencies
+        run: npm audit --audit-level=low
+
+      - name: Validate all source files
+        run: node scripts/validate-files.mjs
+
+      - name: Install gateway dependencies from lockfile
+        working-directory: services/rumo-finance-gateway
+        run: npm ci
+
+      - name: Test gateway with mocked Pluggy
+        working-directory: services/rumo-finance-gateway
+        run: npm test
+
+      - name: Check gateway JavaScript syntax
+        working-directory: services/rumo-finance-gateway
+        run: |
+          Get-ChildItem src,test -Recurse -File -Filter *.mjs | ForEach-Object {
+            node --check $_.FullName
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Audit gateway dependencies
+        working-directory: services/rumo-finance-gateway
+        run: npm audit --audit-level=low
+
+      - name: Stage bundled local gateway runtime
+        run: node scripts/stage-finance-gateway.mjs
+
+      # Keep this native build uncached to distinguish source failures from stale local artifacts.
+      - name: Set up stable Rust MSVC
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc --profile minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup default stable-x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup target add x86_64-pc-windows-msvc --toolchain stable-x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustc --version
+          cargo --version
+
+      - name: Resolve locked Cargo metadata and dependency tree
+        working-directory: src-tauri
+        run: |
+          cargo metadata --locked --format-version 1 | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo tree --locked
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Check Rust
+        working-directory: src-tauri
+        run: cargo check --locked
+
+      - name: Test Rust
+        working-directory: src-tauri
+        run: cargo test --locked
+
+      - name: Build Tauri and NSIS without signing
+        run: npm run desktop:build
+
+      - name: Verify unsigned artifacts and print SHA256
+        run: |
+          $app = Get-Item -LiteralPath 'src-tauri/target/release/rumo.exe' -ErrorAction Stop
+          $installers = @(Get-ChildItem -LiteralPath 'src-tauri/target/release/bundle/nsis' -Filter 'RUMAR_*_x64-setup.exe' -File)
+          if ($installers.Count -ne 1) { throw "Expected exactly one NSIS installer, found $($installers.Count)" }
+          foreach ($file in @($app) + $installers) {
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+            Write-Output "$($file.FullName) | bytes=$($file.Length) | SHA256=$hash"
+          }
+
+      - name: Upload unsigned validation binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: rumo-windows-unsigned-validation-${{ github.run_number }}
+          path: |
+            src-tauri/target/release/rumo.exe
+            src-tauri/target/release/bundle/nsis/RUMAR_*_x64-setup.exe
+          if-no-files-found: error
+          retention-days: 7

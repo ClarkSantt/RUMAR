@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "RUMAR",
+  "version": "1.8.0",
+  "identifier": "com.rumo.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "RUMAR",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 900,
+        "minHeight": 620,
+        "backgroundColor": "#F7F8FA"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; frame-src https://connect.pluggy.ai; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "resources": {
+      "resources/finance-gateway/node.exe": "finance-gateway/node.exe",
+      "../services/rumo-finance-gateway/src/": "finance-gateway/src/"
+    },
+    "icon": ["icons/icon.ico"],
+    "windows": { "nsis": { "languages": ["PortugueseBR"], "displayLanguageSelector": false } }
+  },
+  "plugins": { "sql": {} }
+}

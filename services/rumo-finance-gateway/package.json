@@ -1,0 +1,16 @@
+{
+  "name": "rumo-finance-gateway",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "pair-code": "node src/admin.mjs pair-code",
+    "revoke-device": "node src/admin.mjs revoke-device",
+    "register-webhook": "node src/admin.mjs register-webhook",
+    "test": "node --test test/*.test.mjs"
+  }
+}

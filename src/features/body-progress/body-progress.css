@@ -1,0 +1,172 @@
+@layer components {
+  .body-progress {
+    min-width: 0;
+  }
+  .body-progress h3 {
+    font-size: var(--heading);
+    margin: 0 0 16px;
+  }
+  .body-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 12px;
+    margin: 20px 0 28px;
+  }
+  .body-overview > div,
+  .body-metric-grid > div {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 16px;
+    display: grid;
+    gap: 4px;
+  }
+  .body-overview span,
+  .body-metric-grid span {
+    color: var(--muted);
+    font-size: var(--caption);
+  }
+  .body-overview strong {
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .body-overview small {
+    color: var(--muted);
+  }
+  .body-section {
+    margin: 28px 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    min-width: 0;
+  }
+  .body-section .section-heading {
+    align-items: end;
+  }
+  .body-section label,
+  .body-editor label,
+  .body-compare-controls label {
+    display: grid;
+    gap: 6px;
+    font-size: var(--caption);
+  }
+  .body-chart {
+    overflow: hidden;
+  }
+  .body-chart svg {
+    width: 100%;
+    max-height: 220px;
+    fill: none;
+  }
+  .body-chart polyline {
+    stroke: var(--primary);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .body-chart circle {
+    fill: var(--surface);
+    stroke: var(--primary);
+    stroke-width: 2;
+  }
+  .body-chart-axis {
+    stroke: var(--border);
+  }
+  .body-chart text {
+    fill: var(--muted);
+    font-size: 10px;
+  }
+  .body-history-table {
+    margin-top: 12px;
+  }
+  .body-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+  }
+  .body-compare-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .body-table-wrap {
+    overflow-x: auto;
+  }
+  .body-table-wrap table,
+  .body-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  .body-table-wrap th,
+  .body-table-wrap td,
+  .body-history-table th,
+  .body-history-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  .body-table-wrap thead th,
+  .body-history-table thead th {
+    color: var(--muted);
+    font-size: var(--caption);
+  }
+  .body-records > div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .body-records > div > span {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+  }
+  .body-records small {
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .body-empty {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    color: var(--muted);
+  }
+  .body-empty h3 {
+    color: var(--text);
+    margin-top: 12px;
+  }
+  .body-editor {
+    scroll-margin-top: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 24px;
+    margin: 24px 0;
+  }
+  .body-editor form {
+    display: grid;
+    gap: 20px;
+  }
+  .body-input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 12px;
+  }
+  .body-input-grid input,
+  .body-editor textarea {
+    width: 100%;
+  }
+  .body-editor .primary-button {
+    justify-self: start;
+  }
+  @media (max-width: 900px) {
+    .body-table-wrap table {
+      min-width: 520px;
+    }
+    .body-editor {
+      padding: 16px;
+    }
+  }
+}
