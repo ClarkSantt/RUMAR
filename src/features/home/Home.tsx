@@ -27,51 +27,27 @@ export function Home({
     completed = rows.filter((r) => r.completed).length;
   return (
     <>
-      <header className="page-header">
-        <p className="eyebrow">UM DIA DE CADA VEZ</p>
+      <header className="page-header home-header">
         <h1>
           {greeting(now)}, {data.settings.name}.
         </h1>
         <p className="date-line">{fullDate(day)}</p>
       </header>
-      <div className="day-summary">
-        <div>
-          <span className="summary-label">Seu dia</span>
-          <strong>
-            {completed}
-            <span> / {rows.length}</span>
-          </strong>
-          <span className="summary-caption">tarefas concluídas</span>
-        </div>
-        <button onClick={onInbox}>
-          <span className="summary-label">Inbox</span>
-          <strong>{data.inbox.length}</strong>
-          <span className="summary-caption">
-            {data.inbox.length === 1 ? 'item para organizar' : 'itens para organizar'}{' '}
-            <ArrowRight size={14} />
-          </span>
-        </button>
-        <button onClick={() => setShowOverdue(!showOverdue)} aria-expanded={showOverdue}>
-          <span className="summary-label">Para retomar</span>
-          <strong>{overdue.length}</strong>
-          <span className="summary-caption">
-            {overdue.length === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}
-          </span>
-        </button>
-      </div>
       <section className="today-section">
-        <div className="section-heading">
-          <h2>Tarefas de hoje</h2>
-          <span>
-            {completed} de {rows.length}
+        <div className="section-heading home-today-heading">
+          <h2>Hoje</h2>
+          <span aria-live="polite">
+            {rows.length ? `${completed} de ${rows.length} concluídas` : 'Sem tarefas previstas'}
           </span>
         </div>
-        <progress
-          className="day-progress"
-          aria-label="Progresso de hoje"
-          max={rows.length || 1}
-          value={completed}
-        />
+        {rows.length > 0 && (
+          <progress
+            className="day-progress"
+            aria-label="Progresso de hoje"
+            max={rows.length}
+            value={completed}
+          />
+        )}
         <TaskList
           rows={rows}
           store={store}
@@ -98,6 +74,23 @@ export function Home({
           }
         />
       </section>
+      <div className="home-glance" aria-label="Outros itens do dia">
+        <button onClick={onInbox}>
+          <span className="summary-label">Inbox</span>
+          <strong>{data.inbox.length}</strong>
+          <span className="summary-caption">
+            {data.inbox.length === 1 ? 'item para organizar' : 'itens para organizar'}{' '}
+            <ArrowRight size={14} />
+          </span>
+        </button>
+        <button onClick={() => setShowOverdue(!showOverdue)} aria-expanded={showOverdue}>
+          <span className="summary-label">Para retomar</span>
+          <strong>{overdue.length}</strong>
+          <span className="summary-caption">
+            {overdue.length === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}
+          </span>
+        </button>
+      </div>
       {showOverdue && (
         <section className="secondary-section">
           <div className="section-heading">

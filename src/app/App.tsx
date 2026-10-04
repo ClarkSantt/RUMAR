@@ -1,25 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import {
-  ArrowUpRight,
-  House,
-  Inbox,
-  ListTodo,
-  Plus,
-  Settings2,
-  X,
-  Folder,
-  Repeat,
-  ListChecks,
-  CalendarDays,
-  NotebookPen,
-  Dumbbell,
-  Utensils,
-  Wallet,
-  Search,
-  Target,
-  History,
-} from 'lucide-react';
+import { X } from 'lucide-react';
+import { AppSidebar, type SidebarPage } from '../components/AppSidebar';
 import { useRumo } from '../hooks/useRumo';
 import { useClock } from '../hooks/useClock';
 import { useTheme } from '../hooks/useTheme';
@@ -82,21 +64,6 @@ type Page =
   | 'monthly-review'
   | 'objectives'
   | 'timeline';
-const navigation = [
-  { id: 'home', label: 'Início', Icon: House },
-  { id: 'inbox', label: 'Inbox', Icon: Inbox },
-  { id: 'tasks', label: 'Tarefas', Icon: ListTodo },
-  { id: 'projects', label: 'Projetos', Icon: Folder },
-  { id: 'objectives', label: 'Objetivos', Icon: Target },
-  { id: 'habits', label: 'Hábitos', Icon: Repeat },
-  { id: 'routines', label: 'Rotinas', Icon: ListChecks },
-  { id: 'calendar', label: 'Calendário', Icon: CalendarDays },
-  { id: 'workouts', label: 'Treinos', Icon: Dumbbell },
-  { id: 'nutrition', label: 'Alimentação', Icon: Utensils },
-  { id: 'finance', label: 'Finanças', Icon: Wallet },
-  { id: 'thoughts', label: 'Pensamentos', Icon: NotebookPen },
-  { id: 'timeline', label: 'Timeline', Icon: History },
-] as const;
 export default function App() {
   const store = useRumo(),
     now = useClock();
@@ -302,62 +269,14 @@ export default function App() {
   }
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <a href="#main" className="skip-link">
-          Ir para o conteúdo
-        </a>
-        <div className="wordmark">
-          <span className="brand-symbol">
-            <ArrowUpRight size={20} strokeWidth={2.5} />
-          </span>
-          RUMAR
-        </div>
-        <button className="capture-button" onClick={() => setCapture(true)} disabled={!store.data}>
-          <Plus size={17} />
-          Adicionar<kbd>Ctrl ␣</kbd>
-        </button>
-        <button
-          className="settings-link search-link"
-          onClick={() => setSearchOpen(true)}
-          disabled={!store.data}
-        >
-          <Search size={17} /> Buscar <kbd>Ctrl K</kbd>
-        </button>
-        <nav aria-label="Navegação principal">
-          {navigation.map(({ id, label, Icon }) => (
-            <div key={id}>
-              {id === 'tasks' && <p className="nav-label">ORGANIZAÇÃO</p>}
-              {id === 'workouts' && <p className="nav-label">VIDA</p>}
-              {id === 'thoughts' && <p className="nav-label">PESSOAL</p>}
-              <button
-                key={id}
-                aria-current={page === id ? 'page' : undefined}
-                onClick={() => void navigate(id)}
-              >
-                <Icon size={18} />
-                <span>{label}</span>
-                {id === 'inbox' && Boolean(store.data?.inbox.length) && (
-                  <span className="nav-count">{store.data!.inbox.length}</span>
-                )}
-              </button>
-            </div>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <button
-            className="settings-link"
-            aria-current={page === 'settings' ? 'page' : undefined}
-            onClick={() => void navigate('settings')}
-          >
-            <Settings2 size={18} />
-            Configurações
-          </button>
-          <div className="local-status">
-            <span />
-            Seu espaço. Neste computador.
-          </div>
-        </div>
-      </aside>
+      <AppSidebar
+        activePage={page}
+        inboxCount={store.data?.inbox.length ?? 0}
+        ready={databaseReady}
+        onNavigate={(next: SidebarPage) => void navigate(next)}
+        onAdd={() => setCapture(true)}
+        onSearch={() => setSearchOpen(true)}
+      />
       <main id="main" tabIndex={-1}>
         <PageErrorBoundary key={page}>
           <div className="content">
@@ -391,33 +310,42 @@ export default function App() {
                     }}
                   />
                 )}
-                <Home
-                  store={store}
-                  now={now}
-                  onOpen={openTask}
-                  onInbox={() => void navigate('inbox')}
-                  onReview={() => void navigate('review')}
-                />
-                <div className="home-secondary-grid">
-                  <HomeHabits day={localDate(now)} />
-                  <HomeRoutines day={localDate(now)} />
-                  <HomeWorkouts day={localDate(now)} onNavigate={() => void navigate('workouts')} />
-                  <HomeNutrition
-                    day={localDate(now)}
-                    onNavigate={() => void navigate('nutrition')}
-                  />
-                  <HomeFinance day={localDate(now)} onNavigate={() => void navigate('finance')} />
+                <div className="home-layout">
+                  <div className="home-primary">
+                    <Home
+                      store={store}
+                      now={now}
+                      onOpen={openTask}
+                      onInbox={() => void navigate('inbox')}
+                      onReview={() => void navigate('review')}
+                    />
+                  </div>
+                  <aside className="home-rail" aria-label="Continuidade do dia">
+                    <HomeAgenda
+                      day={localDate(now)}
+                      now={now}
+                      onOpen={() => void navigate('calendar')}
+                    />
+                    <HomeHabits day={localDate(now)} />
+                    <HomeRoutines day={localDate(now)} />
+                    <HomeWorkouts
+                      day={localDate(now)}
+                      onNavigate={() => void navigate('workouts')}
+                    />
+                  </aside>
+                </div>
+                <div className="home-more" aria-label="Outras áreas">
                   <HomeProjects
                     revision={store.data}
                     day={localDate(now)}
                     onNavigate={() => void navigate('projects')}
                   />
                   <HomeObjectives onNavigate={(id) => void navigate('objectives', id)} />
-                  <HomeAgenda
+                  <HomeNutrition
                     day={localDate(now)}
-                    now={now}
-                    onOpen={() => void navigate('calendar')}
+                    onNavigate={() => void navigate('nutrition')}
                   />
+                  <HomeFinance day={localDate(now)} onNavigate={() => void navigate('finance')} />
                 </div>
               </>
             ) : page === 'review' ? (

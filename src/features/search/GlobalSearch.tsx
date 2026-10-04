@@ -60,6 +60,7 @@ export function GlobalSearch({
         onClose();
       }}
       onKeyDown={(event) => {
+        if (event.target !== input.current) return;
         if (event.key === 'ArrowDown') {
           event.preventDefault();
           setActive((value) => Math.min(results.length - 1, value + 1));
@@ -78,8 +79,13 @@ export function GlobalSearch({
         <Search size={20} />
         <input
           ref={input}
-          aria-label="Buscar no RUMO"
-          placeholder="Buscar no RUMO…"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="true"
+          aria-controls="rumar-search-results"
+          aria-activedescendant={results[active] ? `rumar-search-option-${active}` : undefined}
+          aria-label="Buscar no RUMAR"
+          placeholder="Buscar no RUMAR…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -87,7 +93,12 @@ export function GlobalSearch({
           <X size={18} />
         </button>
       </div>
-      <div className="search-results" role="listbox" aria-label="Resultados da busca">
+      <div
+        id="rumar-search-results"
+        className="search-results"
+        role="listbox"
+        aria-label="Resultados da busca"
+      >
         {error && <p role="alert">{error}</p>}
         {query.trim().length < 2 ? (
           <p>Digite pelo menos duas letras.</p>
@@ -95,13 +106,14 @@ export function GlobalSearch({
           <p>Nenhum resultado encontrado.</p>
         ) : (
           Array.from(grouped, ([group, rows]) => (
-            <section key={group}>
-              <h3>{group}</h3>
+            <section key={group} role="group" aria-label={group}>
+              <h3 aria-hidden="true">{group}</h3>
               {rows.map((row) => {
                 const index = results.indexOf(row);
                 return (
                   <button
                     key={`${group}-${row.id}`}
+                    id={`rumar-search-option-${index}`}
                     role="option"
                     aria-selected={index === active}
                     onMouseEnter={() => setActive(index)}

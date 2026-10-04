@@ -312,7 +312,7 @@
     stroke-width: 1;
   }
   .nutrition-error {
-    color: #bd4a4a;
+    color: var(--danger);
   }
   .nutrition-weight-summary {
     display: flex;
