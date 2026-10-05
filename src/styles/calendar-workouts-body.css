@@ -348,12 +348,11 @@
     max-height: 280px;
   }
   .body-chart-grid {
-    stroke: var(--color-border);
+    stroke: var(--chart-grid);
     stroke-width: 1;
   }
   .body-chart-area {
-    fill: var(--color-primary);
-    opacity: 0.08;
+    fill: var(--chart-fill);
   }
   .body-chart circle:focus-visible {
     outline: none;
@@ -361,7 +360,7 @@
   }
   .body-chart svg text {
     fill: var(--color-text-secondary);
-    font-size: 11px;
+    font-size: var(--caption);
   }
   .body-metric-grid {
     display: block;

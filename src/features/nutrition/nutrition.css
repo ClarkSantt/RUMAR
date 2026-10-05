@@ -304,11 +304,11 @@
     stroke-width: 2;
   }
   .nutrition-chart text {
-    fill: var(--muted);
-    font-size: 12px;
+    fill: var(--color-text-secondary);
+    font-size: var(--caption);
   }
   .nutrition-chart-axis {
-    stroke: var(--border);
+    stroke: var(--chart-axis);
     stroke-width: 1;
   }
   .nutrition-error {

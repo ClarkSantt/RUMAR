@@ -54,11 +54,11 @@
     color: var(--muted);
   }
   .evolution-chart line {
-    stroke: var(--border);
+    stroke: var(--chart-grid);
   }
   .evolution-chart text {
-    fill: var(--muted);
-    font-size: 11px;
+    fill: var(--color-text-secondary);
+    font-size: var(--caption);
   }
   .evolution-chart circle {
     fill: var(--primary);

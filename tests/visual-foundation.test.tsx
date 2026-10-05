@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppSidebar } from '../src/components/AppSidebar';
+import { EmptyState } from '../src/components/EmptyState';
 import { Home } from '../src/features/home/Home';
 import type { RumoStore } from '../src/hooks/useRumo';
 import type { Snapshot, Task } from '../src/types/models';
@@ -65,6 +66,48 @@ it('persiste recolhimento sem perder nomes, atalhos ou navegação por teclado',
     />,
   );
   expect(screen.getByRole('button', { name: 'Expandir barra lateral' })).toBeTruthy();
+});
+
+it('indica seções fora da área visível e permite avançar pela navegação', async () => {
+  render(
+    <AppSidebar
+      activePage="home"
+      inboxCount={0}
+      ready
+      onNavigate={vi.fn()}
+      onAdd={vi.fn()}
+      onSearch={vi.fn()}
+    />,
+  );
+  const nav = screen.getByRole('navigation', { name: 'Navegação principal' });
+  Object.defineProperty(nav, 'clientHeight', { configurable: true, value: 240 });
+  Object.defineProperty(nav, 'scrollHeight', { configurable: true, value: 780 });
+  nav.scrollBy = vi.fn();
+  act(() => window.dispatchEvent(new Event('resize')));
+  const cue = screen.getByRole('button', { name: 'Ver mais seções da navegação' });
+  await userEvent.setup().click(cue);
+  expect(nav.scrollBy).toHaveBeenCalledWith(0, 180);
+  Object.defineProperty(nav, 'scrollTop', { configurable: true, value: 540 });
+  fireEvent.scroll(nav);
+  expect(screen.queryByRole('button', { name: 'Ver mais seções da navegação' })).toBeNull();
+});
+
+it('oferece ação principal e secundária no estado vazio contextual', async () => {
+  const primary = vi.fn();
+  const secondary = vi.fn();
+  render(
+    <EmptyState
+      title="Nenhuma tarefa para hoje"
+      description="Você pode planejar a próxima tarefa."
+      action={{ label: 'Adicionar tarefa', onClick: primary }}
+      secondaryAction={{ label: 'Ver tarefas', onClick: secondary }}
+    />,
+  );
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: 'Adicionar tarefa' }));
+  await user.click(screen.getByRole('button', { name: 'Ver tarefas' }));
+  expect(primary).toHaveBeenCalledOnce();
+  expect(secondary).toHaveBeenCalledOnce();
 });
 
 function task(id: string, date: string, status: Task['status']): Task {

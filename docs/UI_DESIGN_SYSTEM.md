@@ -1,6 +1,6 @@
 # RUMAR visual system
 
-This document is the visual reference for UI migration after Phase 1. It describes the implemented foundation, not a redesign mandate for modules still pending.
+This document describes the implemented RUMAR visual system. The global recalibration strengthens the existing foundation without changing module workflows or migrating Thoughts, Timeline, Reviews or Settings.
 
 ## Visual principles
 
@@ -11,13 +11,13 @@ This document is the visual reference for UI migration after Phase 1. It describ
 
 ## Colors
 
-Semantic tokens live in `src/styles/visual-foundation.css`. Light surfaces use `#F5F7FB`, white and `#F8FAFD`; dark surfaces use `#171A1F`, `#1F232A` and `#252A32`. The main blue is `#2869C8` light and `#9ABAF0` dark. Text and border tokens provide secondary and tertiary levels. Success, warning and danger each have a foreground and soft surface token. `--color-focus-ring` is separate from content color. Legacy aliases (`--surface`, `--primary`, etc.) remain while older screens migrate.
+Semantic tokens live in `src/styles/visual-foundation.css`. Light mode separates a `#F1F4F8` canvas, white content surfaces and a `#F7F9FC` subtle surface with restrained borders. The navigation rail is deep navy (`#172B49`) in light mode, a deliberate RUMAR signature; dark mode retains charcoal content surfaces and a quieter navy rail. The main blue remains `#2869C8` light and `#9ABAF0` dark. Text and border tokens provide secondary and tertiary levels. Success, warning, danger and info each have a foreground and soft surface token. `--color-focus-ring` is separate from content color. Legacy aliases (`--surface`, `--primary`, etc.) remain while older screens migrate.
 
 Use semantic tokens for new UI. Do not use `--color-primary-soft` or `--accent` as text. Check normal-text contrast in both themes before introducing a new combination.
 
 ## Typography
 
-Use Segoe UI Variable, Segoe UI and system fallbacks. Body text is 14px with 1.55 line-height. Page titles are 28px/600, section headings 20px/600 and subsections 16px/600. Labels are about 13px/600; metadata is at least 12.5px when it conveys important information. Eyebrows should be rare, discreet and never replace a real heading.
+Use Segoe UI Variable, Segoe UI and system fallbacks. Body text is 14px with 1.55 line-height. Page titles are 28px/600, section headings 20px/600 and subsections 16px/600. Labels are about 13px/600; shared metadata and chart labels use 13px where they convey important information. Captions below 12px are reserved for truly incidental information. Eyebrows should be rare, discreet and never replace a real heading.
 
 ## Spacing and radius
 
@@ -39,7 +39,7 @@ Default controls use the text and border hierarchy of their surface. Hover chang
 
 ## Sidebar and Home
 
-The sidebar remains fixed, with a scrollable navigation region and a persistent footer for Settings and local status. Expanded width is 232px (216px near the minimum window); collapsed width is 68px. It keeps the existing module order within the new groups. Add and Search remain at the top; the collapse button has an accessible label and the preference survives restart without a database migration.
+The sidebar remains fixed, with a scrollable navigation region and a persistent footer for Settings and local status. Expanded width is 232px (216px near the minimum window); collapsed width is 68px. It keeps the existing module order within the new groups. A visible **Mais seções** control appears only when destinations remain below the viewport and advances the navigation independently of the page. Short windows reduce rail padding and group gaps without shrinking labels below legibility. Add and Search remain at the top; the global Add control is intentionally quieter than the contextual primary button. The collapse button has an accessible label and the preference survives restart without a database migration.
 
 Home uses an asymmetric grid above 1180px: tasks occupy the main column, while the next agenda entries, habits, routines and workout provide compact continuity. Inbox and overdue counts follow tasks. Projects, objectives, nutrition and finance appear below as lighter sections only when the source components have content. Near the minimum desktop width, the rail moves below tasks. Existing Finance privacy behavior remains in the source component.
 
@@ -107,29 +107,70 @@ Financial Connections communicates **trust**; its primary actions are **connect,
 | Verify contrast in both themes                           | Use soft surface colors as text             |
 | Keep desktop width comfortable and scrolling predictable | Fill every wide screen with oversized cards |
 
+## Global visual recalibration
+
+### Color system and visual identity
+
+The rail's navy field, a single calm blue for selection/action, and the distinction between canvas and useful surfaces are the three recurring RUMAR cues. Do not echo the primary blue on every icon or add decorative gradients. The rail has its own ink, muted text, divider, hover and selected tokens so its contrast does not depend on content-surface colors. Success, warning, danger and info keep their semantic meaning across modules; Nutrition and Finance should not invent parallel palettes.
+
+### Surfaces, radius and elevation
+
+`--color-bg` is the canvas; `--color-surface` holds grouped content; `--color-surface-subtle` supports quiet controls and empty states; `--color-surface-raised` is reserved for overlays. `--color-interactive-surface` and `--color-selected-surface` identify interactive and selected regions. Rows and sections should generally use spacing and a divider instead of another card. Controls use the 9px radius, ordinary surfaces 12–14px and dialogs 16px. Ordinary cards do not need a floating shadow; `--shadow-md` belongs to dialogs, popovers and toasts.
+
+### Page layout and headers
+
+Page padding is 32–56px depending on window width. `--page-width-narrow`, `--page-width-standard` and `--page-width-wide` are 960, 1280 and 1480px; wide Calendar, Finance, Nutrition and Body Progress content may use the wider ceiling only on very large monitors. A page header contains a clear title, optional explanatory subtitle and contextual action. Subtitles stay short and are omitted when the title already explains the page. The Home's asymmetric composition is preserved.
+
+### Buttons, inputs, tabs and badges
+
+Primary buttons mean the page's next contextual action. Secondary and ghost controls support it; the sidebar Add control is a global shortcut and has a quieter treatment. Shared buttons and icon buttons retain 40px and at least 36px targets respectively. Inputs and selects keep a 42px minimum height, a semantic border and the shared focus ring; disabled and error states must remain readable. Tabs remain one navigation strip, scroll horizontally when needed and expose an unmistakable selected state. A status badge communicates state in words as well as color; category chips and tags should not be styled as status messages.
+
+### Rows, tables and empty states
+
+Lists remain rows with quiet dividers, visible hover/selection and metadata at a readable size. Tables use a light horizontal rhythm, restrained headers, horizontal scrolling in narrow containers and a row hover that does not obscure content. The shared `EmptyState` accepts an icon, contextual title, useful description, primary action and optional secondary action. It uses a subtle surface rather than a large illustration. A Home empty state remains unboxed so it does not create a card inside a section. Distinguish no records, no records for this filter and a completed day in copy supplied by each module.
+
+### Charts
+
+`--chart-grid`, `--chart-axis` and `--chart-fill` define the quiet chart grammar. Use the primary blue for the principal data series and semantic colors only for their actual meaning. Axes and dates must remain legible; chart tooltips or data-point titles provide exact values where available. Place the current value and relevant trend in visible text near the chart. Body Progress, Nutrition and Workouts map their existing charts to the shared grid/axis and 13px label scale; their existing history or summary views provide textual alternatives. Do not add invented comparison metrics to decorate a chart.
+
+### Dialogs, drawers, menus and motion
+
+Dialogs and drawers keep the existing focus trap, Escape behavior, focus return and header/footer structure. Secondary-action menus retain their keyboard and disclosure behavior. Scrollbars remain thin but visible, particularly in the navigation rail and long drawers. Motion uses the 120/160/220ms tokens for state changes, without bounce or continuous scroll effects. `prefers-reduced-motion` removes shell and control transitions without hiding information.
+
+### Responsive rules
+
+At 900×620, the sidebar navigation scrolls independently and its explicit cue exposes destinations below the fold while Settings remains anchored. At 1366×768, the content uses the standard page gutter and the major screens keep their existing hierarchy. At 1920×1080, standard content is capped instead of stretching indefinitely. At 2560×1440, data-dense modules may use the wide ceiling. Tabs and tables scroll within their own regions rather than causing page-wide horizontal overflow.
+
+### Visual debt for later phases
+
+1. Workouts Today needs a partial redesign; Home needs its final editorial pass.
+2. Timeline and Reviews need dedicated redesigns; Settings needs a clearer organization; Thoughts needs refinement.
+3. Nutrition's internal navigation deserves simplification and Financial Connections can be friendlier. These remain future module work, not changes introduced by the global recalibration.
+
 ## UI migration status
 
-| Area                  | Status  |
-| --------------------- | ------- |
-| Foundation            | DONE    |
-| Shell                 | DONE    |
-| Sidebar               | DONE    |
-| Home                  | DONE    |
-| Tasks                 | DONE    |
-| Inbox                 | DONE    |
-| Projects              | DONE    |
-| Objectives            | DONE    |
-| Habits                | DONE    |
-| Routines              | DONE    |
-| Calendar              | DONE    |
-| Workouts              | DONE    |
-| Body Progress         | DONE    |
-| Nutrition             | DONE    |
-| Finance               | DONE    |
-| Financial Connections | DONE    |
-| Thoughts              | PENDING |
-| Timeline              | PENDING |
-| Reviews               | PENDING |
-| Settings              | PENDING |
+| Area                        | Status  |
+| --------------------------- | ------- |
+| Foundation                  | DONE    |
+| Global Visual Recalibration | DONE    |
+| Shell                       | DONE    |
+| Sidebar                     | DONE    |
+| Home                        | DONE    |
+| Tasks                       | DONE    |
+| Inbox                       | DONE    |
+| Projects                    | DONE    |
+| Objectives                  | DONE    |
+| Habits                      | DONE    |
+| Routines                    | DONE    |
+| Calendar                    | DONE    |
+| Workouts                    | DONE    |
+| Body Progress               | DONE    |
+| Nutrition                   | DONE    |
+| Finance                     | DONE    |
+| Financial Connections       | DONE    |
+| Thoughts                    | PENDING |
+| Timeline                    | PENDING |
+| Reviews                     | PENDING |
+| Settings                    | PENDING |
 
 The contrast fix in Reviews remains a foundational correction; Reviews is pending full visual migration.

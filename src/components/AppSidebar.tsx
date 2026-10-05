@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowUpRight,
   CalendarDays,
@@ -93,6 +93,8 @@ export function AppSidebar({
   onAdd: () => void;
   onSearch: () => void;
 }) {
+  const navigationRef = useRef<HTMLElement>(null);
+  const [hasMoreNavigation, setHasMoreNavigation] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return window.localStorage.getItem(preferenceKey) === 'true';
@@ -109,6 +111,25 @@ export function AppSidebar({
       // The shell remains usable if local preferences are unavailable.
     }
   }
+  useEffect(() => {
+    const navigation = navigationRef.current;
+    if (!navigation) return;
+    const update = () =>
+      setHasMoreNavigation(
+        navigation.scrollTop + navigation.clientHeight < navigation.scrollHeight - 2,
+      );
+    navigation.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(navigation);
+    const frame = window.requestAnimationFrame(update);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      navigation.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      observer?.disconnect();
+    };
+  }, [collapsed]);
   return (
     <aside className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}>
       <a href="#main" className="skip-link">
@@ -154,7 +175,7 @@ export function AppSidebar({
           <span className="sidebar-label">Adicionar</span>
         </button>
       </div>
-      <nav aria-label="Navegação principal">
+      <nav ref={navigationRef} aria-label="Navegação principal">
         {groups.map((group) => (
           <div className="sidebar-group" key={group.label}>
             <p className="nav-label sidebar-label">{group.label}</p>
@@ -182,6 +203,19 @@ export function AppSidebar({
           </div>
         ))}
       </nav>
+      {hasMoreNavigation && (
+        <button
+          className="sidebar-scroll-cue"
+          aria-label="Ver mais seções da navegação"
+          title="Ver mais seções da navegação"
+          onClick={() =>
+            navigationRef.current?.scrollBy(0, navigationRef.current.clientHeight * 0.75)
+          }
+        >
+          <ChevronRight size={15} aria-hidden="true" />
+          <span className="sidebar-label">Mais seções</span>
+        </button>
+      )}
       <div className="sidebar-bottom">
         <button
           className="settings-link"

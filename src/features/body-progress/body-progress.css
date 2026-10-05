@@ -69,11 +69,11 @@
     stroke-width: 2;
   }
   .body-chart-axis {
-    stroke: var(--border);
+    stroke: var(--chart-axis);
   }
   .body-chart text {
-    fill: var(--muted);
-    font-size: 10px;
+    fill: var(--color-text-secondary);
+    font-size: var(--caption);
   }
   .body-history-table {
     margin-top: 12px;
