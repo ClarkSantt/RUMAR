@@ -74,6 +74,18 @@ export function RoutineEditor({
       <div className="drawer-body">
         {id && <VisibilityControl kind="routine" id={id} />}
         {id && <GoogleMirrorControl kind="routine" id={id} />}
+        {id && (
+          <div className="routine-detail-intro">
+            <span>Rotina · {draft.active ? 'Ativa' : 'Pausada'}</span>
+            <h3>{draft.name}</h3>
+            {draft.description && <p>{draft.description}</p>}
+            <small>
+              {items.length} {items.length === 1 ? 'etapa' : 'etapas'} ·{' '}
+              {draft.time_of_day ??
+                (draft.frequency === 'daily' ? 'Todos os dias' : 'Dias selecionados')}
+            </small>
+          </div>
+        )}
         <form
           className="habit-form"
           id="routine-form"

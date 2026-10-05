@@ -98,6 +98,24 @@ export function HabitEditor({
     >
       <div className="drawer-body">
         {habit && <VisibilityControl kind="habit" id={habit.id} />}
+        {habit && (
+          <div className="habit-detail-intro">
+            <span>Hábito · {habit.active ? 'Ativo' : 'Pausado'}</span>
+            <h3>{habit.name}</h3>
+            {habit.description && <p>{habit.description}</p>}
+            <small>
+              {habit.kind === 'quantity'
+                ? `Meta: ${habit.target_value} ${habit.unit}`
+                : 'Registro: feito ou não feito'}{' '}
+              ·{' '}
+              {habit.frequency === 'daily'
+                ? 'Todos os dias'
+                : habit.frequency === 'weekly_target'
+                  ? `${habit.weekly_target} vezes por semana`
+                  : 'Dias selecionados'}
+            </small>
+          </div>
+        )}
         <form
           id="habit-form"
           className="habit-form"

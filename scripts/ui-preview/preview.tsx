@@ -8,15 +8,31 @@ import { ProjectCard } from '../../src/features/projects/ProjectCard';
 import { ProjectDetailOverview } from '../../src/features/projects/ProjectDetailOverview';
 import { ObjectiveCard } from '../../src/features/objectives/ObjectiveCard';
 import { ObjectiveDetailOverview } from '../../src/features/objectives/ObjectiveDetailOverview';
+import { HabitCard } from '../../src/features/habits/HabitCard';
+import { RoutineSequenceCard } from '../../src/features/routines/RoutineSequenceCard';
+import {
+  habitEligible,
+  habitProgress,
+  habitReached,
+  type Habit,
+  type HabitEntry,
+} from '../../src/features/habits/domain';
+import type {
+  Routine,
+  RoutineItem,
+  RoutineOccurrence,
+  RoutineCompletion,
+} from '../../src/features/routines/domain';
 import type { ProjectSummary } from '../../src/features/projects/types';
 import type { Objective, ObjectiveProgress } from '../../src/features/objectives/repository';
-import { FolderKanban, Plus, Target } from 'lucide-react';
+import { FolderKanban, ListChecks, Plus, Repeat2, Target } from 'lucide-react';
 import type { RumoStore } from '../../src/hooks/useRumo';
 import type { Snapshot, Task } from '../../src/types/models';
 import '../../src/styles/global.css';
 import '../../src/styles/visual-foundation.css';
 import '../../src/styles/tasks-inbox.css';
 import '../../src/styles/projects-objectives.css';
+import '../../src/styles/habits-routines.css';
 
 const today = '2026-10-04';
 function task(
@@ -211,6 +227,219 @@ const objectiveProgress: ObjectiveProgress[] = [
   { label: 'Progresso informado', current: 7, target: 10, unit: 'pontos', percent: 70 },
   { label: 'Progresso informado', current: 4, target: 10, unit: 'etapas', percent: 40 },
 ];
+const habitFixtures: Habit[] = [
+  {
+    id: 'h1',
+    name: 'Beber água',
+    description: 'Acompanhar o consumo ao longo do dia.',
+    frequency: 'daily',
+    weekdays: [],
+    weekly_target: 7,
+    kind: 'quantity',
+    target_value: 2.5,
+    unit: 'L',
+    start_date: '2026-08-01',
+    end_date: null,
+    project_id: null,
+    active: 1,
+    archived_at: null,
+    sort_order: 0,
+    created_at: today,
+    updated_at: today,
+  },
+  {
+    id: 'h2',
+    name: 'Ler por 20 minutos',
+    description: 'Uma pausa diária para aprender.',
+    frequency: 'daily',
+    weekdays: [],
+    weekly_target: 7,
+    kind: 'boolean',
+    target_value: 1,
+    unit: '',
+    start_date: '2026-08-01',
+    end_date: null,
+    project_id: null,
+    active: 1,
+    archived_at: null,
+    sort_order: 1,
+    created_at: today,
+    updated_at: today,
+  },
+  {
+    id: 'h3',
+    name: 'Caminhar',
+    description: 'Movimento leve em dias alternados.',
+    frequency: 'weekdays',
+    weekdays: [1, 3, 5],
+    weekly_target: 3,
+    kind: 'boolean',
+    target_value: 1,
+    unit: '',
+    start_date: '2026-08-01',
+    end_date: null,
+    project_id: null,
+    active: 1,
+    archived_at: null,
+    sort_order: 2,
+    created_at: today,
+    updated_at: today,
+  },
+  {
+    id: 'h4',
+    name: 'Praticar um idioma',
+    description: 'Três sessões de estudo por semana.',
+    frequency: 'weekly_target',
+    weekdays: [],
+    weekly_target: 3,
+    kind: 'quantity',
+    target_value: 30,
+    unit: 'min',
+    start_date: '2026-08-01',
+    end_date: null,
+    project_id: null,
+    active: 1,
+    archived_at: null,
+    sort_order: 3,
+    created_at: today,
+    updated_at: today,
+  },
+];
+const habitEntries: HabitEntry[] = [
+  ...['2026-09-28', '2026-09-29', '2026-10-01', '2026-10-02', '2026-10-03'].map((entry_date) => ({
+    habit_id: 'h1',
+    entry_date,
+    value: 2.5,
+    updated_at: today,
+  })),
+  { habit_id: 'h1', entry_date: today, value: 1.7, updated_at: today },
+  ...['2026-09-28', '2026-09-30', '2026-10-01', '2026-10-03', today].map((entry_date) => ({
+    habit_id: 'h2',
+    entry_date,
+    value: 1,
+    updated_at: today,
+  })),
+  ...['2026-09-28', '2026-09-30'].map((entry_date) => ({
+    habit_id: 'h3',
+    entry_date,
+    value: 1,
+    updated_at: today,
+  })),
+  ...['2026-09-30', '2026-10-02'].map((entry_date) => ({
+    habit_id: 'h4',
+    entry_date,
+    value: 30,
+    updated_at: today,
+  })),
+];
+const routineFixtures: Routine[] = [
+  {
+    id: 'r1',
+    name: 'Rotina da noite',
+    description: 'Desacelerar e preparar o dia seguinte.',
+    frequency: 'daily',
+    weekdays: [],
+    time_of_day: '21:00',
+    active: 1,
+    archived_at: null,
+    sort_order: 0,
+    created_at: today,
+    updated_at: today,
+  },
+  {
+    id: 'r2',
+    name: 'Organizar a manhã',
+    description: 'Começar o dia com clareza.',
+    frequency: 'daily',
+    weekdays: [],
+    time_of_day: '07:30',
+    active: 1,
+    archived_at: null,
+    sort_order: 1,
+    created_at: today,
+    updated_at: today,
+  },
+  {
+    id: 'r3',
+    name: 'Planejamento da semana',
+    description: 'Revisar compromissos e prioridades.',
+    frequency: 'weekdays',
+    weekdays: [0],
+    time_of_day: null,
+    active: 1,
+    archived_at: null,
+    sort_order: 2,
+    created_at: today,
+    updated_at: today,
+  },
+];
+const routineItems: RoutineItem[][] = [
+  [
+    'Revisar o dia',
+    'Ler por 20 minutos',
+    'Separar prioridades de amanhã',
+    'Preparar o ambiente para dormir',
+  ].map((title, sort_order) => ({
+    id: `r1-${sort_order}`,
+    routine_id: 'r1',
+    title,
+    sort_order,
+    created_at: today,
+    updated_at: today,
+  })),
+  ['Planejar as tarefas', 'Preparar o café', 'Começar a primeira tarefa'].map(
+    (title, sort_order) => ({
+      id: `r2-${sort_order}`,
+      routine_id: 'r2',
+      title,
+      sort_order,
+      created_at: today,
+      updated_at: today,
+    }),
+  ),
+  ['Revisar calendário', 'Definir prioridades', 'Organizar materiais'].map((title, sort_order) => ({
+    id: `r3-${sort_order}`,
+    routine_id: 'r3',
+    title,
+    sort_order,
+    created_at: today,
+    updated_at: today,
+  })),
+];
+const routineOccurrence: RoutineOccurrence = {
+  id: 'o1',
+  routine_id: 'r1',
+  occurrence_date: today,
+  started_at: today,
+  completed_at: null,
+};
+const routineCompletions: RoutineCompletion[] = [0, 1].map((index) => ({
+  occurrence_id: 'o1',
+  item_id: `r1-${index}`,
+  completed_at: today,
+}));
+const previewToday = habitFixtures.filter((habit) => habitEligible(habit, today));
+const previewCompleted = previewToday.filter((habit) =>
+  habitReached(
+    habit,
+    habitEntries.find((entry) => entry.habit_id === habit.id && entry.entry_date === today)
+      ?.value ?? 0,
+  ),
+).length;
+const previewProgress = habitFixtures.map((habit) => habitProgress(habit, habitEntries, today));
+const previewWeekDone = previewProgress.reduce(
+  (total, progress) => total + Math.min(progress.weekDone, progress.weekTarget),
+  0,
+);
+const previewWeekTarget = previewProgress.reduce(
+  (total, progress) => total + progress.weekTarget,
+  0,
+);
+const previewMonthDone = previewProgress.reduce((total, progress) => total + progress.done, 0);
+const previewMonthExpected = previewProgress.reduce(
+  (total, progress) => total + progress.expected,
+  0,
+);
 function Preview() {
   const screen = new URLSearchParams(window.location.search).get('screen') ?? 'home';
   return (
@@ -221,7 +450,9 @@ function Preview() {
             ? 'projects'
             : screen === 'objective-detail'
               ? 'objectives'
-              : screen
+              : screen === 'routine-execution'
+                ? 'routines'
+                : screen
         }
         inboxCount={2}
         ready
@@ -235,6 +466,98 @@ function Preview() {
             <Tasks store={store} day={today} onOpen={() => {}} onCreate={() => {}} />
           )}
           {screen === 'inbox' && <InboxPage store={store} />}
+          {screen === 'habits' && (
+            <section className="habit-section habits-page" aria-label="Hábitos">
+              <header className="page-header header-with-action module-header">
+                <div className="module-heading">
+                  <span className="module-heading-icon">
+                    <Repeat2 size={22} />
+                  </span>
+                  <div>
+                    <h1>Hábitos</h1>
+                    <p>Pequenas ações, grandes resultados.</p>
+                  </div>
+                </div>
+                <button className="primary-button">
+                  <Plus size={17} /> Novo hábito
+                </button>
+              </header>
+              <div className="habit-day-summary">
+                <div>
+                  <strong>
+                    {previewCompleted} de {previewToday.length}
+                  </strong>
+                  <span>hábitos previstos hoje</span>
+                </div>
+                <div>
+                  <strong>
+                    {previewWeekDone} de {previewWeekTarget}
+                  </strong>
+                  <span>registros desta semana</span>
+                </div>
+                <div>
+                  <strong>{Math.round((previewMonthDone / previewMonthExpected) * 100)}%</strong>
+                  <span>consistência em 30 dias</span>
+                </div>
+              </div>
+              <div className="habit-card-grid">
+                {habitFixtures.map((habit) => (
+                  <HabitCard
+                    key={habit.id}
+                    habit={habit}
+                    entries={habitEntries}
+                    day={today}
+                    busy={false}
+                    onRecord={() => {}}
+                    onEdit={() => {}}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+          {(screen === 'routines' || screen === 'routine-execution') && (
+            <section className="habit-section routines-page" aria-label="Rotinas">
+              <header className="page-header header-with-action module-header">
+                <div className="module-heading">
+                  <span className="module-heading-icon">
+                    <ListChecks size={22} />
+                  </span>
+                  <div>
+                    <h1>Rotinas</h1>
+                    <p>Organize sequências que tornam o seu dia mais simples.</p>
+                  </div>
+                </div>
+                <button className="primary-button">
+                  <Plus size={17} /> Nova rotina
+                </button>
+              </header>
+              <label className="routine-date-bar">
+                Dia da ocorrência <input type="date" value={today} readOnly />
+              </label>
+              <div className="routine-page-list">
+                {routineFixtures
+                  .slice(0, screen === 'routine-execution' ? 1 : undefined)
+                  .map((routine, index) => (
+                    <RoutineSequenceCard
+                      key={routine.id}
+                      routine={routine}
+                      items={routineItems[index]}
+                      occurrence={index === 0 ? routineOccurrence : undefined}
+                      completions={index === 0 ? routineCompletions : []}
+                      eligible
+                      expanded={index === 0}
+                      busy={false}
+                      onExpand={() => {}}
+                      onEdit={() => {}}
+                      onStart={() => {}}
+                      onComplete={() => {}}
+                      onReopen={() => {}}
+                      onToggleStep={() => {}}
+                    />
+                  ))}
+              </div>
+            </section>
+          )}
           {screen === 'projects' && (
             <div className="projects-page">
               <header className="page-header header-with-action module-header">

@@ -59,6 +59,8 @@ For Tasks and Inbox, run `node scripts/ui-preview/capture-tasks-inbox.mjs`. It c
 
 For Projects and Objectives, run `node scripts/ui-preview/capture-projects-objectives.mjs` against the same local Vite preview. It captures list and detail presentations in both themes at the same six desktop sizes under ignored `artifacts/ui-projects-objectives/`. The fixtures are invented and never query the personal database.
 
+For Habits and Routines, run `node scripts/ui-preview/capture-habits-routines.mjs`. It captures both themes for the habit overview, routine overview and routine execution at the same six desktop sizes under ignored `artifacts/ui-habits-routines/`. The preview reuses the app's presentational cards with invented entries and occurrences; it never queries personal data.
+
 ## Mockup translation: Tasks and Inbox
 
 The approved concepts guide contextual headers, compact tabs, light list rows, prominent Inbox capture and restrained blue accents. The implementation keeps the existing four task views, QuickEntry, task drawer, conversions, editing, deletion and undo behavior. It does not add conceptual task filters, Inbox item types or a new database-backed master/detail route. Less frequent Inbox actions live in a keyboard-accessible disclosure menu; converting to a task remains visible on the row. The task drawer remains the existing editing surface so no behavior is lost.
@@ -68,6 +70,12 @@ The approved concepts guide contextual headers, compact tabs, light list rows, p
 Projects emphasize execution. The overview preserves the real active, paused, completed and archived filters and presents status, task completion, next action and deadline from existing project data. Detail keeps sections, task rows, section ordering, creation, templates, linked habits and attachments. Rare project and section actions use a disclosure menu with Escape and focus return. An empty status filter has different copy from a genuinely empty project collection. The current status filter is remembered only in memory while the app runs.
 
 Objectives emphasize direction. The list uses real categories, existing linked-item counts and the repository's existing progress calculation, including its financial privacy state; only a real percentage receives a ring with text. Detail puts the established milestones ahead of related items, attachments and updates. Category filtering uses existing categories and is remembered only in memory. No featured objective, cover image, new relationship, timeline query, project cover, schema change or migration was introduced to reproduce the conceptual art.
+
+## Mockup translation: Habits and Routines
+
+Habits communicate **consistency** and put **check-in** first. The overview shows only metrics derived from existing entries: completed eligible habits today, weekly registrations and 30-day consistency. Cards adapt to the existing boolean and quantity types, retain a native checkbox or explicit quantity form, and show seven days of actual records without a new streak, score or reminder rule. Editing, past-record correction, project association, pause and archive remain in the existing drawer.
+
+Routines communicate **sequence** and put **execution** first. An active occurrence expands to show ordered native-checkbox steps, completion count, the next incomplete step and the established start, complete and reopen actions. Other routines stay compact until expanded. The editor retains ordering, item editing, templates, calendar visibility and Google mirror controls. Home summaries keep their compact rendering. No new duration model, occurrence state, schema change or migration was introduced.
 
 ## Do / don't
 
@@ -91,8 +99,8 @@ Objectives emphasize direction. The list uses real categories, existing linked-i
 | Inbox                 | DONE    |
 | Projects              | DONE    |
 | Objectives            | DONE    |
-| Habits                | PENDING |
-| Routines              | PENDING |
+| Habits                | DONE    |
+| Routines              | DONE    |
 | Calendar              | PENDING |
 | Workouts              | PENDING |
 | Body Progress         | PENDING |

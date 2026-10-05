@@ -1,0 +1,578 @@
+@layer components {
+  .habits-page,
+  .routines-page {
+    margin: 0;
+  }
+  .habits-page .module-heading-icon,
+  .routines-page .module-heading-icon {
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+  }
+  .habit-day-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 0;
+    margin: 0 0 28px;
+    padding: 4px 0 18px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .habit-day-summary > div {
+    display: grid;
+    gap: 2px;
+    min-width: 170px;
+    padding: 0 26px;
+    border-right: 1px solid var(--color-border);
+  }
+  .habit-day-summary > div:first-child {
+    padding-left: 0;
+  }
+  .habit-day-summary > div:last-child {
+    border-right: 0;
+  }
+  .habit-day-summary strong {
+    color: var(--color-text);
+    font-size: 21px;
+    font-weight: 650;
+    line-height: 1.2;
+  }
+  .habit-day-summary span {
+    color: var(--color-text-secondary);
+    font-size: 12.5px;
+  }
+  .habit-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 16px;
+  }
+  .habit-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    transition: border-color var(--motion-normal) var(--motion-ease);
+  }
+  .habit-card:hover {
+    border-color: var(--color-border-strong);
+  }
+  .habit-card.is-done {
+    border-color: var(--color-border-strong);
+  }
+  .habit-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+  .habit-card-symbol {
+    display: grid;
+    place-items: center;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-control);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .habit-card.is-done .habit-card-symbol {
+    background: var(--color-success-soft);
+    color: var(--color-success);
+  }
+  .habit-card-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .habit-card-title h2 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .habit-card-title p {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 4px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 12.5px;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .habit-card .project-menu > summary {
+    min-width: 38px;
+    min-height: 38px;
+    padding: 0 8px;
+  }
+  .habit-card-state {
+    color: var(--color-warning);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .habit-card-metric {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+  }
+  .habit-card-metric > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .habit-card-label {
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+  }
+  .habit-card-metric strong {
+    color: var(--color-text);
+    font-size: 18px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .habit-card-consistency {
+    max-width: 92px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    line-height: 1.35;
+    text-align: right;
+  }
+  .habit-card > progress,
+  .routine-sequence-card > progress {
+    display: block;
+    width: 100%;
+    height: 7px;
+    margin: -8px 0 0;
+    border: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    appearance: none;
+    background: var(--color-border);
+    accent-color: var(--color-primary);
+  }
+  .habit-card > progress::-webkit-progress-bar,
+  .routine-sequence-card > progress::-webkit-progress-bar {
+    background: var(--color-border);
+  }
+  .habit-card > progress::-webkit-progress-value,
+  .routine-sequence-card > progress::-webkit-progress-value {
+    border-radius: 999px;
+    background: var(--color-primary);
+  }
+  .habit-card > progress::-moz-progress-bar,
+  .routine-sequence-card > progress::-moz-progress-bar {
+    border-radius: 999px;
+    background: var(--color-primary);
+  }
+  .habit-card.is-done > progress {
+    accent-color: var(--color-success);
+  }
+  .habit-card.is-done > progress::-webkit-progress-value {
+    background: var(--color-success);
+  }
+  .habit-card.is-done > progress::-moz-progress-bar {
+    background: var(--color-success);
+  }
+  .habit-card-checkin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 42px;
+    padding: 8px 12px;
+    border-radius: var(--radius-control);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .habit-card-checkin:has(input:checked) {
+    background: var(--color-success-soft);
+    color: var(--color-success);
+  }
+  .habit-card-checkin:has(input:focus-visible) {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 3px;
+  }
+  .habit-card-checkin input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--color-primary);
+  }
+  .habit-card-quantity {
+    display: flex;
+    align-items: end;
+    gap: 8px;
+  }
+  .habit-card-quantity label {
+    display: grid;
+    flex: 1;
+    gap: 5px;
+    min-width: 0;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .habit-card-quantity input {
+    width: 100%;
+    min-height: 40px;
+  }
+  .habit-card-quantity button {
+    min-height: 40px;
+  }
+  .habit-card-unavailable {
+    margin: 0;
+    min-height: 42px;
+    padding: 11px 0;
+    color: var(--color-text-secondary);
+    font-size: 12.5px;
+  }
+  .habit-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin: auto 0 0;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--color-border);
+    list-style: none;
+  }
+  .habit-week li {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: var(--color-text-tertiary);
+    font-size: 11px;
+  }
+  .habit-week-mark {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid var(--color-border-strong);
+    border-radius: 50%;
+    color: var(--color-surface);
+  }
+  .habit-week [data-state='done'] .habit-week-mark {
+    border-color: var(--color-success);
+    background: var(--color-success);
+  }
+  .habit-week [data-state='partial'] .habit-week-mark {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+  }
+  .habit-week [data-state='off'] .habit-week-mark {
+    border-style: dashed;
+    opacity: 0.5;
+  }
+  .habit-card-week-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+
+  .routine-date-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 22px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .routine-date-bar input {
+    min-height: 40px;
+  }
+  .routine-page-list {
+    display: grid;
+    gap: 12px;
+  }
+  .routine-sequence-card {
+    min-width: 0;
+    padding: 20px 22px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .routine-sequence-card.is-running {
+    border-color: var(--color-border-strong);
+  }
+  .routine-card-top {
+    display: flex;
+    align-items: start;
+    gap: 12px;
+  }
+  .routine-card-toggle {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+  }
+  .routine-card-symbol {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-surface);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .routine-card-heading {
+    display: grid;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+  }
+  .routine-card-status {
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .routine-card-heading strong {
+    font-size: 17px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .routine-card-description {
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .routine-card-chevron {
+    flex-shrink: 0;
+    color: var(--color-text-tertiary);
+    transition: transform var(--motion-normal) var(--motion-ease);
+  }
+  .routine-card-toggle[aria-expanded='true'] .routine-card-chevron {
+    transform: rotate(180deg);
+  }
+  .routine-card-context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 18px;
+    margin: 14px 0;
+    color: var(--color-text-secondary);
+    font-size: 12.5px;
+  }
+  .routine-card-context > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .routine-card-context strong {
+    margin-left: auto;
+    color: var(--color-text);
+    font-weight: 600;
+  }
+  .routine-sequence-card > progress {
+    margin: 0;
+  }
+  .routine-card-preview {
+    overflow: hidden;
+    margin: 12px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 12.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .routine-card-expanded {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-border);
+  }
+  .routine-card-expanded h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+  }
+  .routine-step-list {
+    display: grid;
+    margin: 0;
+    padding: 0 0 0 14px;
+    list-style: none;
+  }
+  .routine-step-list li {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 7px 12px 7px 24px;
+    border-left: 1px solid var(--color-border-strong);
+  }
+  .routine-step-list li:last-child {
+    border-left-color: transparent;
+  }
+  .routine-step-list li::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 17px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--color-border-strong);
+    border-radius: 50%;
+    background: var(--color-surface);
+  }
+  .routine-step-list li.is-complete::before {
+    border-color: var(--color-success);
+    background: var(--color-success);
+  }
+  .routine-step-list li.is-current {
+    border-radius: var(--radius-control);
+    background: var(--color-primary-soft);
+  }
+  .routine-step-list li.is-current::before {
+    border-color: var(--color-primary);
+  }
+  .routine-step-list label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+  .routine-step-list input {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--color-primary);
+  }
+  .routine-step-title {
+    overflow-wrap: anywhere;
+  }
+  .routine-step-list .is-complete .routine-step-title {
+    color: var(--color-text-secondary);
+  }
+  .routine-step-pending {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-text-secondary);
+  }
+  .routine-step-pending > span {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 50%;
+    font-size: 11px;
+  }
+  .routine-step-now {
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .routine-card-empty {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+  .routine-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .routine-card-actions .primary-button,
+  .routine-card-actions .secondary-button {
+    min-height: 40px;
+  }
+  .routine-card-actions .project-menu {
+    margin-left: auto;
+  }
+  .routine-compact-list {
+    display: grid;
+    gap: 12px;
+  }
+  .habit-detail-intro,
+  .routine-detail-intro {
+    display: grid;
+    gap: 5px;
+    padding: 0 0 18px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .habit-detail-intro > span,
+  .routine-detail-intro > span {
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .habit-detail-intro h3,
+  .routine-detail-intro h3 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.25;
+  }
+  .habit-detail-intro p,
+  .routine-detail-intro p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+  .habit-detail-intro small,
+  .routine-detail-intro small {
+    margin-top: 4px;
+    color: var(--color-text-secondary);
+    font-size: 12.5px;
+  }
+  @media (max-width: 1320px) {
+    .habit-card-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 1100px) {
+    .habit-card-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 760px) {
+    .habits-page .module-header,
+    .routines-page .module-header {
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .habit-day-summary > div {
+      min-width: 140px;
+      padding: 0 14px;
+    }
+    .habit-card,
+    .routine-sequence-card {
+      padding: 16px;
+    }
+    .routine-card-context strong {
+      margin-left: 0;
+    }
+    .routine-step-now {
+      white-space: normal;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .habit-card,
+    .routine-card-chevron {
+      transition: none;
+    }
+  }
+}
