@@ -7,6 +7,7 @@ import {
   Plus,
   SlidersHorizontal,
 } from 'lucide-react';
+import { MetricChart } from '../../src/features/body-progress/BodyProgress';
 
 function Header({
   title,
@@ -236,29 +237,75 @@ function WorkoutsPreview() {
           </button>
         ))}
       </nav>
-      <section className="workout-today workout-today-scheduled">
-        <p className="workout-kicker">Treino de hoje</p>
-        <h2>Força · membros superiores</h2>
-        <p>6 exercícios</p>
-        <button className="primary-button">Iniciar treino</button>
-      </section>
-      <section className="workout-today workout-overview">
-        <p className="workout-kicker">Seu plano</p>
-        <h2>Plano de força</h2>
-        <p>Último treino: membros inferiores · 2 de outubro de 2026</p>
-      </section>
-      <section className="secondary-section">
-        <h2>Escolher treino</h2>
-        <div className="workout-choose">
-          <label>
-            Dia do plano ativo
-            <select defaultValue="upper">
-              <option value="upper">Membros superiores · 6 exercícios</option>
-            </select>
-          </label>
-          <button className="secondary-button">Iniciar escolhido</button>
+      <div className="workout-today-page">
+        <div className="workout-today-top">
+          <div className="workout-today-main">
+            <section className="workout-today workout-today-scheduled">
+              <p className="workout-kicker">Treino de hoje</p>
+              <h2>Força · membros superiores</h2>
+              <p>6 exercícios</p>
+              <button className="primary-button">Iniciar treino</button>
+            </section>
+          </div>
+          <section className="workout-week-context" aria-label="Contexto desta semana">
+            <span className="workout-kicker">Esta semana</span>
+            <strong>2 concluídos</strong>
+            <span>4 treinos no calendário</span>
+            <progress max={4} value={2} aria-label="Treinos concluídos nesta semana" />
+          </section>
         </div>
-      </section>
+        <div className="workout-context-grid">
+          <section className="workout-context-section">
+            <div className="section-heading">
+              <h2>Seu plano</h2>
+              <button className="text-button">Ver plano</button>
+            </div>
+            <ul className="workout-exercise-preview">
+              {['Supino reto com barra', 'Desenvolvimento com halteres', 'Remada curvada'].map(
+                (name) => (
+                  <li key={name}>
+                    <span>{name}</span>
+                    <small>4 séries</small>
+                  </li>
+                ),
+              )}
+            </ul>
+            <p className="field-help">Mais 3 exercícios no plano.</p>
+          </section>
+          <section className="workout-context-section">
+            <div className="section-heading">
+              <h2>Último treino</h2>
+            </div>
+            <strong>Membros inferiores</strong>
+            <p>2 de outubro de 2026</p>
+          </section>
+        </div>
+        <section className="workout-next-section">
+          <h2>Próximos nesta semana</h2>
+          <div className="workout-next-list">
+            <div>
+              <strong>Cardio</strong>
+              <span>6 de outubro · 4 exercícios</span>
+            </div>
+            <div>
+              <strong>Membros inferiores</strong>
+              <span>8 de outubro · 5 exercícios</span>
+            </div>
+          </div>
+        </section>
+        <section className="secondary-section workout-choose-section">
+          <h2>Escolher outro treino</h2>
+          <div className="workout-choose">
+            <label>
+              Dia do plano ativo
+              <select defaultValue="upper">
+                <option value="upper">Membros superiores · 6 exercícios</option>
+              </select>
+            </label>
+            <button className="secondary-button">Iniciar escolhido</button>
+          </div>
+        </section>
+      </div>
     </>
   );
 }
@@ -361,16 +408,12 @@ function WorkoutHistoryPreview() {
 }
 
 function BodyPreview() {
-  const points = [
-    [36, 43],
-    [110, 53],
-    [184, 48],
-    [258, 73],
-    [332, 82],
-    [406, 78],
-    [480, 94],
-    [564, 99],
-  ];
+  const points = [78.3, 77.8, 77.9, 77.1, 76.8, 76.9, 76.5, 76.4]
+    .map((value, index) => ({
+      date: new Date(Date.UTC(2026, 8, 6 + index * 4)).toISOString().slice(0, 10),
+      value,
+    }))
+    .reverse();
   return (
     <>
       <Header
@@ -425,49 +468,7 @@ function BodyPreview() {
               </select>
             </label>
           </div>
-          <div className="body-chart">
-            <svg viewBox="0 0 600 150" role="img" aria-label="Evolução de peso">
-              {[40, 75, 110].map((y) => (
-                <line key={y} x1="36" x2="564" y1={y} y2={y} className="body-chart-grid" />
-              ))}
-              <line x1="36" x2="564" y1="122" y2="122" className="body-chart-axis" />
-              <polygon
-                className="body-chart-area"
-                points={`36,122 ${points.map(([x, y]) => `${x},${y}`).join(' ')} 564,122`}
-              />
-              <polyline points={points.map(([x, y]) => `${x},${y}`).join(' ')} />
-              {points.map(([x, y], index) => (
-                <circle key={x} cx={x} cy={y} r="4">
-                  <title>{`Medição ${index + 1}`}</title>
-                </circle>
-              ))}
-              <text x="36" y="143">
-                set.
-              </text>
-              <text x="544" y="143">
-                out.
-              </text>
-            </svg>
-            <table className="body-history-table">
-              <caption>Histórico de peso</caption>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>4 de outubro</td>
-                  <td>76,4 kg</td>
-                </tr>
-                <tr>
-                  <td>20 de setembro</td>
-                  <td>77,2 kg</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <MetricChart points={points} label="Peso" unit="kg" />
         </section>
         <section className="body-section">
           <h3>Medidas</h3>

@@ -10,10 +10,12 @@ import './body-progress.css';
 
 const formatNumber = (value: number) =>
   new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value);
+const formatAxisValue = (value: number) =>
+  new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
 const signed = (value: number, unit: string) =>
   `${value > 0 ? '+' : value < 0 ? '−' : ''}${formatNumber(Math.abs(value))} ${unit}`;
 type HistoryPoint = { date: string; value: number };
-function MetricChart({
+export function MetricChart({
   points,
   label,
   unit,
@@ -28,37 +30,72 @@ function MetricChart({
   const values = chronological.map((point) => point.value);
   const min = Math.min(...values),
     max = Math.max(...values),
-    range = Math.max(max - min, 1);
+    range = Math.max(max - min, 1),
+    lower = min - range * 0.15,
+    upper = max + range * 0.15;
   const plotted = chronological.map((point, index) => ({
     ...point,
-    x: 36 + (index * 528) / Math.max(chronological.length - 1, 1),
-    y: 110 - ((point.value - min) / range) * 70,
+    x: 58 + (index * 500) / Math.max(chronological.length - 1, 1),
+    y: 132 - ((point.value - lower) / (upper - lower)) * 100,
   }));
+  const first = chronological[0],
+    latest = chronological.at(-1)!,
+    change = latest.value - first.value;
+  const ticks = [upper, (upper + lower) / 2, lower];
+  const dateTicks = [0, Math.floor((plotted.length - 1) / 2), plotted.length - 1].filter(
+    (index, position, all) => all.indexOf(index) === position,
+  );
   return (
     <div className="body-chart">
-      <svg viewBox="0 0 600 150" role="img" aria-label={`Evolução de ${label}`}>
-        {[40, 75, 110].map((y) => (
-          <line key={y} x1="36" x2="564" y1={y} y2={y} className="body-chart-grid" />
+      <p className="body-chart-summary">
+        <strong>{formatMeasurement(first.value, unit)}</strong> em {formatDate(first.date)}{' '}
+        <span>→</span> <strong>{formatMeasurement(latest.value, unit)}</strong> em{' '}
+        {formatDate(latest.date)}
+        <span> · {signed(change, unit)} no período</span>
+      </p>
+      <svg
+        viewBox="0 0 600 180"
+        role="img"
+        aria-label={`Evolução de ${label}: de ${formatMeasurement(first.value, unit)} em ${formatDate(first.date)} para ${formatMeasurement(latest.value, unit)} em ${formatDate(latest.date)}; variação ${signed(change, unit)}.`}
+      >
+        {ticks.map((value, index) => (
+          <g key={index}>
+            <line
+              x1="58"
+              x2="558"
+              y1={32 + index * 50}
+              y2={32 + index * 50}
+              className="body-chart-grid"
+            />
+            <text x="50" y={36 + index * 50} textAnchor="end">
+              {formatAxisValue(value)}
+            </text>
+          </g>
         ))}
-        <line x1="36" x2="564" y1="122" y2="122" className="body-chart-axis" />
+        <line x1="58" x2="558" y1="144" y2="144" className="body-chart-axis" />
         <polygon
           className="body-chart-area"
-          points={`36,122 ${plotted.map(({ x, y }) => `${x},${y}`).join(' ')} 564,122`}
+          points={`58,144 ${plotted.map(({ x, y }) => `${x},${y}`).join(' ')} 558,144`}
         />
         <polyline points={plotted.map(({ x, y }) => `${x},${y}`).join(' ')} />
         {plotted.map((point, index) => (
           <g key={point.date}>
             <circle
+              className={index === plotted.length - 1 ? 'body-chart-current' : undefined}
               cx={point.x}
               cy={point.y}
-              r="4"
+              r={index === plotted.length - 1 ? 5 : 4}
               tabIndex={0}
-              aria-label={`${formatDate(point.date)}: ${formatMeasurement(point.value, unit)}`}
+              aria-label={`${formatDate(point.date)}: ${formatMeasurement(point.value, unit)}${index ? `, ${signed(point.value - plotted[index - 1].value, unit)} desde a medição anterior` : ''}`}
             >
-              <title>{`${formatDate(point.date)}: ${formatMeasurement(point.value, unit)}`}</title>
+              <title>{`${formatDate(point.date)}: ${formatMeasurement(point.value, unit)}${index ? ` · ${signed(point.value - plotted[index - 1].value, unit)} desde a anterior` : ''}`}</title>
             </circle>
-            {(index === 0 || index === plotted.length - 1) && (
-              <text x={point.x} y="143" textAnchor="middle">
+            {dateTicks.includes(index) && (
+              <text
+                x={point.x}
+                y="166"
+                textAnchor={index === 0 ? 'start' : index === plotted.length - 1 ? 'end' : 'middle'}
+              >
                 {formatDate(point.date)}
               </text>
             )}

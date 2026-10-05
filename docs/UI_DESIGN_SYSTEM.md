@@ -141,11 +141,21 @@ Dialogs and drawers keep the existing focus trap, Escape behavior, focus return 
 
 At 900×620, the sidebar navigation scrolls independently and its explicit cue exposes destinations below the fold while Settings remains anchored. At 1366×768, the content uses the standard page gutter and the major screens keep their existing hierarchy. At 1920×1080, standard content is capped instead of stretching indefinitely. At 2560×1440, data-dense modules may use the wide ceiling. Tabs and tables scroll within their own regions rather than causing page-wide horizontal overflow.
 
+### Core experience polish
+
+Home answers “what matters now?” with a four-item quick summary (today's tasks, workout, nutrition and habits), followed by actionable tasks and compact continuity from the existing agenda, projects, objectives and routines. The quick summary never repeats the task list. At wider desktop widths the page uses the existing content ceiling and real secondary content rather than enlarging cards.
+
+Workouts Today puts the scheduled or active session first. Existing schedule, plan exercises and completed sessions provide a compact weekly count, an exercise preview, last-session context and upcoming scheduled workouts. These are read-only queries over existing records; estimated durations and new training scores are not implied. The session editor is unchanged.
+
+Body Progress charts must explain their scale and period in visible text and in an accessible name. Axes, dates, a current-point marker and date/value titles support interpretation; the existing table remains the complete textual alternative. Derived change is descriptive and uses the same recorded measurements.
+
+Habit overview rows prioritize the native check-in or existing quantity form, with short weekly history visible and longer-term consistency quiet. Nutrition gives Today, Diary and Progress the leading navigation group while Diet, Meals, Shopping, Foods and History remain directly visible and keyboard reachable. Financial Connections expresses the existing path as institution → RUMAR destination → review → confirmation, with a semantic current step. Connected accounts still show their actual state and technical help remains available by disclosure.
+
+The preview harness uses invented records and never loads a personal database. The Core Experience capture in ignored `artifacts/ui-core-experience/` covers both themes and checks 900×620 through 2560×1440 for page errors and horizontal overflow. Some harness views are source-informed static compositions; Body Progress uses the real chart component and Home uses the real Home composition with synthetic slots.
+
 ### Visual debt for later phases
 
-1. Workouts Today needs a partial redesign; Home needs its final editorial pass.
-2. Timeline and Reviews need dedicated redesigns; Settings needs a clearer organization; Thoughts needs refinement.
-3. Nutrition's internal navigation deserves simplification and Financial Connections can be friendlier. These remain future module work, not changes introduced by the global recalibration.
+Thoughts, Timeline, Reviews and Settings still need their dedicated visual migration. The other migrated modules retain their current structure.
 
 ## UI migration status
 
@@ -153,6 +163,7 @@ At 900×620, the sidebar navigation scrolls independently and its explicit cue e
 | --------------------------- | ------- |
 | Foundation                  | DONE    |
 | Global Visual Recalibration | DONE    |
+| Core Experience Polish      | DONE    |
 | Shell                       | DONE    |
 | Sidebar                     | DONE    |
 | Home                        | DONE    |

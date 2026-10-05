@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react';
 import { getDatabase } from '../../../lib/database/connection';
 import { WorkoutScheduleRepository, type ScheduledWorkout } from '../repositories/schedule';
 import { SessionsRepository } from '../repositories/sessions';
-export function HomeWorkouts({ day, onNavigate }: { day: string; onNavigate: () => void }) {
+export function HomeWorkouts({
+  day,
+  onNavigate,
+  compact = false,
+}: {
+  day: string;
+  onNavigate: () => void;
+  compact?: boolean;
+}) {
   const [rows, setRows] = useState<ScheduledWorkout[]>([]);
   const [current, setCurrent] = useState('');
   const [error, setError] = useState('');
@@ -27,6 +35,25 @@ export function HomeWorkouts({ day, onNavigate }: { day: string; onNavigate: () 
     };
   }, [day]);
   if (error) return <p role="alert">{error}</p>;
+  if (compact) {
+    const today = rows.find((row) => !row.in_progress);
+    return (
+      <section className="home-pulse-item home-workout-pulse">
+        <span className="summary-label">Treino de hoje</span>
+        <strong>{current || today?.name || 'Sem treino previsto'}</strong>
+        <span className="summary-caption">
+          {current
+            ? 'Sessão em andamento'
+            : today
+              ? `${today.exercise_count} exercícios`
+              : 'Consulte seu plano'}
+        </span>
+        <button className="text-button" onClick={onNavigate}>
+          {current ? 'Abrir treino em andamento' : 'Ver treinos'}
+        </button>
+      </section>
+    );
+  }
   if (!rows.length && !current) return null;
   return (
     <section className="secondary-section">

@@ -333,22 +333,30 @@ export function Nutrition({
         <h1>Alimentação</h1>
         <p>Planeje suas refeições e acompanhe o que consumiu, no seu ritmo.</p>
       </header>
-      <nav className="tabs nutrition-tabs nutrition-navigation" aria-label="Seções de alimentação">
-        {tabs.map((item, index) => (
-          <span className="nutrition-nav-item" key={item.id}>
-            {[0, 3, 6].includes(index) && (
-              <span className="nutrition-nav-label" aria-hidden="true">
-                {index === 0 ? 'Acompanhar' : index === 3 ? 'Planejar' : 'Consultar'}
-              </span>
-            )}
+      <nav className="nutrition-navigation" aria-label="Seções de alimentação">
+        <div className="nutrition-primary-tabs" role="group" aria-label="Acompanhar">
+          {tabs.slice(0, 3).map((item) => (
             <button
+              key={item.id}
               aria-current={tab === item.id ? 'page' : undefined}
               onClick={() => setTab(item.id)}
             >
               {item.label}
             </button>
-          </span>
-        ))}
+          ))}
+        </div>
+        <div className="nutrition-secondary-tabs" role="group" aria-label="Planejar e consultar">
+          <span aria-hidden="true">Planejar e consultar</span>
+          {tabs.slice(3).map((item) => (
+            <button
+              key={item.id}
+              aria-current={tab === item.id ? 'page' : undefined}
+              onClick={() => setTab(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </nav>
       {error && (
         <p role="alert" className="nutrition-error">

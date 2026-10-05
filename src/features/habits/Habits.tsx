@@ -9,8 +9,16 @@ import './habits.css';
 import { HabitEditor } from './HabitEditor';
 import { HabitCard } from './HabitCard';
 const repository = async () => new HabitsRepository(await getDatabase());
-export function HomeHabits({ day, projectId }: { day: string; projectId?: string }) {
-  return <HabitCollection day={day} projectId={projectId} compact />;
+export function HomeHabits({
+  day,
+  projectId,
+  summaryOnly = false,
+}: {
+  day: string;
+  projectId?: string;
+  summaryOnly?: boolean;
+}) {
+  return <HabitCollection day={day} projectId={projectId} compact summaryOnly={summaryOnly} />;
 }
 export function Habits() {
   return <HabitCollection day={localDate()} />;
@@ -19,10 +27,12 @@ function HabitCollection({
   day,
   projectId,
   compact = false,
+  summaryOnly = false,
 }: {
   day: string;
   projectId?: string;
   compact?: boolean;
+  summaryOnly?: boolean;
 }) {
   const [habits, setHabits] = useState<Habit[]>([]),
     [entries, setEntries] = useState<HabitEntry[]>([]),
@@ -86,6 +96,22 @@ function HabitCollection({
   const weekTarget = summaries.reduce((total, summary) => total + summary.weekTarget, 0);
   const monthDone = summaries.reduce((total, summary) => total + summary.done, 0);
   const monthExpected = summaries.reduce((total, summary) => total + summary.expected, 0);
+  if (summaryOnly)
+    return (
+      <section className="home-pulse-item home-habit-pulse">
+        <span className="summary-label">Hábitos de hoje</span>
+        <strong>
+          {completedToday} de {todayHabits.length} feitos
+        </strong>
+        <progress
+          max={Math.max(todayHabits.length, 1)}
+          value={completedToday}
+          aria-label="Hábitos concluídos hoje"
+        />
+        <span className="summary-caption">{todayHabits.length - completedToday} por registrar</span>
+        {error && <span role="alert">{error}</span>}
+      </section>
+    );
   return (
     <section className={`habit-section${page ? ' habits-page' : ''}`} aria-label="Hábitos">
       {page ? (

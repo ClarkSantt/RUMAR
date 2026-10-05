@@ -99,29 +99,26 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
       </header>
       {nutrition ? (
         <>
-          <nav
-            className="tabs nutrition-tabs nutrition-navigation"
-            aria-label="Seções de alimentação"
-          >
-            {[
-              'Hoje',
-              'Diário',
-              'Progresso',
-              'Dieta',
-              'Refeições',
-              'Compras',
-              'Alimentos',
-              'Histórico',
-            ].map((label, index) => (
-              <span className="nutrition-nav-item" key={label}>
-                {[0, 3, 6].includes(index) && (
-                  <span className="nutrition-nav-label" aria-hidden="true">
-                    {index === 0 ? 'Acompanhar' : index === 3 ? 'Planejar' : 'Consultar'}
-                  </span>
-                )}
-                <button aria-current={nutritionTab === label ? 'page' : undefined}>{label}</button>
-              </span>
-            ))}
+          <nav className="nutrition-navigation" aria-label="Seções de alimentação">
+            <div className="nutrition-primary-tabs" role="group" aria-label="Acompanhar">
+              {['Hoje', 'Diário', 'Progresso'].map((label) => (
+                <button key={label} aria-current={nutritionTab === label ? 'page' : undefined}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div
+              className="nutrition-secondary-tabs"
+              role="group"
+              aria-label="Planejar e consultar"
+            >
+              <span aria-hidden="true">Planejar e consultar</span>
+              {['Dieta', 'Refeições', 'Compras', 'Alimentos', 'Histórico'].map((label) => (
+                <button key={label} aria-current={nutritionTab === label ? 'page' : undefined}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </nav>
           {screen === 'nutrition-today' ? (
             <section className="nutrition-page">
@@ -422,15 +419,34 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
               <div className="finance-connections-intro">
                 <h2>Contas conectadas</h2>
                 <p>
-                  Consulte suas instituições, vincule cada conta e confira a prévia antes de
-                  importar. A conexão consulta dados em modo somente leitura; a importação grava no
-                  banco local do RUMAR.
+                  Escolha uma instituição, indique a conta de destino e confira cada importação
+                  antes de salvar no RUMAR.
                 </p>
               </div>
+              <ol className="finance-connection-steps" aria-label="Etapas da conexão">
+                {['Instituição', 'Destino', 'Revisão', 'Confirmação'].map((label, index) => (
+                  <li
+                    key={label}
+                    aria-current={
+                      index ===
+                      (screen === 'finance-connection-confirmation'
+                        ? 3
+                        : screen === 'finance-connection-preview'
+                          ? 2
+                          : 1)
+                        ? 'step'
+                        : undefined
+                    }
+                  >
+                    <span aria-hidden="true">{index + 1}</span>
+                    {label}
+                  </li>
+                ))}
+              </ol>
               <p className="field-help">Ambiente de demonstração com dados fictícios.</p>
               <button className="secondary-button">Continuar com Meu Pluggy</button>
               <label>
-                Instituição
+                1. Instituição conectada
                 <select>
                   <option>Banco de teste</option>
                 </select>
@@ -438,12 +454,18 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
               <p className="finance-connection-status">
                 Estado: Conectada · Última sincronização: não realizada
               </p>
+              <h3 className="finance-flow-heading">2. Escolher destino no RUMAR</h3>
               <div className="preference-row finance-account-mapping">
-                <span>
-                  <strong>Conta de demonstração</strong> · BRL · •••• 0000
+                <div className="finance-mapping-source">
+                  <small>Conta externa</small>
+                  <strong>Conta de demonstração</strong>
+                  <span>BRL · •••• 0000</span>
+                </div>
+                <span className="finance-mapping-arrow" aria-hidden="true">
+                  →
                 </span>
                 <label>
-                  Conta RUMAR
+                  Conta de destino no RUMAR
                   <select>
                     <option>Conta local fictícia</option>
                   </select>
@@ -453,6 +475,7 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
               <p className="field-help">
                 Origem e destino: Conta de demonstração → Conta local fictícia.
               </p>
+              <h3 className="finance-flow-heading">3. Revisar antes de importar</h3>
               <label>
                 Período inicial
                 <select>
@@ -466,7 +489,7 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
               {(screen === 'finance-connection-preview' ||
                 screen === 'finance-connection-confirmation') && (
                 <section className="finance-connection-preview" aria-label="Prévia da importação">
-                  <h3>Prévia da importação</h3>
+                  <h3>Origem, destino e transações</h3>
                   <p>2 registros · 2 novos · 0 para revisão · 0 já existentes</p>
                   <FinancialPreviewRows
                     rows={previewRows}

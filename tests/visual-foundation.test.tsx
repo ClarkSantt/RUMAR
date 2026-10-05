@@ -185,3 +185,30 @@ it('mostra um dia vazio sem barra de progresso fictícia', () => {
   expect(screen.getByText('Nada para hoje.')).toBeTruthy();
   expect(screen.queryByRole('progressbar')).toBeNull();
 });
+
+it('resume o dia antes da lista e mantém a continuidade visível', () => {
+  const data: Snapshot = {
+    tasks: [task('Preparar apresentação', '2026-10-04', 'pending')],
+    subtasks: [],
+    completions: [],
+    subtaskCompletions: [],
+    inbox: [],
+    settings: { name: 'Pessoa', theme: 'light' },
+  };
+  render(
+    <Home
+      store={{ data, busy: false, run: vi.fn(async () => true) } as unknown as RumoStore}
+      now={new Date(2026, 9, 4, 10)}
+      onOpen={vi.fn()}
+      onInbox={vi.fn()}
+      onReview={vi.fn()}
+      quickSummary={<section>Treino real de hoje</section>}
+      continuation={<section>Próximo compromisso</section>}
+    />,
+  );
+  expect(screen.getByRole('region', { name: 'Resumo do dia' })).toBeTruthy();
+  expect(screen.getByText('0 de 1 concluídas')).toBeTruthy();
+  expect(screen.getByText('Treino real de hoje')).toBeTruthy();
+  expect(screen.getByText('Preparar apresentação')).toBeTruthy();
+  expect(screen.getByText('Próximo compromisso')).toBeTruthy();
+});

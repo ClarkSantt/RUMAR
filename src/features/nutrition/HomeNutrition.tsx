@@ -3,7 +3,15 @@ import { getDatabase } from '../../lib/database/connection';
 import { formatAmount, remaining, type Nutrients } from './domain';
 import { NutritionRepository } from './repository';
 import type { Goals } from './types';
-export function HomeNutrition({ day, onNavigate }: { day: string; onNavigate: () => void }) {
+export function HomeNutrition({
+  day,
+  onNavigate,
+  compact = false,
+}: {
+  day: string;
+  onNavigate: () => void;
+  compact?: boolean;
+}) {
   const [totals, setTotals] = useState<Nutrients>({}),
     [goals, setGoals] = useState<Goals>();
   useEffect(() => {
@@ -20,6 +28,23 @@ export function HomeNutrition({ day, onNavigate }: { day: string; onNavigate: ()
       alive = false;
     };
   }, [day]);
+  if (compact)
+    return (
+      <section className="home-pulse-item home-nutrition-pulse">
+        <span className="summary-label">Alimentação</span>
+        <strong>
+          {formatAmount(totals.energy_kcal ?? 0, 0)}
+          {goals?.calories == null ? '' : ` / ${formatAmount(goals.calories, 0)}`} kcal
+        </strong>
+        <span className="summary-caption">
+          Proteínas {formatAmount(totals.protein_g ?? 0)} g · Carboidratos{' '}
+          {formatAmount(totals.carbohydrate_g ?? 0)} g
+        </span>
+        <button className="text-button" onClick={onNavigate}>
+          Ver alimentação
+        </button>
+      </section>
+    );
   return (
     <section className="secondary-section">
       <div className="section-heading">

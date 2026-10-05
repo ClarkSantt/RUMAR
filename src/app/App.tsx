@@ -310,42 +310,48 @@ export default function App() {
                     }}
                   />
                 )}
-                <div className="home-layout">
-                  <div className="home-primary">
-                    <Home
-                      store={store}
-                      now={now}
-                      onOpen={openTask}
-                      onInbox={() => void navigate('inbox')}
-                      onReview={() => void navigate('review')}
-                    />
+                <div className="home-experience">
+                  <Home
+                    store={store}
+                    now={now}
+                    onOpen={openTask}
+                    onInbox={() => void navigate('inbox')}
+                    onReview={() => void navigate('review')}
+                    quickSummary={
+                      <>
+                        <HomeWorkouts
+                          day={localDate(now)}
+                          onNavigate={() => void navigate('workouts')}
+                          compact
+                        />
+                        <HomeNutrition
+                          day={localDate(now)}
+                          onNavigate={() => void navigate('nutrition')}
+                          compact
+                        />
+                        <HomeHabits day={localDate(now)} summaryOnly />
+                      </>
+                    }
+                    continuation={
+                      <>
+                        <HomeAgenda
+                          day={localDate(now)}
+                          now={now}
+                          onOpen={() => void navigate('calendar')}
+                        />
+                        <HomeProjects
+                          revision={store.data}
+                          day={localDate(now)}
+                          onNavigate={() => void navigate('projects')}
+                        />
+                        <HomeObjectives onNavigate={(id) => void navigate('objectives', id)} />
+                        <HomeRoutines day={localDate(now)} />
+                      </>
+                    }
+                  />
+                  <div className="home-more" aria-label="Outras áreas">
+                    <HomeFinance day={localDate(now)} onNavigate={() => void navigate('finance')} />
                   </div>
-                  <aside className="home-rail" aria-label="Continuidade do dia">
-                    <HomeAgenda
-                      day={localDate(now)}
-                      now={now}
-                      onOpen={() => void navigate('calendar')}
-                    />
-                    <HomeHabits day={localDate(now)} />
-                    <HomeRoutines day={localDate(now)} />
-                    <HomeWorkouts
-                      day={localDate(now)}
-                      onNavigate={() => void navigate('workouts')}
-                    />
-                  </aside>
-                </div>
-                <div className="home-more" aria-label="Outras áreas">
-                  <HomeProjects
-                    revision={store.data}
-                    day={localDate(now)}
-                    onNavigate={() => void navigate('projects')}
-                  />
-                  <HomeObjectives onNavigate={(id) => void navigate('objectives', id)} />
-                  <HomeNutrition
-                    day={localDate(now)}
-                    onNavigate={() => void navigate('nutrition')}
-                  />
-                  <HomeFinance day={localDate(now)} onNavigate={() => void navigate('finance')} />
                 </div>
               </>
             ) : page === 'review' ? (

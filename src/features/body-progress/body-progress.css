@@ -52,9 +52,22 @@
   .body-chart {
     overflow: hidden;
   }
+  .body-chart-summary {
+    margin: 0 0 12px;
+    color: var(--color-text-secondary);
+    font-size: var(--caption);
+    line-height: 1.5;
+  }
+  .body-chart-summary strong {
+    color: var(--color-text);
+    font-weight: 650;
+  }
+  .body-chart-summary span {
+    white-space: nowrap;
+  }
   .body-chart svg {
     width: 100%;
-    max-height: 220px;
+    max-height: 280px;
     fill: none;
   }
   .body-chart polyline {
@@ -67,6 +80,9 @@
     fill: var(--surface);
     stroke: var(--primary);
     stroke-width: 2;
+  }
+  .body-chart .body-chart-current {
+    stroke-width: 3;
   }
   .body-chart-axis {
     stroke: var(--chart-axis);

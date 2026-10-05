@@ -743,72 +743,73 @@ function Preview() {
             </div>
           )}
           {screen === 'home' && (
-            <>
-              <div className="home-layout">
-                <div className="home-primary">
-                  <Home
-                    store={store}
-                    now={new Date(2026, 9, 4, 10)}
-                    onOpen={() => {}}
-                    onInbox={() => {}}
-                    onReview={() => {}}
-                  />
-                </div>
-                <aside className="home-rail" aria-label="Continuidade do dia">
-                  <section className="secondary-section">
-                    <div className="section-heading">
-                      <h2>Agenda de hoje</h2>
-                      <button className="text-button">Ver dia</button>
-                    </div>
-                    <button className="review-line">
-                      <span>11:30</span>
-                      <strong>Próximo · Planejar a semana</strong>
-                    </button>
-                    <button className="review-line">
-                      <span>16:00</span>
-                      <strong>Próximo · Caminhada</strong>
-                    </button>
-                  </section>
-                  <section className="habit-section">
-                    <div className="habit-heading">
-                      <h2>Hábitos de hoje</h2>
-                    </div>
-                    <div className="habit-list">
-                      <article className="habit-row">
-                        <div className="habit-row-main">
-                          <input type="checkbox" aria-label="Ler" /> <strong>Ler</strong>
-                        </div>
-                        <p>0 de 1 hoje</p>
-                      </article>
-                      <article className="habit-row">
-                        <div className="habit-row-main">
-                          <input type="checkbox" aria-label="Água" checked readOnly />{' '}
-                          <strong>Água</strong>
-                        </div>
-                        <p>Meta de hoje registrada</p>
-                      </article>
-                    </div>
-                  </section>
-                  <section className="habit-section">
-                    <div className="habit-heading">
-                      <h2>Rotinas de hoje</h2>
-                    </div>
-                    <div className="habit-list">
-                      <article className="habit-row">
-                        <strong>Rotina da manhã</strong>
-                        <p>3 de 4 etapas</p>
-                      </article>
-                    </div>
-                  </section>
-                  <section className="secondary-section">
-                    <div className="section-heading">
-                      <h2>Treino</h2>
-                      <button className="text-button">Abrir</button>
-                    </div>
-                    <p>Treino de força · 5 exercícios</p>
-                  </section>
-                </aside>
-              </div>
+            <div className="home-experience">
+              <Home
+                store={store}
+                now={new Date(2026, 9, 4, 10)}
+                onOpen={() => {}}
+                onInbox={() => {}}
+                onReview={() => {}}
+                quickSummary={
+                  <>
+                    <section className="home-pulse-item home-workout-pulse">
+                      <span className="summary-label">Treino de hoje</span>
+                      <strong>Treino de força</strong>
+                      <span className="summary-caption">5 exercícios no plano</span>
+                      <button className="text-button">Ver treinos</button>
+                    </section>
+                    <section className="home-pulse-item home-nutrition-pulse">
+                      <span className="summary-label">Alimentação</span>
+                      <strong>1.640 / 2.200 kcal</strong>
+                      <span className="summary-caption">Proteínas 98 g · Carboidratos 175 g</span>
+                      <button className="text-button">Ver alimentação</button>
+                    </section>
+                    <section className="home-pulse-item home-habit-pulse">
+                      <span className="summary-label">Hábitos de hoje</span>
+                      <strong>1 de 2 feitos</strong>
+                      <progress max={2} value={1} aria-label="Hábitos concluídos hoje" />
+                      <span className="summary-caption">1 por registrar</span>
+                    </section>
+                  </>
+                }
+                continuation={
+                  <>
+                    <section className="secondary-section">
+                      <div className="section-heading">
+                        <h2>Agenda de hoje</h2>
+                        <button className="text-button">Ver dia</button>
+                      </div>
+                      <button className="review-line">
+                        <span>11:30</span>
+                        <strong>Próximo · Planejar a semana</strong>
+                      </button>
+                      <button className="review-line">
+                        <span>16:00</span>
+                        <strong>Próximo · Caminhada</strong>
+                      </button>
+                    </section>
+                    <section className="secondary-section">
+                      <div className="section-heading">
+                        <h2>Em andamento</h2>
+                      </div>
+                      <button className="review-line">
+                        <strong>Projeto pessoal</strong>
+                        <span>2 de 4 tarefas concluídas</span>
+                      </button>
+                      <button className="review-line">
+                        <strong>Objetivo de leitura</strong>
+                        <span>Próximo marco: 10 livros</span>
+                      </button>
+                    </section>
+                    <section className="secondary-section">
+                      <div className="section-heading">
+                        <h2>Rotinas de hoje</h2>
+                      </div>
+                      <p>Rotina da manhã · 3 de 4 etapas</p>
+                    </section>
+                  </>
+                }
+              />
               <div className="home-more">
                 <section className="secondary-section">
                   <div className="section-heading">
@@ -816,14 +817,8 @@ function Preview() {
                   </div>
                   <p>Projeto pessoal · próxima etapa</p>
                 </section>
-                <section className="secondary-section">
-                  <div className="section-heading">
-                    <h2>Alimentação</h2>
-                  </div>
-                  <p>Resumo do dia</p>
-                </section>
               </div>
-            </>
+            </div>
           )}
         </div>
       </main>

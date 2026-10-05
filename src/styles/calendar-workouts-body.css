@@ -251,6 +251,99 @@
   .workout-today .field-help {
     margin-top: var(--space-3);
   }
+  .workout-today-page {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .workout-today-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(210px, 0.7fr);
+    gap: var(--space-4);
+    align-items: stretch;
+  }
+  .workout-today-main .workout-today {
+    height: 100%;
+    margin-bottom: 0;
+  }
+  .workout-week-context {
+    display: grid;
+    align-content: center;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .workout-week-context strong {
+    font-size: var(--heading);
+  }
+  .workout-week-context > span:not(.workout-kicker) {
+    color: var(--color-text-secondary);
+    font-size: var(--caption);
+  }
+  .workout-week-context progress {
+    width: 100%;
+    accent-color: var(--color-primary);
+  }
+  .workout-context-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .workout-context-section,
+  .workout-next-section {
+    min-width: 0;
+    padding-block: var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+  .workout-context-section h2,
+  .workout-next-section h2 {
+    margin: 0;
+    font-size: var(--subheading);
+  }
+  .workout-context-section > p {
+    color: var(--color-text-secondary);
+  }
+  .workout-exercise-preview {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .workout-exercise-preview li,
+  .workout-next-list > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .workout-exercise-preview small,
+  .workout-next-list span {
+    color: var(--color-text-secondary);
+  }
+  .workout-next-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .workout-next-list > div {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+  }
+  .workout-choose-section {
+    padding-block: var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+  @media (max-width: 900px) {
+    .workout-today-top,
+    .workout-context-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .workout-next-list {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
   .workout-overview {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);

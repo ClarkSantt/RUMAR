@@ -58,9 +58,9 @@ export function HabitCard({
           <button onClick={onEdit}>Editar e ver histórico</button>
         </ProjectActionMenu>
       </div>
-      {!habit.active && <span className="habit-card-state">Pausado</span>}
-      <div className="habit-card-metric">
-        <div>
+      <div className="habit-card-tracking">
+        {!habit.active && <span className="habit-card-state">Pausado</span>}
+        <div className="habit-card-metric">
           <span className="habit-card-label">
             {habit.kind === 'quantity' ? 'Hoje' : 'Esta semana'}
           </span>
@@ -70,73 +70,79 @@ export function HabitCard({
               : `${weekAchieved} de ${progress.weekTarget} dias`}
           </strong>
         </div>
+        <progress
+          max={habit.kind === 'quantity' ? habit.target_value : Math.max(progress.weekTarget, 1)}
+          value={habit.kind === 'quantity' ? Math.min(value, habit.target_value) : weekAchieved}
+          aria-label={`${habit.kind === 'quantity' ? 'Progresso de hoje' : 'Progresso semanal'} de ${habit.name}`}
+        />
         <span className="habit-card-consistency">{progress.consistency}% nos últimos 30 dias</span>
       </div>
-      <progress
-        max={habit.kind === 'quantity' ? habit.target_value : Math.max(progress.weekTarget, 1)}
-        value={habit.kind === 'quantity' ? Math.min(value, habit.target_value) : weekAchieved}
-        aria-label={`${habit.kind === 'quantity' ? 'Progresso de hoje' : 'Progresso semanal'} de ${habit.name}`}
-      />
-      {eligible &&
-        (habit.kind === 'boolean' ? (
-          <label className="habit-card-checkin">
-            <input
-              type="checkbox"
-              checked={done}
-              disabled={busy}
-              onChange={(event) => onRecord(event.currentTarget.checked ? 1 : 0)}
+      <div className="habit-card-action">
+        {eligible &&
+          (habit.kind === 'boolean' ? (
+            <label className="habit-card-checkin">
+              <input
+                type="checkbox"
+                checked={done}
+                disabled={busy}
+                onChange={(event) => onRecord(event.currentTarget.checked ? 1 : 0)}
+              />
+              <span>{done ? 'Concluído hoje' : 'Concluir hoje'}</span>
+            </label>
+          ) : (
+            <QuantityCheckIn
+              key={`${habit.id}-${value}`}
+              value={value}
+              unit={habit.unit}
+              busy={busy}
+              onRecord={onRecord}
             />
-            <span>{done ? 'Concluído hoje' : 'Concluir hoje'}</span>
-          </label>
-        ) : (
-          <QuantityCheckIn
-            key={`${habit.id}-${value}`}
-            value={value}
-            unit={habit.unit}
-            busy={busy}
-            onRecord={onRecord}
-          />
-        ))}
-      {!eligible && <p className="habit-card-unavailable">Sem check-in previsto para esta data.</p>}
-      <ol className="habit-week" aria-label={`Semana de ${habit.name}`}>
-        {week.map((date, index) => {
-          const entry = entries.find(
-            (item) => item.habit_id === habit.id && item.entry_date === date,
-          );
-          const scheduled = habitEligible({ ...habit, active: 1, archived_at: null }, date);
-          const state = !scheduled
-            ? 'off'
-            : entry && habitReached(habit, entry.value)
-              ? 'done'
-              : entry && entry.value > 0
-                ? 'partial'
-                : date > day
-                  ? 'future'
-                  : 'pending';
-          const spokenDate = new Intl.DateTimeFormat('pt-BR', {
-            day: 'numeric',
-            month: 'long',
-          }).format(parseDate(date));
-          return (
-            <li
-              key={date}
-              data-state={state}
-              aria-label={`${spokenDate}: ${state === 'done' ? 'concluído' : state === 'partial' ? 'parcial' : state === 'off' ? 'não previsto' : 'sem registro'}`}
-            >
-              <span>{weekLabels[index]}</span>
-              <span className="habit-week-mark" aria-hidden="true">
-                {state === 'done' ? <Check size={12} /> : null}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-      {habit.kind === 'quantity' && (
-        <span className="habit-card-week-note">
-          <CalendarDays size={14} aria-hidden="true" /> {weekAchieved} de {progress.weekTarget}{' '}
-          nesta semana
-        </span>
-      )}
+          ))}
+        {!eligible && (
+          <p className="habit-card-unavailable">Sem check-in previsto para esta data.</p>
+        )}
+      </div>
+      <div className="habit-card-week">
+        <ol className="habit-week" aria-label={`Semana de ${habit.name}`}>
+          {week.map((date, index) => {
+            const entry = entries.find(
+              (item) => item.habit_id === habit.id && item.entry_date === date,
+            );
+            const scheduled = habitEligible({ ...habit, active: 1, archived_at: null }, date);
+            const state = !scheduled
+              ? 'off'
+              : entry && habitReached(habit, entry.value)
+                ? 'done'
+                : entry && entry.value > 0
+                  ? 'partial'
+                  : date > day
+                    ? 'future'
+                    : 'pending';
+            const spokenDate = new Intl.DateTimeFormat('pt-BR', {
+              day: 'numeric',
+              month: 'long',
+            }).format(parseDate(date));
+            return (
+              <li
+                key={date}
+                data-state={state}
+                aria-label={`${spokenDate}: ${state === 'done' ? 'concluído' : state === 'partial' ? 'parcial' : state === 'off' ? 'não previsto' : 'sem registro'}`}
+              >
+                <span>{weekLabels[index]}</span>
+                <span className="habit-week-mark" aria-hidden="true">
+                  {state === 'done' ? <Check size={12} /> : null}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+        {habit.kind === 'quantity' && (
+          <span className="habit-card-week-note">
+            <CalendarDays size={14} aria-hidden="true" /> {weekAchieved} de {progress.weekTarget}{' '}
+            nesta semana
+          </span>
+        )}
+      </div>
     </article>
   );
 }

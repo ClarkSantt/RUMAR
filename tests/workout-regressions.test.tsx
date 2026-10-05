@@ -19,6 +19,7 @@ import { PlanEditor } from '../src/features/workouts/components/PlanEditor';
 import { ExerciseLibrary } from '../src/features/workouts/components/ExerciseLibrary';
 import { flushWorkouts } from '../src/features/workouts/persistence';
 import { exerciseMetrics } from '../src/features/workouts/domain';
+import { Workouts } from '../src/features/workouts/Workouts';
 import { addDays, localDate, parseDate } from '../src/lib/dates';
 
 vi.mock('../src/lib/database/connection', () => ({ getDatabase: vi.fn() }));
@@ -90,6 +91,20 @@ describe('Regressões integradas de treinos com SQLite e interface reais', () =>
       });
     return day;
   }
+  it('mostra treino, plano e contexto semanal antes de iniciar', async () => {
+    await planWith(['builtin-bench']);
+    render(<Workouts day={localDate()} />);
+    expect(await screen.findByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+    expect(screen.getByText('Supino reto')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Contexto desta semana' })).toBeTruthy();
+  });
+  it('oferece continuidade para uma sessão em andamento', async () => {
+    const day = await planWith(['builtin-bench']);
+    await new SessionsRepository(db.connection).start(day);
+    render(<Workouts day={localDate()} />);
+    expect(await screen.findByRole('button', { name: 'Continuar treino' })).toBeTruthy();
+    expect(screen.getByText('Supino reto')).toBeTruthy();
+  });
   it('permite consultar plano arquivado sem editar dias ou exercícios', async () => {
     const user = userEvent.setup(),
       plans = new PlansRepository(db.connection);

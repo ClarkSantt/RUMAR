@@ -256,18 +256,27 @@ export function FinancialConnections({
     existing: preview.filter((row) => row.status === 'existing').length,
   };
   const mappedAccounts = accounts.filter((account) => account.linkedFinanceAccountId);
+  const flowStep = !connection ? 1 : !mappedAccounts.length ? 2 : !preview.length ? 3 : 4;
   return (
     <section className="finance-connections" aria-label="Contas conectadas">
       <div className="finance-connections-intro">
         <h2>Contas conectadas</h2>
         <p>
-          Consulte suas instituições, vincule cada conta e confira a prévia antes de importar. A
-          conexão consulta dados em modo somente leitura; a importação grava no banco local do
-          RUMAR.
+          Escolha uma instituição, indique a conta de destino e confira cada importação antes de
+          salvar no RUMAR.
         </p>
       </div>
+      <ol className="finance-connection-steps" aria-label="Etapas da conexão">
+        {['Instituição', 'Destino', 'Revisão', 'Confirmação'].map((label, index) => (
+          <li key={label} aria-current={flowStep === index + 1 ? 'step' : undefined}>
+            <span aria-hidden="true">{index + 1}</span>
+            {label}
+          </li>
+        ))}
+      </ol>
       {personal && (
-        <div className="field-help">
+        <details className="finance-connection-help">
+          <summary>Como funciona o Meu Pluggy</summary>
           <p>
             Uso pessoal: conecte suas próprias contas no Meu Pluggy e autorize o RUMAR a acessá-las.
             O RUMAR nunca pede senha bancária.
@@ -279,7 +288,7 @@ export function FinancialConnections({
             Depois de conectar sua conta no Meu Pluggy, vincule-a à aplicação demo no Dashboard
             Pluggy e selecione MeuPluggy ao continuar aqui.
           </p>
-        </div>
+        </details>
       )}
       {!effectiveProvider && (
         <>
@@ -337,6 +346,7 @@ export function FinancialConnections({
       )}
       {effectiveProvider && (
         <>
+          {!connections.length && <h3 className="finance-flow-heading">1. Conectar instituição</h3>}
           {effectiveProvider.id === 'pluggy' && (
             <label>
               Sincronização automática
@@ -447,11 +457,21 @@ export function FinancialConnections({
               Atualizar contas
             </button>
           )}
+          {accounts.length > 0 && (
+            <h3 className="finance-flow-heading">2. Escolher destino no RUMAR</h3>
+          )}
           {accounts.map((account) => (
             <div className="preference-row finance-account-mapping" key={account.localId}>
-              <span>
-                <strong>{account.name}</strong> · {account.currency}
-                {account.lastFour ? ` · •••• ${account.lastFour}` : ''}
+              <div className="finance-mapping-source">
+                <small>Conta externa</small>
+                <strong>{account.name}</strong>
+                <span>
+                  {account.currency}
+                  {account.lastFour ? ` · •••• ${account.lastFour}` : ''}
+                </span>
+              </div>
+              <span className="finance-mapping-arrow" aria-hidden="true">
+                →
               </span>
               <label>
                 Conta RUMAR
@@ -507,6 +527,7 @@ export function FinancialConnections({
             )}
           {activeProvider && ['connected', 'error'].includes(connection.status) && (
             <>
+              <h3 className="finance-flow-heading">3. Revisar antes de importar</h3>
               <label>
                 Período inicial
                 <select
@@ -565,7 +586,7 @@ export function FinancialConnections({
               </div>
               {!!preview.length && (
                 <section className="finance-connection-preview" aria-label="Prévia da importação">
-                  <h3>Prévia da importação</h3>
+                  <h3>Origem, destino e transações</h3>
                   <p role="status">
                     {preview.length} registros · {previewCounts.new} novos · {previewCounts.update}{' '}
                     atualizações · {previewCounts.review} para revisão · {previewCounts.existing} já
