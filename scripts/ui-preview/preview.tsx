@@ -40,6 +40,8 @@ import '../../src/features/workouts/execution.css';
 import '../../src/features/body-progress/body-progress.css';
 import '../../src/styles/calendar-workouts-body.css';
 import { TemporalFitnessPreview } from './temporal-fitness';
+import { NutritionFinancePreview } from './nutrition-finance';
+import '../../src/styles/nutrition-finance-connections.css';
 
 const today = '2026-10-04';
 function task(
@@ -463,7 +465,11 @@ function Preview() {
                   ? 'calendar'
                   : screen === 'body-progress' || screen.startsWith('workout-')
                     ? 'workouts'
-                    : screen
+                    : screen.startsWith('nutrition-')
+                      ? 'nutrition'
+                      : screen.startsWith('finance-')
+                        ? 'finance'
+                        : screen
         }
         inboxCount={2}
         ready
@@ -473,6 +479,9 @@ function Preview() {
       />
       <main id="main" tabIndex={-1}>
         <div className="content">
+          {(screen.startsWith('nutrition-') || screen.startsWith('finance-')) && (
+            <NutritionFinancePreview screen={screen} />
+          )}
           {screen === 'tasks' && (
             <Tasks store={store} day={today} onOpen={() => {}} onCreate={() => {}} />
           )}

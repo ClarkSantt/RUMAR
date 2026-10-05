@@ -1,0 +1,375 @@
+/* Macrophase 2: daily nutrition, financial clarity and explicit import review. */
+@layer components {
+  .nutrition-navigation {
+    align-items: end;
+    gap: var(--space-2);
+    overflow-x: auto;
+    scrollbar-width: thin;
+    margin-bottom: var(--space-6);
+  }
+  .nutrition-nav-item {
+    display: grid;
+    align-content: end;
+    flex: 0 0 auto;
+  }
+  .nutrition-nav-label {
+    min-height: 18px;
+    color: var(--color-text-tertiary);
+    font-size: var(--caption);
+  }
+  .nutrition-nav-item button {
+    min-height: 38px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-control) var(--radius-control) 0 0;
+    white-space: nowrap;
+  }
+  .nutrition-nav-item button:hover,
+  .nutrition-nav-item button[aria-current='page'] {
+    background: var(--color-primary-soft);
+  }
+  .nutrition-page {
+    gap: var(--space-6);
+  }
+  .nutrition-page > .section-heading:first-child {
+    margin-bottom: calc(-1 * var(--space-3));
+  }
+  .nutrition-page > .section-heading time {
+    color: var(--color-text-secondary);
+  }
+  .nutrition-summary {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr);
+    gap: var(--space-4) var(--space-8);
+    padding: var(--space-6);
+    border-color: var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: none;
+    background: var(--color-surface);
+  }
+  .nutrition-calories {
+    align-items: start;
+    grid-column: 1;
+    display: grid;
+    gap: var(--space-2);
+  }
+  .nutrition-calories strong {
+    font-size: clamp(2.25rem, 3.2vw, 3.5rem);
+    font-weight: 650;
+    color: var(--color-text);
+  }
+  .nutrition-calories .summary-label,
+  .nutrition-calories > div > span:last-child,
+  .nutrition-remaining {
+    color: var(--color-text-secondary);
+  }
+  .nutrition-remaining {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+  .nutrition-summary > progress {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .nutrition-summary progress,
+  .nutrition-summary progress::-webkit-progress-bar {
+    background: var(--color-surface-subtle);
+  }
+  .nutrition-summary progress::-webkit-progress-value {
+    background: var(--color-primary);
+  }
+  .nutrition-summary progress::-moz-progress-bar {
+    background: var(--color-primary);
+  }
+  .nutrition-macros {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+    padding-left: var(--space-6);
+    border-left: 1px solid var(--color-border);
+  }
+  .nutrition-macro-line b {
+    font-weight: 600;
+  }
+  .nutrition-macro-line span {
+    color: var(--color-text-secondary);
+  }
+  .nutrition-micros {
+    grid-column: 1 / -1;
+    padding-top: var(--space-3);
+    border-color: var(--color-border);
+  }
+  .nutrition-section {
+    border-color: var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    padding: var(--space-5);
+  }
+  .nutrition-section .nutrition-list > div,
+  .nutrition-section .nutrition-list > button,
+  .nutrition-food-list > button {
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    padding: var(--space-3) var(--space-1);
+  }
+  .nutrition-section .nutrition-list > :last-child {
+    border-bottom: 0;
+  }
+  .nutrition-list > button:hover,
+  .nutrition-picker-results button:hover {
+    background: var(--color-hover);
+  }
+  .nutrition-secondary .energy-panel {
+    margin-top: 0;
+  }
+  .nutrition-plan-list button span,
+  .nutrition-chart polyline {
+    color: var(--color-success);
+    stroke: var(--color-primary);
+  }
+  .nutrition-chart circle {
+    fill: var(--color-primary);
+  }
+  .nutrition-week button[aria-pressed='true'] {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-surface);
+  }
+
+  .finance-page {
+    gap: var(--space-6);
+  }
+  .finance-toolbar {
+    align-items: start;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .finance-toolbar .nutrition-tabs {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    flex-wrap: nowrap;
+  }
+  .finance-toolbar .nutrition-tabs button {
+    white-space: nowrap;
+    min-height: 40px;
+  }
+  .finance-toolbar .nutrition-tabs button[aria-current='page'] {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .finance-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .finance-metric,
+  .finance-panel {
+    border-color: var(--color-border);
+    border-radius: var(--radius-card);
+    padding: var(--space-5);
+    background: var(--color-surface);
+  }
+  .finance-metric:not(.finance-primary) {
+    background: var(--color-surface-subtle);
+  }
+  .finance-primary {
+    grid-column: 1 / -1;
+    min-height: 142px;
+    border-color: var(--color-border);
+    background: var(--color-primary-soft);
+    justify-content: center;
+  }
+  .finance-primary strong {
+    font-size: clamp(2rem, 3vw, 3.25rem);
+    line-height: 1.15;
+  }
+  .finance-metric:not(.finance-primary) strong {
+    font-size: clamp(1.05rem, 1.7vw, 1.5rem);
+  }
+  .finance-panel {
+    gap: var(--space-4);
+  }
+  .finance-panel h2,
+  .finance-panel h3 {
+    font-size: var(--subheading);
+  }
+  .finance-transactions-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .finance-transactions-layout > .finance-panel:last-child {
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+  .finance-recent {
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    padding-inline: 0;
+  }
+  .finance-recent .finance-list li {
+    padding: var(--space-3) var(--space-1);
+  }
+  .finance-list li,
+  .finance-facts div {
+    border-color: var(--color-border);
+  }
+  .finance-disclosure,
+  .finance-administration {
+    min-width: 0;
+  }
+  .finance-disclosure summary,
+  .finance-administration > summary {
+    cursor: pointer;
+    color: var(--color-primary);
+    font-weight: 600;
+    padding: var(--space-2) 0;
+  }
+  .finance-disclosure[open] summary,
+  .finance-administration[open] > summary {
+    margin-bottom: var(--space-4);
+  }
+  .finance-administration {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
+  }
+  .finance-filters {
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-surface);
+    background: var(--color-surface-subtle);
+  }
+
+  .finance-connections {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .finance-connections-intro h2 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--heading);
+  }
+  .finance-connections-intro p {
+    margin: 0;
+    max-width: 66ch;
+    color: var(--color-text-secondary);
+  }
+  .finance-connections > .field-help,
+  .finance-connections-empty {
+    margin: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-surface);
+    background: var(--color-surface-subtle);
+  }
+  .finance-connections > label {
+    display: grid;
+    gap: var(--space-1);
+    max-width: 420px;
+  }
+  .finance-connections > .secondary-button,
+  .finance-connections > .form-actions {
+    justify-self: start;
+  }
+  .finance-connection-status {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+  .finance-account-mapping {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(200px, 1.3fr) auto;
+    gap: var(--space-4);
+    align-items: end;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-surface);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    max-width: 1080px;
+  }
+  .finance-account-mapping span strong {
+    color: var(--color-text);
+  }
+  .finance-connection-preview {
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    max-width: 1080px;
+  }
+  .finance-connection-preview h3 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--subheading);
+  }
+  .finance-connection-preview ul {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-3) 0 0;
+  }
+  .finance-connection-preview li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    align-items: center;
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .finance-connection-preview li span {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+  .finance-connection-preview li small {
+    color: var(--color-text-secondary);
+  }
+  .finance-connection-preview li > strong {
+    white-space: nowrap;
+  }
+  .finance-confirm-import {
+    padding: var(--space-5) var(--space-6);
+    overflow: auto;
+  }
+  .finance-confirm-import dl {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .finance-confirm-import dl > div {
+    display: grid;
+    grid-template-columns: minmax(95px, 0.4fr) minmax(0, 1fr);
+    gap: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-2) 0;
+  }
+  .finance-confirm-import dt {
+    color: var(--color-text-secondary);
+  }
+  .finance-confirm-import dd {
+    margin: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 900px) {
+    .nutrition-summary {
+      grid-template-columns: 1fr;
+    }
+    .nutrition-calories,
+    .nutrition-summary > progress,
+    .nutrition-macros,
+    .nutrition-micros {
+      grid-column: 1;
+      grid-row: auto;
+    }
+    .nutrition-macros {
+      border-left: 0;
+      border-top: 1px solid var(--color-border);
+      padding: var(--space-4) 0 0;
+    }
+    .finance-metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .finance-primary {
+      grid-column: 1 / -1;
+    }
+    .finance-account-mapping {
+      grid-template-columns: 1fr;
+    }
+  }
+}

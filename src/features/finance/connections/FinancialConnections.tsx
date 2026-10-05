@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Dialog } from '../../../components/Dialog';
+import { money } from '../domain';
 import { getDatabase } from '../../../lib/database/connection';
 import type { FinancialConnectionProvider } from './provider';
 import { PluggyFinancialConnectionProvider } from './pluggy-provider';
@@ -25,16 +27,148 @@ const periods = [
   { days: 180, label: '6 meses' },
   { days: 365, label: '12 meses' },
 ];
+const previewStatusLabels: Record<FinancialPreviewRow['status'], string> = {
+  new: 'Nova',
+  update: 'Atualização',
+  existing: 'Já existente',
+  possible: 'Possível duplicata',
+  review: 'Requer revisão',
+  unmapped: 'Sem vínculo',
+};
+const connectionStatusLabels: Record<string, string> = {
+  connected: 'Conectada',
+  syncing: 'Sincronizando',
+  error: 'Erro na sincronização',
+  reconnect_required: 'Reconexão necessária',
+  consent_expired: 'Consentimento expirado',
+};
 
 const pluggyProvider = new PluggyFinancialConnectionProvider(
   nativeGatewayTransport,
   pluggyWidgetFlow,
 );
 
+export function FinancialPreviewRows({
+  rows,
+  localAccounts,
+  hidden,
+}: {
+  rows: FinancialPreviewRow[];
+  localAccounts: LocalAccount[];
+  hidden: boolean;
+}) {
+  return (
+    <ul>
+      {rows.slice(0, 12).map((row) => (
+        <li key={`${row.account.localId}-${row.transaction.id}`}>
+          <span>
+            <strong>{row.transaction.description}</strong>
+            <small>
+              {row.transaction.date} · {row.account.name} →{' '}
+              {localAccounts.find((local) => local.id === row.account.linkedFinanceAccountId)
+                ?.name ?? 'Não vinculada'}{' '}
+              · {previewStatusLabels[row.status]}
+            </small>
+          </span>
+          <strong>
+            {hidden
+              ? money(row.transaction.amountCents, true)
+              : `${row.transaction.type === 'income' ? '+' : '−'}${money(row.transaction.amountCents)}`}
+          </strong>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+interface PreviewCounts {
+  total: number;
+  new: number;
+  update: number;
+  review: number;
+  existing: number;
+}
+export function FinancialImportConfirmation({
+  connection,
+  mappedAccounts,
+  localAccounts,
+  days,
+  counts,
+  busy,
+  error,
+  onClose,
+  onConfirm,
+}: {
+  connection: StoredConnection;
+  mappedAccounts: StoredExternalAccount[];
+  localAccounts: LocalAccount[];
+  days: number;
+  counts: PreviewCounts;
+  busy: boolean;
+  error?: string;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog title="Confirmar importação" onClose={onClose} busy={busy} error={error}>
+      <div className="finance-confirm-import">
+        <p>
+          Confira o destino antes de adicionar transações ao RUMAR. Registros para revisão não são
+          importados automaticamente.
+        </p>
+        <dl>
+          <div>
+            <dt>Instituição</dt>
+            <dd>{connection.institution_name}</dd>
+          </div>
+          <div>
+            <dt>Origem → destino</dt>
+            <dd>
+              {mappedAccounts
+                .map(
+                  (account) =>
+                    `${account.name} → ${localAccounts.find((local) => local.id === account.linkedFinanceAccountId)?.name ?? 'Conta RUMAR'}`,
+                )
+                .join('; ') || 'Nenhuma conta vinculada'}
+            </dd>
+          </div>
+          <div>
+            <dt>Período</dt>
+            <dd>
+              {connection.last_synced_at ? 'Desde a última sincronização' : `Últimos ${days} dias`}
+            </dd>
+          </div>
+          <div>
+            <dt>Prévia</dt>
+            <dd>
+              {counts.total} registros · {counts.new} novos · {counts.update} atualizações ·{' '}
+              {counts.review} para revisão · {counts.existing} já existentes
+            </dd>
+          </div>
+        </dl>
+        <div className="form-actions">
+          <button className="secondary-button" disabled={busy} onClick={onClose}>
+            Cancelar
+          </button>
+          <button
+            className="primary-button"
+            disabled={busy || counts.new + counts.update === 0}
+            onClick={onConfirm}
+          >
+            Confirmar e importar
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 export function FinancialConnections({
   provider = null,
+  hidden = false,
 }: {
   provider?: FinancialConnectionProvider | null;
+  hidden?: boolean;
 }) {
   const [repo, setRepo] = useState<FinancialConnectionsRepository | null>(null);
   const [connections, setConnections] = useState<StoredConnection[]>([]);
@@ -43,6 +177,7 @@ export function FinancialConnections({
   const [localAccounts, setLocalAccounts] = useState<LocalAccount[]>([]);
   const [days, setDays] = useState(90);
   const [preview, setPreview] = useState<FinancialPreviewRow[]>([]);
+  const [confirmImport, setConfirmImport] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -113,10 +248,24 @@ export function FinancialConnections({
     date.setDate(date.getDate() - days);
     return date.toISOString().slice(0, 10);
   };
+  const previewCounts = {
+    total: preview.length,
+    new: preview.filter((row) => row.status === 'new').length,
+    update: preview.filter((row) => row.status === 'update').length,
+    review: preview.filter((row) => row.status === 'possible' || row.status === 'review').length,
+    existing: preview.filter((row) => row.status === 'existing').length,
+  };
+  const mappedAccounts = accounts.filter((account) => account.linkedFinanceAccountId);
   return (
     <section className="finance-connections" aria-label="Contas conectadas">
-      <h2>Contas conectadas</h2>
-      <p>Importação somente de leitura, após vínculo explícito de cada conta.</p>
+      <div className="finance-connections-intro">
+        <h2>Contas conectadas</h2>
+        <p>
+          Consulte suas instituições, vincule cada conta e confira a prévia antes de importar. A
+          conexão consulta dados em modo somente leitura; a importação grava no banco local do
+          RUMAR.
+        </p>
+      </div>
       {personal && (
         <div className="field-help">
           <p>
@@ -231,7 +380,11 @@ export function FinancialConnections({
           </button>
         </>
       )}
-      {!connections.length && <p>Nenhuma instituição conectada.</p>}
+      {!connections.length && (
+        <p className="finance-connections-empty">
+          Nenhuma instituição conectada. Você pode continuar usando Finanças sem conexão.
+        </p>
+      )}
       {connections.length > 0 && (
         <label>
           Instituição
@@ -241,6 +394,7 @@ export function FinancialConnections({
               const id = event.target.value;
               setSelected(id);
               setPreview([]);
+              setConfirmImport(false);
               void repo?.accounts(id).then(setAccounts);
             }}
           >
@@ -256,8 +410,9 @@ export function FinancialConnections({
       )}
       {connection && (
         <>
-          <p>
-            Estado: {connection.status} · Última sincronização:{' '}
+          <p className="finance-connection-status">
+            Estado: {connectionStatusLabels[connection.status] ?? 'Requer atenção'} · Última
+            sincronização:{' '}
             {connection.last_synced_at
               ? new Date(connection.last_synced_at).toLocaleString('pt-BR')
               : 'não realizada'}
@@ -293,9 +448,9 @@ export function FinancialConnections({
             </button>
           )}
           {accounts.map((account) => (
-            <div className="preference-row" key={account.localId}>
+            <div className="preference-row finance-account-mapping" key={account.localId}>
               <span>
-                {account.name} · {account.currency}
+                <strong>{account.name}</strong> · {account.currency}
                 {account.lastFour ? ` · •••• ${account.lastFour}` : ''}
               </span>
               <label>
@@ -305,6 +460,8 @@ export function FinancialConnections({
                   disabled={busy || !activeProvider}
                   onChange={(event) =>
                     void action(async (current) => {
+                      setPreview([]);
+                      setConfirmImport(false);
                       await current.mapAccount(account.localId, event.target.value);
                       return 'Conta vinculada.';
                     })
@@ -352,7 +509,14 @@ export function FinancialConnections({
             <>
               <label>
                 Período inicial
-                <select value={days} onChange={(event) => setDays(Number(event.target.value))}>
+                <select
+                  value={days}
+                  onChange={(event) => {
+                    setDays(Number(event.target.value));
+                    setPreview([]);
+                    setConfirmImport(false);
+                  }}
+                >
                   {periods.map((item) => (
                     <option key={item.days} value={item.days}>
                       {item.label}
@@ -360,6 +524,18 @@ export function FinancialConnections({
                   ))}
                 </select>
               </label>
+              {mappedAccounts.length > 0 && (
+                <p className="field-help">
+                  Origem e destino:{' '}
+                  {mappedAccounts
+                    .map(
+                      (account) =>
+                        `${account.name} → ${localAccounts.find((local) => local.id === account.linkedFinanceAccountId)?.name ?? 'Conta RUMAR'}`,
+                    )
+                    .join('; ')}
+                  .
+                </p>
+              )}
               <div className="form-actions">
                 <button
                   className="secondary-button"
@@ -372,6 +548,7 @@ export function FinancialConnections({
                         connection.last_synced_at ? undefined : fromDate(),
                       );
                       setPreview(rows);
+                      setConfirmImport(false);
                       return `${rows.length} transações consultadas. Confira antes de importar.`;
                     })
                   }
@@ -380,33 +557,32 @@ export function FinancialConnections({
                 </button>
                 <button
                   className="primary-button"
-                  disabled={busy || !preview.length}
-                  onClick={() =>
-                    void action(async (current) => {
-                      const result = await current.sync(
-                        selected,
-                        activeProvider,
-                        connection.last_synced_at ? undefined : fromDate(),
-                      );
-                      setPreview([]);
-                      window.dispatchEvent(new Event('rumo-finance-changed'));
-                      return `${result.newCount} importadas, ${result.updatedCount} atualizadas, ${result.skippedCount} não importadas.`;
-                    })
-                  }
+                  disabled={busy || previewCounts.new + previewCounts.update === 0}
+                  onClick={() => setConfirmImport(true)}
                 >
-                  Importar
+                  Revisar importação
                 </button>
               </div>
               {!!preview.length && (
-                <p role="status">
-                  {preview.length} registros ·{' '}
-                  {preview.filter((row) => row.status === 'new').length} novos ·{' '}
-                  {
-                    preview.filter((row) => row.status === 'possible' || row.status === 'review')
-                      .length
-                  }{' '}
-                  para revisão
-                </p>
+                <section className="finance-connection-preview" aria-label="Prévia da importação">
+                  <h3>Prévia da importação</h3>
+                  <p role="status">
+                    {preview.length} registros · {previewCounts.new} novos · {previewCounts.update}{' '}
+                    atualizações · {previewCounts.review} para revisão · {previewCounts.existing} já
+                    existentes
+                  </p>
+                  <FinancialPreviewRows
+                    rows={preview}
+                    localAccounts={localAccounts}
+                    hidden={hidden}
+                  />
+                  {preview.length > 12 && (
+                    <p className="field-help">
+                      Mostrando 12 de {preview.length} registros. A confirmação considera toda a
+                      prévia.
+                    </p>
+                  )}
+                </section>
               )}
             </>
           )}
@@ -432,6 +608,31 @@ export function FinancialConnections({
         <p role="alert" className="form-error">
           {error}
         </p>
+      )}
+      {confirmImport && connection && activeProvider && (
+        <FinancialImportConfirmation
+          connection={connection}
+          mappedAccounts={mappedAccounts}
+          localAccounts={localAccounts}
+          days={days}
+          counts={previewCounts}
+          busy={busy}
+          error={error}
+          onClose={() => setConfirmImport(false)}
+          onConfirm={() =>
+            void action(async (current) => {
+              const result = await current.sync(
+                selected,
+                activeProvider,
+                connection.last_synced_at ? undefined : fromDate(),
+              );
+              setPreview([]);
+              setConfirmImport(false);
+              window.dispatchEvent(new Event('rumo-finance-changed'));
+              return `${result.newCount} importadas, ${result.updatedCount} atualizadas, ${result.skippedCount} não importadas.`;
+            })
+          }
+        />
       )}
     </section>
   );

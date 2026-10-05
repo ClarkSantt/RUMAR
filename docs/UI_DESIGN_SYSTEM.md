@@ -63,6 +63,8 @@ For Habits and Routines, run `node scripts/ui-preview/capture-habits-routines.mj
 
 For Calendar, Workouts and Body Progress, run `node scripts/ui-preview/capture-temporal-fitness.mjs` with the same local Vite preview. The synthetic harness captures the month, daily planner, workout Today and body overview in both themes at all six desktop sizes. Week planning, an active workout and workout history are captured at 1366×768 and 1920×1080. Files go to ignored `artifacts/ui-calendar-workouts-body/`; the fixtures contain no personal data.
 
+For Nutrition, Finance and Financial Connections, run `node scripts/ui-preview/capture-nutrition-finance.mjs`. It checks light and dark at 1366×768 and 1920×1080, plus the six desktop sizes for the principal views, rejecting horizontal overflow and page errors. Optional screen names limit recapture after a focused change. Captures go to ignored `artifacts/ui-nutrition-finance/`. All meals, accounts and transactions in this harness are invented.
+
 ## Mockup translation: Tasks and Inbox
 
 The approved concepts guide contextual headers, compact tabs, light list rows, prominent Inbox capture and restrained blue accents. The implementation keeps the existing four task views, QuickEntry, task drawer, conversions, editing, deletion and undo behavior. It does not add conceptual task filters, Inbox item types or a new database-backed master/detail route. Less frequent Inbox actions live in a keyboard-accessible disclosure menu; converting to a task remains visible on the row. The task drawer remains the existing editing surface so no behavior is lost.
@@ -86,6 +88,14 @@ Calendar communicates **time**; its primary action is **plan**. The month grid c
 Workouts communicate **execution**; the primary action is **train**. The scheduled or active session leads, while plan context becomes a quieter line. Existing tabs, plan actions, library, history and session persistence remain. During a session, exercise headings, previous loads and editable set rows receive a clearer hierarchy without adding estimated duration, invented training scores or new records.
 
 Body Progress communicates **evolution**; the primary action is **track**. Existing weight, body-fat and left/right measurements form the summary and compact measure list. The line chart gains quiet grid lines and an area cue, while the existing history table supplies a full textual alternative; each SVG point has a date/value label. Measurement removal now uses the shared accessible Dialog instead of a browser confirm. No photo tracking, body composition model, goal metric or medical interpretation was added from the concept art.
+
+## Mockup translation: Nutrition, Finance and Financial Connections
+
+Nutrition communicates **daily tracking**; the primary action is **log**. Today leads with calories consumed and remaining, macro progress and recorded meals. Micronutrients and planning stay available with less visual competition. The established Diary, Progress, Diet, Meals, Shopping, Foods and History routes retain their behavior. Progress bars and charts use the shared color tokens in both themes rather than a separate green identity.
+
+Finance communicates **clarity**; its primary actions are **understand and control**. The overview leads with balance, income and expenses, then planning, categories and recent transactions. Transactions lead with search, filters and a full-width list; the form and administrative tools are disclosed when needed. Budget, goal and patrimony figures continue to use the existing calculations and privacy preference. Hidden values stay masked in readouts and preview rows, and monetary editing is disabled while values are hidden.
+
+Financial Connections communicates **trust**; its primary actions are **connect, review and import**. Connection state, external account and explicit RUMAR destination lead into a preview of individual transactions already supplied by the existing repository flow. The visual list is limited to 12 rows, with the total still shown. The shared Dialog presents the actual source, destination, period and counts before an explicit import action. No new import, synchronization, provider, credential or gateway rule was introduced.
 
 ## Do / don't
 
@@ -114,12 +124,12 @@ Body Progress communicates **evolution**; the primary action is **track**. Exist
 | Calendar              | DONE    |
 | Workouts              | DONE    |
 | Body Progress         | DONE    |
-| Nutrition             | PENDING |
-| Finance               | PENDING |
-| Financial Connections | PENDING |
+| Nutrition             | DONE    |
+| Finance               | DONE    |
+| Financial Connections | DONE    |
 | Thoughts              | PENDING |
 | Timeline              | PENDING |
 | Reviews               | PENDING |
 | Settings              | PENDING |
 
-The contrast fix in Reviews and error-color fix in Nutrition are foundational corrections only; those screens remain pending full visual migration.
+The contrast fix in Reviews remains a foundational correction; Reviews is pending full visual migration.

@@ -31,13 +31,13 @@ import type { SearchResult } from '../search/repository';
 type Tab = 'today' | 'diet' | 'diary' | 'foods' | 'meals' | 'weight' | 'history' | 'shopping';
 const tabs: { id: Tab; label: string }[] = [
   { id: 'today', label: 'Hoje' },
-  { id: 'diet', label: 'Dieta' },
   { id: 'diary', label: 'Diário' },
-  { id: 'foods', label: 'Alimentos' },
-  { id: 'meals', label: 'Refeições' },
   { id: 'weight', label: 'Progresso' },
-  { id: 'history', label: 'Histórico' },
+  { id: 'diet', label: 'Dieta' },
+  { id: 'meals', label: 'Refeições' },
   { id: 'shopping', label: 'Compras' },
+  { id: 'foods', label: 'Alimentos' },
+  { id: 'history', label: 'Histórico' },
 ];
 const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const major: { key: NutrientKey; goal: keyof Goals }[] = [
@@ -61,7 +61,7 @@ export function NutrientSummary({
     <section className="nutrition-summary" aria-label={title}>
       <div className="nutrition-calories">
         <div>
-          <span className="summary-label">Calorias</span>
+          <span className="summary-label">Consumidas</span>
           <strong>
             {formatAmount(consumed, 0)} <small>kcal</small>
           </strong>
@@ -126,6 +126,41 @@ export function NutrientSummary({
         </p>
       </details>
     </section>
+  );
+}
+
+export function NutritionTodayMeals({
+  entries,
+  onDiary,
+}: {
+  entries: DiaryEntry[];
+  onDiary: () => void;
+}) {
+  return (
+    <div className="nutrition-section nutrition-today-meals">
+      <div className="section-heading">
+        <h2>Refeições registradas</h2>
+        <button className="text-button" onClick={onDiary}>
+          Abrir diário <ChevronRight size={15} />
+        </button>
+      </div>
+      {entries.length ? (
+        <div className="nutrition-list">
+          {entries.map((entry) => (
+            <div key={entry.id}>
+              <span>
+                {entry.meal_label} · {entry.food_name}
+              </span>
+              <strong>{formatAmount(entry.grams_equivalent)} g</strong>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="field-help">
+          Nada registrado hoje. O diário está pronto quando você precisar.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -298,15 +333,21 @@ export function Nutrition({
         <h1>Alimentação</h1>
         <p>Planeje suas refeições e acompanhe o que consumiu, no seu ritmo.</p>
       </header>
-      <nav className="tabs nutrition-tabs" aria-label="Seções de alimentação">
-        {tabs.map((item) => (
-          <button
-            key={item.id}
-            aria-current={tab === item.id ? 'page' : undefined}
-            onClick={() => setTab(item.id)}
-          >
-            {item.label}
-          </button>
+      <nav className="tabs nutrition-tabs nutrition-navigation" aria-label="Seções de alimentação">
+        {tabs.map((item, index) => (
+          <span className="nutrition-nav-item" key={item.id}>
+            {[0, 3, 6].includes(index) && (
+              <span className="nutrition-nav-label" aria-hidden="true">
+                {index === 0 ? 'Acompanhar' : index === 3 ? 'Planejar' : 'Consultar'}
+              </span>
+            )}
+            <button
+              aria-current={tab === item.id ? 'page' : undefined}
+              onClick={() => setTab(item.id)}
+            >
+              {item.label}
+            </button>
+          </span>
         ))}
       </nav>
       {error && (
@@ -405,10 +446,14 @@ function Today({
     <section className="nutrition-page">
       <div className="section-heading">
         <h2>Hoje</h2>
-        <span>{date}</span>
+        <time dateTime={date}>
+          {new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR', {
+            day: 'numeric',
+            month: 'long',
+          })}
+        </time>
       </div>
       <NutrientSummary values={values} goals={goals} title="Alimentação de hoje" />
-      <EnergyPanel day={date} revision={revision} onChange={onEnergyChange} />
       <div>
         <button
           className="text-button"
@@ -464,29 +509,9 @@ function Today({
           <button className="primary-button">Salvar metas</button>
         </form>
       )}
-      <div className="nutrition-section">
-        <div className="section-heading">
-          <h2>Refeições registradas</h2>
-          <button className="text-button" onClick={onDiary}>
-            Abrir diário <ChevronRight size={15} />
-          </button>
-        </div>
-        {entries.length ? (
-          <div className="nutrition-list">
-            {entries.map((entry) => (
-              <div key={entry.id}>
-                <span>
-                  {entry.meal_label} · {entry.food_name}
-                </span>
-                <strong>{formatAmount(entry.grams_equivalent)} g</strong>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="field-help">
-            Nada registrado hoje. O diário está pronto quando você precisar.
-          </p>
-        )}
+      <NutritionTodayMeals entries={entries} onDiary={onDiary} />
+      <div className="nutrition-secondary">
+        <EnergyPanel day={date} revision={revision} onChange={onEnergyChange} />
       </div>
     </section>
   );

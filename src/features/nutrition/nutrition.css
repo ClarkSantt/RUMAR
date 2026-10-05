@@ -56,18 +56,18 @@
     border: 0;
     border-radius: 999px;
     overflow: hidden;
-    background: #dceee9;
+    background: var(--color-surface-subtle);
   }
   .nutrition-summary progress::-webkit-progress-bar {
-    background: #dceee9;
+    background: var(--color-surface-subtle);
     border-radius: 999px;
   }
   .nutrition-summary progress::-webkit-progress-value {
-    background: #58a18d;
+    background: var(--color-primary);
     border-radius: 999px;
   }
   .nutrition-summary progress::-moz-progress-bar {
-    background: #58a18d;
+    background: var(--color-primary);
   }
   .nutrition-macros {
     display: grid;
@@ -293,13 +293,13 @@
   }
   .nutrition-chart polyline {
     fill: none;
-    stroke: #58a18d;
+    stroke: var(--color-primary);
     stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
   .nutrition-chart circle {
-    fill: #58a18d;
+    fill: var(--color-primary);
     stroke: var(--surface);
     stroke-width: 2;
   }

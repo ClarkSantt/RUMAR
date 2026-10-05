@@ -64,6 +64,12 @@ it('cria conta e movimentação pela UI, atualiza resumo e oculta valores', asyn
   expect((await screen.findAllByText(/R\$\s*5\.000,00/)).length).toBeGreaterThan(1);
   await user.click(screen.getByRole('button', { name: 'Ocultar valores' }));
   expect((await screen.findAllByText('R$ •••••')).length).toBeGreaterThan(1);
+  expect(screen.queryByText(/R\$\s*5\.000,00/)).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Transações' }));
+  expect(screen.queryByText(/R\$\s*5\.000,00/)).toBeNull();
+  const amountInput = screen.getByLabelText('Valor em R$') as HTMLInputElement;
+  expect(amountInput.disabled).toBe(true);
+  expect(amountInput.value).toBe('');
   await act(async () => {
     expect(db.sqlite.prepare('SELECT hide_values FROM finance_preferences').get()).toEqual({
       hide_values: 1,
