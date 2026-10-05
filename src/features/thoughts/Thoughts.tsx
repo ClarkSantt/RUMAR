@@ -102,9 +102,26 @@ function Editor({
           .catch(() => {});
       }}
     >
+      <label className="sr-only" htmlFor="thought-title">
+        Título (opcional)
+      </label>
+      <input
+        id="thought-title"
+        value={draft.title}
+        onChange={(event) => edit('title', event.target.value)}
+        placeholder="Sem título"
+        disabled={busy}
+      />
       <div className="thought-toolbar">
-        <span role="status">
-          {status === 'saved' ? 'Salvo' : status === 'saving' ? 'Salvando…' : 'Erro ao salvar'}
+        <time dateTime={thought.updated_at}>
+          {formatDate(localDate(new Date(thought.updated_at)))}
+        </time>
+        <span role="status" className="thought-save-status" data-status={status}>
+          {status === 'saved'
+            ? 'Salvo neste computador'
+            : status === 'saving'
+              ? 'Salvando…'
+              : 'Erro ao salvar'}
         </span>
         {status === 'error' && (
           <button
@@ -118,15 +135,9 @@ function Editor({
           {preview ? 'Editar' : 'Visualizar Markdown'}
         </button>
       </div>
-      <label htmlFor="thought-title">Título (opcional)</label>
-      <input
-        id="thought-title"
-        value={draft.title}
-        onChange={(event) => edit('title', event.target.value)}
-        placeholder="Sem título"
-        disabled={busy}
-      />
-      <label htmlFor="thought-content">Pensamento</label>
+      <label className="sr-only" htmlFor="thought-content">
+        Pensamento
+      </label>
       {preview ? (
         <Markdown content={draft.content} />
       ) : (
@@ -139,42 +150,42 @@ function Editor({
           disabled={busy}
         />
       )}
-      <p className="thought-help">
-        Markdown: # título, - lista, **negrito** e *itálico*. Salvo automaticamente neste
-        dispositivo.
-      </p>
-      <Attachments entityType="thought" entityId={thought.id} />
-      <div className="thought-actions">
-        <span>Transformar em</span>
-        {(['task', 'project', 'inbox'] as const).map((target) => (
+      <p className="thought-help">Markdown: # título, - lista, **negrito** e *itálico*.</p>
+      <details className="thought-more">
+        <summary>Organizar e transformar</summary>
+        <Attachments entityType="thought" entityId={thought.id} />
+        <div className="thought-actions">
+          <span>Transformar em</span>
+          {(['task', 'project', 'inbox'] as const).map((target) => (
+            <button
+              key={target}
+              className="secondary-button"
+              disabled={busy || (!draft.title.trim() && !draft.content.trim())}
+              onClick={() => void convert(target)}
+            >
+              {target === 'task' ? 'Tarefa' : target === 'project' ? 'Projeto' : 'Inbox'}
+            </button>
+          ))}
           <button
-            key={target}
-            className="secondary-button"
-            disabled={busy || (!draft.title.trim() && !draft.content.trim())}
-            onClick={() => void convert(target)}
+            className="icon-button"
+            aria-label="Arquivar pensamento"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await flushThoughts();
+                await repo.archive(thought.id);
+                await onChange();
+              } catch (error) {
+                setMessage(error instanceof Error ? error.message : 'Não foi possível arquivar.');
+                setBusy(false);
+              }
+            }}
           >
-            {target === 'task' ? 'Tarefa' : target === 'project' ? 'Projeto' : 'Inbox'}
+            <Archive size={17} />
           </button>
-        ))}
-        <button
-          className="icon-button"
-          aria-label="Arquivar pensamento"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              await flushThoughts();
-              await repo.archive(thought.id);
-              await onChange();
-            } catch (error) {
-              setMessage(error instanceof Error ? error.message : 'Não foi possível arquivar.');
-              setBusy(false);
-            }
-          }}
-        >
-          <Archive size={17} />
-        </button>
-      </div>
+        </div>
+      </details>
       {message && <p role="status">{message}</p>}
     </section>
   );
@@ -253,7 +264,6 @@ export function Thoughts({
       <header className="page-header header-with-action">
         <div>
           <h1>Pensamentos</h1>
-          <p>Espaço para pensar, sem precisar organizar agora.</p>
         </div>
         <button className="primary-button" disabled={!repo || busy} onClick={() => void choose()}>
           <Plus size={17} />
@@ -288,6 +298,12 @@ export function Thoughts({
                 >
                   <strong>{item.title || 'Sem título'}</strong>
                   <span>{item.content || 'Pensamento vazio'}</span>
+                  <time dateTime={item.updated_at}>
+                    {new Date(item.updated_at).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </time>
                 </button>
               </div>
             );

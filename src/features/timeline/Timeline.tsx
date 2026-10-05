@@ -17,6 +17,7 @@ import { Dialog } from '../../components/Dialog';
 import { TimelineRepository, type TimelineEvent, type TimelineGroup } from './repository';
 import { ObjectivesRepository, type Objective } from '../objectives/repository';
 import { Attachments } from '../attachments/Attachments';
+import './timeline.css';
 
 const groups: { value: TimelineGroup | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -44,6 +45,8 @@ const sources: { value: string; label: string }[] = [
   { value: 'thought', label: 'Pensamentos' },
   { value: 'moment', label: 'Momentos' },
 ];
+const quickSources = ['', 'task', 'project', 'habit', 'workout', 'thought'];
+const sourceLabels = Object.fromEntries(sources.map((item) => [item.value, item.label]));
 const icons: Record<string, typeof ListTodo> = {
   task: ListTodo,
   project: Folder,
@@ -234,73 +237,89 @@ export function Timeline({
     moment: 'objectives',
   };
   return (
-    <>
-      <header className="page-header">
-        <p className="eyebrow">PESSOAL</p>
-        <h1>Timeline</h1>
-        <p>O que foi registrado ao longo do tempo, reunido por dia.</p>
-      </header>
-      <div className="review-actions">
+    <div className="timeline-page">
+      <header className="page-header header-with-action timeline-header">
+        <div>
+          <h1>Timeline</h1>
+          <p>Seu histórico, dia após dia.</p>
+        </div>
         <button className="primary-button" onClick={() => setNoteOpen(true)}>
           <Plus size={16} /> Registrar momento
         </button>
-        <label className="timeline-private">
-          <input type="checkbox" checked={privateMode} onChange={() => void togglePrivate()} />{' '}
-          Ocultar conteúdo sensível
-        </label>
-      </div>
-      <div className="timeline-filters">
-        <div role="group" aria-label="Área da Timeline" className="timeline-chips">
-          {groups.map((item) => (
+      </header>
+      <div className="timeline-primary-filters">
+        <div role="group" aria-label="Módulos da Timeline" className="timeline-quick-filters">
+          {quickSources.map((value) => (
             <button
-              key={item.value}
-              className={group === item.value ? 'active' : ''}
-              aria-pressed={group === item.value}
-              onClick={() => setGroup(item.value)}
+              key={value}
+              className={source === value ? 'active' : ''}
+              aria-pressed={source === value}
+              onClick={() => setSource(value)}
             >
-              {item.label}
+              {value ? sourceLabels[value] : 'Todos'}
             </button>
           ))}
         </div>
-        <label>
-          Período inicial
-          <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
-        </label>
-        <label>
-          Período final
-          <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
-        </label>
-        <label>
-          Módulo
-          <select value={source} onChange={(e) => setSource(e.target.value)}>
-            {sources.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Objetivo
-          <select value={objective} onChange={(e) => setObjective(e.target.value)}>
-            <option value="">Todos</option>
-            {objectives.map((row) => (
-              <option key={row.id} value={row.id}>
-                {row.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Buscar
+        <label className="timeline-search">
+          <span className="sr-only">Buscar na Timeline</span>
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar na Timeline…"
+            placeholder="Buscar no histórico…"
           />
         </label>
       </div>
+      <details className="timeline-advanced">
+        <summary>Período e filtros avançados</summary>
+        <div className="timeline-filters">
+          <div role="group" aria-label="Área da Timeline" className="timeline-chips">
+            {groups.map((item) => (
+              <button
+                key={item.value}
+                className={group === item.value ? 'active' : ''}
+                aria-pressed={group === item.value}
+                onClick={() => setGroup(item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <label>
+            Período inicial
+            <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
+          </label>
+          <label>
+            Período final
+            <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
+          </label>
+          <label>
+            Módulo
+            <select value={source} onChange={(e) => setSource(e.target.value)}>
+              {sources.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Objetivo
+            <select value={objective} onChange={(e) => setObjective(e.target.value)}>
+              <option value="">Todos</option>
+              {objectives.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="timeline-private">
+            <input type="checkbox" checked={privateMode} onChange={() => void togglePrivate()} />{' '}
+            Ocultar conteúdo sensível
+          </label>
+        </div>
+      </details>
       {error && <p role="alert">{error}</p>}
       {loading && !events.length && <p role="status">Carregando Timeline…</p>}
       {!loading && !events.length && !error && (
@@ -334,12 +353,17 @@ export function Timeline({
                         onNavigate(destination[event.source_type] ?? 'objectives', event.source_id);
                     }}
                   >
-                    <Icon size={17} />
-                    <span>
+                    <time dateTime={event.sort_at}>{time || '—'}</time>
+                    <span className="timeline-event-mark">
+                      <Icon size={17} />
+                    </span>
+                    <span className="timeline-event-copy">
+                      <small className="timeline-event-source">
+                        {sourceLabels[event.source_type] ?? 'Registro'}
+                      </small>
                       <strong>{event.title}</strong>
                       {event.summary && <small>{event.summary}</small>}
                     </span>
-                    {time && <time>{time}</time>}
                     <ArrowRight size={14} />
                   </button>
                 );
@@ -415,6 +439,6 @@ export function Timeline({
           </div>
         </Dialog>
       )}
-    </>
+    </div>
   );
 }

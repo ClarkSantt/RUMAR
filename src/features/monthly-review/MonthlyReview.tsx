@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getDatabase } from '../../lib/database/connection';
 import { localDate, parseDate } from '../../lib/dates';
 import { durationLabel } from '../calendar/planner-domain';
+import '../weekly-review/review-experience.css';
 import {
   adjacentMonth,
   monthStart,
@@ -113,11 +114,10 @@ export function MonthlyReview({
     !data.finance.expense &&
     !data.moments.length;
   return (
-    <>
+    <div className="legacy-review-page">
       <header className="page-header">
-        <p className="eyebrow">REGISTRAR → REVISAR → CONTINUAR</p>
-        <h1>Revisão Mensal</h1>
-        <p>Um resumo do que foi registrado no RUMAR.</p>
+        <h1>Revisão mensal</h1>
+        <p>Entenda o período e registre o que deseja levar adiante.</p>
       </header>
       <div className="review-navigation">
         <button
@@ -160,278 +160,297 @@ export function MonthlyReview({
             </p>
           )}
           {empty && <p className="field-help">Nenhum registro neste mês.</p>}
-          <section className="review-section">
-            <h2>Resumo do mês</h2>
-            <div className="review-navigation">
-              <span>{data.tasks.completed} tarefas concluídas</span>
-              <span>{data.workouts.sessions} treinos</span>
-              <span>{durationLabel(data.focus.seconds)} de foco registrado</span>
-              <span>{data.nutrition.days} dias de alimentação registrada</span>
+          <section className="review-story" aria-label="Resumo do mês">
+            <h2>O que aconteceu</h2>
+            <div className="review-story-summary">
+              <p>
+                <strong>{data.tasks.completed}</strong>
+                <span>tarefas concluídas</span>
+              </p>
+              <p>
+                <strong>{data.workouts.sessions}</strong>
+                <span>treinos</span>
+              </p>
+              <p>
+                <strong>{durationLabel(data.focus.seconds)}</strong>
+                <span>foco registrado</span>
+              </p>
+              <p>
+                <strong>{data.nutrition.days}</strong>
+                <span>dias de alimentação</span>
+              </p>
             </div>
           </section>
-          <div className="review-grid">
-            <section className="review-section">
-              <h2>Objetivos e projetos</h2>
-              <button className="review-line" onClick={() => onNavigate('objectives')}>
-                <strong>Objetivos</strong>
-                <span>
-                  {data.objectives.active} ativos · {data.objectives.withActivity} com atividade ·{' '}
-                  {data.objectives.completed} concluídos
-                </span>
-              </button>
-              {data.objectives.updates.map((o) => (
-                <button
-                  key={o.id}
-                  className="review-line"
-                  onClick={() => onNavigate('objectives', o.id)}
-                >
-                  <span>{o.name}</span>
-                  <span>{o.activities} registros relacionados</span>
-                </button>
-              ))}
-              <button className="review-line" onClick={() => onNavigate('projects')}>
-                <strong>Projetos</strong>
-                <span>
-                  {data.projects.completed} concluídos · {data.projects.withActivity} com atividade
-                </span>
-              </button>
-              <h3>Marcos concluídos</h3>
-              {data.milestones.length ? (
-                data.milestones.slice(0, 6).map((m) => (
-                  <button
-                    key={m.id}
-                    className="review-line"
-                    onClick={() => onNavigate('objectives', m.objective_id)}
-                  >
-                    <span>{m.title}</span>
-                    <small>
-                      {m.objective_name} · {m.achieved_date?.split('-').reverse().join('/')}
-                    </small>
-                  </button>
-                ))
-              ) : (
-                <p className="field-help">Nenhum marco concluído no período.</p>
-              )}
-            </section>
-            <section className="review-section">
-              <h2>Tempo e organização</h2>
-              <button className="review-line" onClick={() => onNavigate('tasks')}>
-                <strong>Tarefas</strong>
-                <span>
-                  {data.tasks.completed} concluídas · {data.tasks.pending} pendentes ao fim do
-                  período
-                </span>
-              </button>
-              <button className="review-line" onClick={() => onNavigate('habits')}>
-                <strong>Hábitos</strong>
-                <span>
-                  {data.habits.done} de {data.habits.target} ocorrências registradas
-                  {data.habits.target
-                    ? ` · ${Math.round((data.habits.done / data.habits.target) * 100)}%`
-                    : ''}
-                </span>
-              </button>
-              <button className="review-line" onClick={() => onNavigate('routines')}>
-                <strong>Rotinas</strong>
-                <span>{data.routines} execuções concluídas</span>
-              </button>
-              <button className="review-line" onClick={() => onNavigate('calendar')}>
-                <strong>Time Blocks planejados no mês</strong>
-                <span>{durationLabel(data.planningSeconds)}</span>
-              </button>
-              <p className="review-line">
-                <strong>Foco registrado</strong>
-                <span>
-                  {durationLabel(data.focus.seconds)} · {data.focus.sessions} sessões concluídas
-                </span>
-              </p>
-              <p className="field-help">
-                Planejamento e foco são registros diferentes. Não representam uma pontuação de
-                produtividade.
-              </p>
-            </section>
-            <section className="review-section">
-              <h2>Treinos e corpo</h2>
-              <button className="review-line" onClick={() => onNavigate('workouts')}>
-                <strong>Treinos</strong>
-                <span>
-                  {data.workouts.sessions} sessões · {durationLabel(data.workouts.minutes * 60)}
-                </span>
-              </button>
-              {data.workouts.volumes.map((v) => (
-                <p className="review-line" key={v.load_type}>
-                  <span>Volume: {volumeLabels[v.load_type] ?? v.load_type}</span>
-                  <span>{number.format(v.volume)} kg × reps</span>
-                </p>
-              ))}
-              <p className="field-help">
-                Volumes mantêm os tipos de carga separados. Aquecimentos não entram no volume
-                principal.
-              </p>
-              <p>
-                Gasto estimado em treinos: {number.format(data.workouts.estimatedCalories)} kcal
-              </p>
-              <p className="review-line">
-                <strong>Passos</strong>
-                <span>
-                  {number.format(data.activity.average)} por dia registrado · {data.activity.days}/
-                  {data.elapsedDays} dias · total {number.format(data.activity.steps)}
-                </span>
-              </p>
-              {data.body.map((b) => (
-                <p className="review-line" key={b.metric_key}>
-                  <strong>{metricLabels[b.metric_key] ?? b.metric_key}</strong>
-                  <span>
-                    {b.first.toLocaleString('pt-BR')} → {b.last.toLocaleString('pt-BR')} {b.unit}
-                  </span>
-                </p>
-              ))}
-              {data.privateMode && (
-                <p className="field-help">Valores corporais ocultos pelo modo privado.</p>
-              )}
-            </section>
-            <section className="review-section">
-              <h2>Alimentação</h2>
-              <button className="review-line" onClick={() => onNavigate('nutrition')}>
-                <strong>Média registrada</strong>
-                <span>{number.format(data.nutrition.caloriesAverage)} kcal/dia</span>
-              </button>
-              <p className="review-line">
-                <strong>Proteína média</strong>
-                <span>{number.format(data.nutrition.proteinAverage)} g/dia</span>
-              </p>
-              <p>
-                {data.nutrition.days} de {data.elapsedDays} dias com alimentação registrada.
-              </p>
-              <p>
-                Balanço energético acumulado estimado:{' '}
-                {data.nutrition.balance === null
-                  ? 'Sem dados suficientes'
-                  : `${number.format(data.nutrition.balance)} kcal`}
-              </p>
-              <p className="field-help">
-                Balanço disponível em {data.nutrition.balanceDays} dias. Usa as estimativas e os
-                registros existentes, sem converter o saldo em perda de gordura.
-              </p>
-            </section>
-            <section className="review-section">
-              <h2>Finanças</h2>
-              <button className="review-line" onClick={() => onNavigate('finance')}>
-                <strong>Receitas</strong>
-                <span>{data.finance.hidden ? 'R$ •••••' : money(data.finance.income)}</span>
-              </button>
-              <p className="review-line">
-                <strong>Despesas</strong>
-                <span>{data.finance.hidden ? 'R$ •••••' : money(data.finance.expense)}</span>
-              </p>
-              <p className="review-line">
-                <strong>Balanço</strong>
-                <span>
-                  {data.finance.hidden
-                    ? 'R$ •••••'
-                    : money(data.finance.income - data.finance.expense)}
-                </span>
-              </p>
-              {data.finance.categories.map((c) => (
-                <p className="review-line" key={c.name}>
-                  <span>{c.name}</span>
-                  <span>{money(c.amount)}</span>
-                </p>
-              ))}
-            </section>
-            <section className="review-section">
-              <h2>Momentos do mês</h2>
-              {data.moments.map((m) => (
-                <button
-                  className="review-line"
-                  key={m.id}
-                  onClick={() => onTimeline(m.objectiveId ?? undefined)}
-                >
-                  <span>{m.title}</span>
-                  <small>{m.date.split('-').reverse().join('/')}</small>
-                </button>
-              ))}
-              {!data.moments.length && (
-                <p className="field-help">
-                  {data.privateMode
-                    ? 'Conteúdo oculto pelo modo privado.'
-                    : 'Nenhum momento destacado no período.'}
-                </p>
-              )}
-              <button className="secondary-button" onClick={() => onTimeline()}>
-                Abrir Timeline
-              </button>
-            </section>
-          </div>
-          <section className="review-section">
-            <h2>Comparação com mês anterior</h2>
-            <p className="field-help">
-              Mês atual consultado: {data.elapsedDays} dias. {monthLabel(data.previous.month)}: mês
-              completo. As médias consideram apenas dias registrados.
-            </p>
-            <table>
-              <caption>Registros dos períodos consultados</caption>
-              <thead>
-                <tr>
-                  <th>Métrica</th>
-                  <th>{monthLabel(data.start)}</th>
-                  <th>{monthLabel(data.previous.month)}</th>
-                  <th>Diferença</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th>Treinos</th>
-                  <td>{data.workouts.sessions}</td>
-                  <td>{data.previous.workouts}</td>
-                  <td>{data.workouts.sessions - data.previous.workouts}</td>
-                </tr>
-                <tr>
-                  <th>Passos médios/dia registrado</th>
-                  <td>
-                    {number.format(data.activity.average)} ({data.activity.days} dias)
-                  </td>
-                  <td>
-                    {number.format(data.previous.averageSteps)} ({data.previous.registeredDays}{' '}
-                    dias)
-                  </td>
-                  <td>
-                    {data.activity.days && data.previous.registeredDays
-                      ? number.format(data.activity.average - data.previous.averageSteps)
-                      : 'Sem cobertura comparável'}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </section>
-          <section className="review-section">
-            <h2>Nota mensal</h2>
+          <section className="review-story review-writing">
+            <h2>O que aprendi neste mês?</h2>
             {data.privateMode ? (
               <p className="field-help">
                 Desative o modo privado da Timeline para consultar ou editar a nota pessoal.
               </p>
             ) : (
               <>
-                <label htmlFor="monthly-note">Reflexão pessoal opcional</label>
+                <label className="sr-only" htmlFor="monthly-note">
+                  Reflexão pessoal opcional
+                </label>
                 <textarea
                   id="monthly-note"
-                  rows={4}
+                  rows={5}
                   maxLength={8000}
                   value={note}
+                  placeholder="Registre sua reflexão…"
                   onChange={(e) => {
                     setNote(e.target.value);
                     setSaved(false);
                   }}
                 />
                 <button className="secondary-button" disabled={saving} onClick={() => void save()}>
-                  {saving ? 'Salvando…' : 'Salvar nota'}
+                  {saving ? 'Salvando…' : 'Salvar reflexão'}
                 </button>
                 {saved && <p role="status">Nota salva.</p>}
               </>
             )}
           </section>
+          <details className="review-context">
+            <summary>Explorar registros e comparação</summary>
+            <div className="review-grid">
+              <section className="review-section">
+                <h2>Objetivos e projetos</h2>
+                <button className="review-line" onClick={() => onNavigate('objectives')}>
+                  <strong>Objetivos</strong>
+                  <span>
+                    {data.objectives.active} ativos · {data.objectives.withActivity} com atividade ·{' '}
+                    {data.objectives.completed} concluídos
+                  </span>
+                </button>
+                {data.objectives.updates.map((o) => (
+                  <button
+                    key={o.id}
+                    className="review-line"
+                    onClick={() => onNavigate('objectives', o.id)}
+                  >
+                    <span>{o.name}</span>
+                    <span>{o.activities} registros relacionados</span>
+                  </button>
+                ))}
+                <button className="review-line" onClick={() => onNavigate('projects')}>
+                  <strong>Projetos</strong>
+                  <span>
+                    {data.projects.completed} concluídos · {data.projects.withActivity} com
+                    atividade
+                  </span>
+                </button>
+                <h3>Marcos concluídos</h3>
+                {data.milestones.length ? (
+                  data.milestones.slice(0, 6).map((m) => (
+                    <button
+                      key={m.id}
+                      className="review-line"
+                      onClick={() => onNavigate('objectives', m.objective_id)}
+                    >
+                      <span>{m.title}</span>
+                      <small>
+                        {m.objective_name} · {m.achieved_date?.split('-').reverse().join('/')}
+                      </small>
+                    </button>
+                  ))
+                ) : (
+                  <p className="field-help">Nenhum marco concluído no período.</p>
+                )}
+              </section>
+              <section className="review-section">
+                <h2>Tempo e organização</h2>
+                <button className="review-line" onClick={() => onNavigate('tasks')}>
+                  <strong>Tarefas</strong>
+                  <span>
+                    {data.tasks.completed} concluídas · {data.tasks.pending} pendentes ao fim do
+                    período
+                  </span>
+                </button>
+                <button className="review-line" onClick={() => onNavigate('habits')}>
+                  <strong>Hábitos</strong>
+                  <span>
+                    {data.habits.done} de {data.habits.target} ocorrências registradas
+                    {data.habits.target
+                      ? ` · ${Math.round((data.habits.done / data.habits.target) * 100)}%`
+                      : ''}
+                  </span>
+                </button>
+                <button className="review-line" onClick={() => onNavigate('routines')}>
+                  <strong>Rotinas</strong>
+                  <span>{data.routines} execuções concluídas</span>
+                </button>
+                <button className="review-line" onClick={() => onNavigate('calendar')}>
+                  <strong>Time Blocks planejados no mês</strong>
+                  <span>{durationLabel(data.planningSeconds)}</span>
+                </button>
+                <p className="review-line">
+                  <strong>Foco registrado</strong>
+                  <span>
+                    {durationLabel(data.focus.seconds)} · {data.focus.sessions} sessões concluídas
+                  </span>
+                </p>
+                <p className="field-help">
+                  Planejamento e foco são registros diferentes. Não representam uma pontuação de
+                  produtividade.
+                </p>
+              </section>
+              <section className="review-section">
+                <h2>Treinos e corpo</h2>
+                <button className="review-line" onClick={() => onNavigate('workouts')}>
+                  <strong>Treinos</strong>
+                  <span>
+                    {data.workouts.sessions} sessões · {durationLabel(data.workouts.minutes * 60)}
+                  </span>
+                </button>
+                {data.workouts.volumes.map((v) => (
+                  <p className="review-line" key={v.load_type}>
+                    <span>Volume: {volumeLabels[v.load_type] ?? v.load_type}</span>
+                    <span>{number.format(v.volume)} kg × reps</span>
+                  </p>
+                ))}
+                <p className="field-help">
+                  Volumes mantêm os tipos de carga separados. Aquecimentos não entram no volume
+                  principal.
+                </p>
+                <p>
+                  Gasto estimado em treinos: {number.format(data.workouts.estimatedCalories)} kcal
+                </p>
+                <p className="review-line">
+                  <strong>Passos</strong>
+                  <span>
+                    {number.format(data.activity.average)} por dia registrado · {data.activity.days}
+                    /{data.elapsedDays} dias · total {number.format(data.activity.steps)}
+                  </span>
+                </p>
+                {data.body.map((b) => (
+                  <p className="review-line" key={b.metric_key}>
+                    <strong>{metricLabels[b.metric_key] ?? b.metric_key}</strong>
+                    <span>
+                      {b.first.toLocaleString('pt-BR')} → {b.last.toLocaleString('pt-BR')} {b.unit}
+                    </span>
+                  </p>
+                ))}
+                {data.privateMode && (
+                  <p className="field-help">Valores corporais ocultos pelo modo privado.</p>
+                )}
+              </section>
+              <section className="review-section">
+                <h2>Alimentação</h2>
+                <button className="review-line" onClick={() => onNavigate('nutrition')}>
+                  <strong>Média registrada</strong>
+                  <span>{number.format(data.nutrition.caloriesAverage)} kcal/dia</span>
+                </button>
+                <p className="review-line">
+                  <strong>Proteína média</strong>
+                  <span>{number.format(data.nutrition.proteinAverage)} g/dia</span>
+                </p>
+                <p>
+                  {data.nutrition.days} de {data.elapsedDays} dias com alimentação registrada.
+                </p>
+                <p>
+                  Balanço energético acumulado estimado:{' '}
+                  {data.nutrition.balance === null
+                    ? 'Sem dados suficientes'
+                    : `${number.format(data.nutrition.balance)} kcal`}
+                </p>
+                <p className="field-help">
+                  Balanço disponível em {data.nutrition.balanceDays} dias. Usa as estimativas e os
+                  registros existentes, sem converter o saldo em perda de gordura.
+                </p>
+              </section>
+              <section className="review-section">
+                <h2>Finanças</h2>
+                <button className="review-line" onClick={() => onNavigate('finance')}>
+                  <strong>Receitas</strong>
+                  <span>{data.finance.hidden ? 'R$ •••••' : money(data.finance.income)}</span>
+                </button>
+                <p className="review-line">
+                  <strong>Despesas</strong>
+                  <span>{data.finance.hidden ? 'R$ •••••' : money(data.finance.expense)}</span>
+                </p>
+                <p className="review-line">
+                  <strong>Balanço</strong>
+                  <span>
+                    {data.finance.hidden
+                      ? 'R$ •••••'
+                      : money(data.finance.income - data.finance.expense)}
+                  </span>
+                </p>
+                {data.finance.categories.map((c) => (
+                  <p className="review-line" key={c.name}>
+                    <span>{c.name}</span>
+                    <span>{money(c.amount)}</span>
+                  </p>
+                ))}
+              </section>
+              <section className="review-section">
+                <h2>Momentos do mês</h2>
+                {data.moments.map((m) => (
+                  <button
+                    className="review-line"
+                    key={m.id}
+                    onClick={() => onTimeline(m.objectiveId ?? undefined)}
+                  >
+                    <span>{m.title}</span>
+                    <small>{m.date.split('-').reverse().join('/')}</small>
+                  </button>
+                ))}
+                {!data.moments.length && (
+                  <p className="field-help">
+                    {data.privateMode
+                      ? 'Conteúdo oculto pelo modo privado.'
+                      : 'Nenhum momento destacado no período.'}
+                  </p>
+                )}
+                <button className="secondary-button" onClick={() => onTimeline()}>
+                  Abrir Timeline
+                </button>
+              </section>
+            </div>
+            <section className="review-section">
+              <h2>Comparação com mês anterior</h2>
+              <p className="field-help">
+                Mês atual consultado: {data.elapsedDays} dias. {monthLabel(data.previous.month)}:
+                mês completo. As médias consideram apenas dias registrados.
+              </p>
+              <table>
+                <caption>Registros dos períodos consultados</caption>
+                <thead>
+                  <tr>
+                    <th>Métrica</th>
+                    <th>{monthLabel(data.start)}</th>
+                    <th>{monthLabel(data.previous.month)}</th>
+                    <th>Diferença</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>Treinos</th>
+                    <td>{data.workouts.sessions}</td>
+                    <td>{data.previous.workouts}</td>
+                    <td>{data.workouts.sessions - data.previous.workouts}</td>
+                  </tr>
+                  <tr>
+                    <th>Passos médios/dia registrado</th>
+                    <td>
+                      {number.format(data.activity.average)} ({data.activity.days} dias)
+                    </td>
+                    <td>
+                      {number.format(data.previous.averageSteps)} ({data.previous.registeredDays}{' '}
+                      dias)
+                    </td>
+                    <td>
+                      {data.activity.days && data.previous.registeredDays
+                        ? number.format(data.activity.average - data.previous.averageSteps)
+                        : 'Sem cobertura comparável'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+          </details>
         </>
       )}
-    </>
+    </div>
   );
 }

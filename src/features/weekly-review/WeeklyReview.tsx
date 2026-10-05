@@ -3,6 +3,7 @@ import { addDays, localDate } from '../../lib/dates';
 import { getDatabase } from '../../lib/database/connection';
 import { weekStart } from '../habits/domain';
 import { WeeklyReviewRepository, type WeeklyReviewData } from './repository';
+import './review-experience.css';
 
 const number = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -57,11 +58,10 @@ export function WeeklyReview({
     }
   }
   return (
-    <>
+    <div className="legacy-review-page">
       <header className="page-header">
-        <p className="eyebrow">REGISTRAR → ENTENDER → PREPARAR</p>
-        <h1>Revisão Semanal</h1>
-        <p>Um resumo do que foi registrado no RUMAR.</p>
+        <h1>Revisão semanal</h1>
+        <p>Olhe para a semana e escolha o que vem a seguir.</p>
       </header>
       <div className="review-navigation">
         <button className="secondary-button" onClick={() => setWeek(addDays(week, -7))}>
@@ -94,175 +94,203 @@ export function WeeklyReview({
             data.finance.expense === 0 && (
               <p className="field-help">Nenhum registro nesta semana.</p>
             )}
-          <div className="review-grid">
-            <section className="review-section">
-              <h2>Organização</h2>
-              <button className="review-line" onClick={() => onNavigate('tasks')}>
-                <strong>Tarefas</strong>
-                <span>
-                  {data.tasks.completed} {data.tasks.completed === 1 ? 'concluída' : 'concluídas'} ·{' '}
-                  {data.tasks.pending} {data.tasks.pending === 1 ? 'pendente' : 'pendentes'} ·{' '}
-                  {data.tasks.overdue} {data.tasks.overdue === 1 ? 'vencida' : 'vencidas'}
-                </span>
-              </button>
-              {data.tasks.pendingTitles.length > 0 && (
-                <ul>
-                  {data.tasks.pendingTitles.map((title, i) => (
-                    <li key={i}>{title}</li>
-                  ))}
-                </ul>
-              )}
-              <button className="review-line" onClick={() => onNavigate('projects')}>
-                <strong>Projetos</strong>
-                <span>
-                  {data.projects.withActivity} com atividade · {data.projects.withoutActivity} sem
-                  atividade
-                </span>
-              </button>
-              <p className="review-detail">
-                Planejado: {Math.floor(data.planning.plannedSeconds / 60)} min · Foco registrado:{' '}
-                {Math.floor(data.planning.focusedSeconds / 60)} min
-              </p>
-              {data.projects.rows.map((row) => (
-                <p className="review-detail" key={row.id}>
-                  {row.name}: {row.completed}/{row.total} tarefas · +{row.completedWeek}{' '}
-                  {row.completedWeek === 1 ? 'concluída' : 'concluídas'} na semana
-                </p>
-              ))}
-              <button className="review-line" onClick={() => onNavigate('habits')}>
-                <strong>Hábitos</strong>
-                <span>
-                  {data.habits.done} de {data.habits.target}{' '}
-                  {data.habits.target === 1 ? 'ocorrência' : 'ocorrências'}
-                </span>
-              </button>
-              {data.habits.rows.map((row) => (
-                <p className="review-detail" key={row.id}>
-                  {row.name}: {row.done}/{row.target}
-                </p>
-              ))}
-              <button className="review-line" onClick={() => onNavigate('routines')}>
-                <strong>Rotinas</strong>
-                <span>
-                  {data.routines.length}{' '}
-                  {data.routines.length === 1 ? 'acompanhada' : 'acompanhadas'}
-                </span>
-              </button>
-              {data.routines.map((row) => (
-                <p className="review-detail" key={row.id}>
-                  {row.name}: {row.done}/{row.target} dias
-                </p>
-              ))}
-            </section>
-            <section className="review-section">
-              <h2>Treinos e atividade</h2>
-              <button className="review-line" onClick={() => onNavigate('workouts')}>
-                <strong>Treinos</strong>
-                <span>
-                  {data.workouts.completed}{' '}
-                  {data.workouts.completed === 1 ? 'realizado' : 'realizados'} ·{' '}
-                  {data.workouts.planned}{' '}
-                  {data.workouts.planned === 1 ? 'programado' : 'programados'}
-                </span>
-              </button>
-              <p>{number.format(data.workouts.minutes)} min registrados</p>
-              {data.workouts.estimatedCalories > 0 && (
-                <p>Gasto estimado: {number.format(data.workouts.estimatedCalories)} kcal</p>
-              )}
+          <section className="review-story" aria-label="Resumo da semana">
+            <h2>O que aconteceu</h2>
+            <div className="review-story-summary">
               <p>
-                Passos: {number.format(data.activity.steps)} em {data.activity.days} dias · média{' '}
-                {number.format(data.activity.average)}
-              </p>
-            </section>
-            <section className="review-section">
-              <h2>Alimentação e corpo</h2>
-              <button className="review-line" onClick={() => onNavigate('nutrition')}>
-                <strong>Alimentação</strong>
-                <span>
-                  {data.nutrition.days}{' '}
-                  {data.nutrition.days === 1 ? 'dia registrado' : 'dias registrados'}
-                </span>
-              </button>
-              {data.nutrition.days > 0 && (
-                <p>
-                  Média: {number.format(data.nutrition.caloriesAverage)} kcal ·{' '}
-                  {number.format(data.nutrition.proteinAverage)} g de proteína
-                </p>
-              )}
-              {data.nutrition.estimatedBalance !== null && (
-                <p>
-                  Balanço energético estimado: {number.format(data.nutrition.estimatedBalance)} kcal
-                  ({data.nutrition.balanceDays} dias com dados)
-                </p>
-              )}
-              {data.body.firstWeight !== null && data.body.lastWeight !== null && (
-                <p>
-                  Peso registrado: {data.body.firstWeight.toLocaleString('pt-BR')} →{' '}
-                  {data.body.lastWeight.toLocaleString('pt-BR')} kg
-                </p>
-              )}
-            </section>
-            <section className="review-section">
-              <h2>Finanças</h2>
-              <button className="review-line" onClick={() => onNavigate('finance')}>
-                <strong>Receitas</strong>
-                <span>
-                  {data.finance.hidden ? 'R$ •••••' : money.format(data.finance.income / 100)}
-                </span>
-              </button>
-              <p>
-                Despesas:{' '}
-                {data.finance.hidden ? 'R$ •••••' : money.format(data.finance.expense / 100)}
+                <strong>{data.tasks.completed}</strong>
+                <span>tarefas concluídas</span>
               </p>
               <p>
-                Balanço:{' '}
-                {data.finance.hidden
-                  ? 'R$ •••••'
-                  : money.format((data.finance.income - data.finance.expense) / 100)}
+                <strong>{data.habits.done}</strong>
+                <span>registros de hábitos</span>
               </p>
-            </section>
-            <section className="review-section">
-              <h2>Próxima semana</h2>
-              <button className="review-line" onClick={() => onNavigate('calendar')}>
-                <strong>Agenda</strong>
-                <span>
-                  {data.next.tasks} tarefas · {data.next.workouts} treinos · {data.next.bills}{' '}
-                  contas previstas · {data.next.projectDeadlines} prazos de projeto
-                </span>
-              </button>
-            </section>
-            {data.objectives.length > 0 && (
+              <p>
+                <strong>{data.workouts.completed}</strong>
+                <span>treinos realizados</span>
+              </p>
+              <p>
+                <strong>{data.nutrition.days}</strong>
+                <span>dias de alimentação</span>
+              </p>
+            </div>
+          </section>
+          <section className="review-story review-writing">
+            <h2>O que aprendi nesta semana?</h2>
+            <p>O que funcionou bem? O que merece ajuste no próximo período?</p>
+            <label className="sr-only" htmlFor="review-note">
+              Reflexão opcional
+            </label>
+            <textarea
+              id="review-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={5}
+              placeholder="Registre sua reflexão…"
+            />
+            <button
+              className="secondary-button"
+              onClick={() => void saveNote()}
+              disabled={note === data.note}
+            >
+              Salvar reflexão
+            </button>
+          </section>
+          <section className="review-story review-next">
+            <h2>O que vem a seguir</h2>
+            <button className="review-line" onClick={() => onNavigate('calendar')}>
+              <strong>Próxima semana</strong>
+              <span>
+                {data.next.tasks} tarefas · {data.next.workouts} treinos · {data.next.bills} contas
+                previstas · {data.next.projectDeadlines} prazos de projeto
+              </span>
+            </button>
+          </section>
+          <details className="review-context">
+            <summary>Explorar registros por área</summary>
+            <div className="review-grid">
               <section className="review-section">
-                <h2>Objetivos</h2>
-                {data.objectives.map((row) => (
+                <h2>Organização</h2>
+                <button className="review-line" onClick={() => onNavigate('tasks')}>
+                  <strong>Tarefas</strong>
+                  <span>
+                    {data.tasks.completed} {data.tasks.completed === 1 ? 'concluída' : 'concluídas'}{' '}
+                    · {data.tasks.pending} {data.tasks.pending === 1 ? 'pendente' : 'pendentes'} ·{' '}
+                    {data.tasks.overdue} {data.tasks.overdue === 1 ? 'vencida' : 'vencidas'}
+                  </span>
+                </button>
+                {data.tasks.pendingTitles.length > 0 && (
+                  <ul>
+                    {data.tasks.pendingTitles.map((title, i) => (
+                      <li key={i}>{title}</li>
+                    ))}
+                  </ul>
+                )}
+                <button className="review-line" onClick={() => onNavigate('projects')}>
+                  <strong>Projetos</strong>
+                  <span>
+                    {data.projects.withActivity} com atividade · {data.projects.withoutActivity} sem
+                    atividade
+                  </span>
+                </button>
+                <p className="review-detail">
+                  Planejado: {Math.floor(data.planning.plannedSeconds / 60)} min · Foco registrado:{' '}
+                  {Math.floor(data.planning.focusedSeconds / 60)} min
+                </p>
+                {data.projects.rows.map((row) => (
                   <p className="review-detail" key={row.id}>
-                    {row.name}: {row.activities}{' '}
-                    {row.activities === 1 ? 'atividade relacionada' : 'atividades relacionadas'}
+                    {row.name}: {row.completed}/{row.total} tarefas · +{row.completedWeek}{' '}
+                    {row.completedWeek === 1 ? 'concluída' : 'concluídas'} na semana
                   </p>
                 ))}
-                <button className="secondary-button" onClick={onTimeline}>
-                  Ver semana na Timeline
+                <button className="review-line" onClick={() => onNavigate('habits')}>
+                  <strong>Hábitos</strong>
+                  <span>
+                    {data.habits.done} de {data.habits.target}{' '}
+                    {data.habits.target === 1 ? 'ocorrência' : 'ocorrências'}
+                  </span>
                 </button>
+                {data.habits.rows.map((row) => (
+                  <p className="review-detail" key={row.id}>
+                    {row.name}: {row.done}/{row.target}
+                  </p>
+                ))}
+                <button className="review-line" onClick={() => onNavigate('routines')}>
+                  <strong>Rotinas</strong>
+                  <span>
+                    {data.routines.length}{' '}
+                    {data.routines.length === 1 ? 'acompanhada' : 'acompanhadas'}
+                  </span>
+                </button>
+                {data.routines.map((row) => (
+                  <p className="review-detail" key={row.id}>
+                    {row.name}: {row.done}/{row.target} dias
+                  </p>
+                ))}
               </section>
-            )}
-            <section className="review-section">
-              <h2>Nota pessoal da semana</h2>
-              <label htmlFor="review-note">Reflexão opcional</label>
-              <textarea
-                id="review-note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={4}
-              />
-              <button
-                className="secondary-button"
-                onClick={() => void saveNote()}
-                disabled={note === data.note}
-              >
-                Salvar nota
-              </button>
-            </section>
-          </div>
+              <section className="review-section">
+                <h2>Treinos e atividade</h2>
+                <button className="review-line" onClick={() => onNavigate('workouts')}>
+                  <strong>Treinos</strong>
+                  <span>
+                    {data.workouts.completed}{' '}
+                    {data.workouts.completed === 1 ? 'realizado' : 'realizados'} ·{' '}
+                    {data.workouts.planned}{' '}
+                    {data.workouts.planned === 1 ? 'programado' : 'programados'}
+                  </span>
+                </button>
+                <p>{number.format(data.workouts.minutes)} min registrados</p>
+                {data.workouts.estimatedCalories > 0 && (
+                  <p>Gasto estimado: {number.format(data.workouts.estimatedCalories)} kcal</p>
+                )}
+                <p>
+                  Passos: {number.format(data.activity.steps)} em {data.activity.days} dias · média{' '}
+                  {number.format(data.activity.average)}
+                </p>
+              </section>
+              <section className="review-section">
+                <h2>Alimentação e corpo</h2>
+                <button className="review-line" onClick={() => onNavigate('nutrition')}>
+                  <strong>Alimentação</strong>
+                  <span>
+                    {data.nutrition.days}{' '}
+                    {data.nutrition.days === 1 ? 'dia registrado' : 'dias registrados'}
+                  </span>
+                </button>
+                {data.nutrition.days > 0 && (
+                  <p>
+                    Média: {number.format(data.nutrition.caloriesAverage)} kcal ·{' '}
+                    {number.format(data.nutrition.proteinAverage)} g de proteína
+                  </p>
+                )}
+                {data.nutrition.estimatedBalance !== null && (
+                  <p>
+                    Balanço energético estimado: {number.format(data.nutrition.estimatedBalance)}{' '}
+                    kcal ({data.nutrition.balanceDays} dias com dados)
+                  </p>
+                )}
+                {data.body.firstWeight !== null && data.body.lastWeight !== null && (
+                  <p>
+                    Peso registrado: {data.body.firstWeight.toLocaleString('pt-BR')} →{' '}
+                    {data.body.lastWeight.toLocaleString('pt-BR')} kg
+                  </p>
+                )}
+              </section>
+              <section className="review-section">
+                <h2>Finanças</h2>
+                <button className="review-line" onClick={() => onNavigate('finance')}>
+                  <strong>Receitas</strong>
+                  <span>
+                    {data.finance.hidden ? 'R$ •••••' : money.format(data.finance.income / 100)}
+                  </span>
+                </button>
+                <p>
+                  Despesas:{' '}
+                  {data.finance.hidden ? 'R$ •••••' : money.format(data.finance.expense / 100)}
+                </p>
+                <p>
+                  Balanço:{' '}
+                  {data.finance.hidden
+                    ? 'R$ •••••'
+                    : money.format((data.finance.income - data.finance.expense) / 100)}
+                </p>
+              </section>
+              {data.objectives.length > 0 && (
+                <section className="review-section">
+                  <h2>Objetivos</h2>
+                  {data.objectives.map((row) => (
+                    <p className="review-detail" key={row.id}>
+                      {row.name}: {row.activities}{' '}
+                      {row.activities === 1 ? 'atividade relacionada' : 'atividades relacionadas'}
+                    </p>
+                  ))}
+                  <button className="secondary-button" onClick={onTimeline}>
+                    Ver semana na Timeline
+                  </button>
+                </section>
+              )}
+            </div>
+          </details>
           <nav className="review-actions" aria-label="Ações após a revisão">
             {data.milestones.length > 0 && (
               <p>
@@ -288,6 +316,6 @@ export function WeeklyReview({
           </nav>
         </>
       )}
-    </>
+    </div>
   );
 }

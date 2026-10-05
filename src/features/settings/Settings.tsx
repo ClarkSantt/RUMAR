@@ -21,12 +21,29 @@ import { GoogleCalendarSettings } from '../integrations/google-calendar/GoogleCa
 import { WindowsSettings } from '../windows/WindowsSettings';
 import { suspendGoogleCalendar } from '../integrations/google-calendar/runtime';
 import '../automations/automations.css';
+import './settings.css';
 const themes: { value: Theme; label: string; Icon: typeof Sun }[] = [
   { value: 'light', label: 'Claro', Icon: Sun },
   { value: 'dark', label: 'Escuro', Icon: Moon },
   { value: 'system', label: 'Sistema', Icon: Monitor },
 ];
+const sections = [
+  { id: 'general', label: 'Geral' },
+  { id: 'appearance', label: 'Aparência' },
+  { id: 'notifications', label: 'Notificações' },
+  { id: 'planning', label: 'Planejamento' },
+  { id: 'automations', label: 'Automações' },
+  { id: 'windows', label: 'Windows' },
+  { id: 'templates', label: 'Templates' },
+  { id: 'data', label: 'Backup e dados' },
+  { id: 'privacy', label: 'Privacidade' },
+  { id: 'integrations', label: 'Integrações' },
+  { id: 'about', label: 'Sobre' },
+] as const;
+type SettingsSection = (typeof sections)[number]['id'];
 export function Settings({ store }: { store: RumoStore }) {
+  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+  const [sectionQuery, setSectionQuery] = useState('');
   const [name, setName] = useState(store.data!.settings.name);
   const [dataInfo, setDataInfo] = useState<{ databasePath: string; appVersion: string } | null>(
     null,
@@ -153,243 +170,311 @@ export function Settings({ store }: { store: RumoStore }) {
     });
   }
   return (
-    <>
-      <header className="page-header">
-        <p className="eyebrow">DO SEU JEITO</p>
+    <div className="settings-page">
+      <header className="page-header settings-header">
         <h1>Configurações</h1>
-        <p>Pequenos ajustes para se sentir em casa.</p>
+        <p>Encontre e ajuste as preferências do RUMAR.</p>
       </header>
-      <section className="settings-section">
-        <h2>Perfil</h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void store.run((repo) => repo.saveSetting('name', name), 'Nome salvo.');
-          }}
-        >
-          <label htmlFor="profile-name">Como podemos chamar você?</label>
-          <div className="name-field">
-            <input
-              id="profile-name"
-              required
-              maxLength={80}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={store.busy}
-            />
-            <button className="secondary-button" disabled={store.busy || !name.trim()}>
-              Salvar
-            </button>
-          </div>
-        </form>
-        <GeneralProfile />
-      </section>
-      <section className="settings-section">
-        <h2>Aparência</h2>
-        <p>Escolha o tema do RUMAR.</p>
-        <div className="theme-options" role="group" aria-label="Tema">
-          {themes.map(({ value, label, Icon }) => (
-            <button
-              key={value}
-              aria-pressed={store.data!.settings.theme === value}
-              disabled={store.busy}
-              onClick={() => void store.run((repo) => repo.saveSetting('theme', value))}
-            >
-              <Icon size={22} />
-              {label}
-            </button>
-          ))}
-        </div>
-      </section>
-      <section className="settings-section">
-        <h2>Preferências</h2>
-        <div className="preference-row">
-          <span>Primeiro dia da semana</span>
-          <strong>Segunda-feira</strong>
-        </div>
-      </section>
-      <WindowsSettings />
-      <section className="settings-section">
-        <h2>Templates</h2>
-        <p>Reutilize estruturas de tarefas, projetos, rotinas, planos de treino e refeições.</p>
-        <button
-          className="secondary-button"
-          aria-expanded={templatesOpen}
-          onClick={() => setTemplatesOpen((current) => !current)}
-        >
-          {templatesOpen ? 'Fechar templates' : 'Abrir meus templates'}
-        </button>
-        {templatesOpen && <TemplatesGallery />}
-      </section>
-      <section className="settings-section">
-        <h2>Notificações</h2>
-        <NotificationSettings />
-      </section>
-      <section className="settings-section">
-        <h2>Dados</h2>
-        <DataCenter onImported={store.retry} />
-        <p>O banco fica neste computador. Backups manuais são salvos onde você escolher.</p>
-        {dataInfo && (
-          <p className="data-path">
-            <strong>Banco local:</strong> {dataInfo.databasePath}
-          </p>
-        )}
-        <div className="name-field backup-preferences">
-          <label htmlFor="backup-frequency">Backup automático</label>
-          <select
-            id="backup-frequency"
-            value={frequency}
-            disabled={busy}
-            onChange={(event) => setFrequency(event.target.value)}
-          >
-            <option value="off">Desativado</option>
-            <option value="daily">Diário</option>
-            <option value="weekly">Semanal</option>
-          </select>
-          <label htmlFor="backup-keep">Manter</label>
+      <div className="settings-layout">
+        <nav className="settings-nav" aria-label="Seções de configurações">
+          <label className="sr-only" htmlFor="settings-section-search">
+            Buscar seção
+          </label>
           <input
-            id="backup-keep"
-            type="number"
-            min="1"
-            max="50"
-            value={keepCount}
-            disabled={busy}
-            onChange={(event) => setKeepCount(Number(event.target.value))}
+            id="settings-section-search"
+            type="search"
+            value={sectionQuery}
+            onChange={(event) => setSectionQuery(event.target.value)}
+            placeholder="Buscar seção…"
           />
-          <button
-            className="secondary-button"
-            disabled={busy || keepCount < 1 || keepCount > 50}
-            onClick={() =>
-              void action(async () => {
-                const db = await getDatabase();
-                await db.execute(
-                  'UPDATE backup_preferences SET frequency=$1,keep_count=$2 WHERE id=1',
-                  [frequency, keepCount],
-                );
-                const backup = await invoke<string | null>('automatic_backup');
-                if (backup) setLastAutomatic(String(Math.floor(Date.now() / 1000)));
-                return 'Preferência de backup salva.';
-              })
-            }
-          >
-            Salvar backup automático
-          </button>
+          {sections
+            .filter((section) =>
+              section.label
+                .toLocaleLowerCase('pt-BR')
+                .includes(sectionQuery.toLocaleLowerCase('pt-BR')),
+            )
+            .map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                aria-current={activeSection === section.id ? 'page' : undefined}
+                onClick={() => setActiveSection(section.id)}
+              >
+                {section.label}
+              </button>
+            ))}
+          {sectionQuery &&
+            !sections.some((section) =>
+              section.label
+                .toLocaleLowerCase('pt-BR')
+                .includes(sectionQuery.toLocaleLowerCase('pt-BR')),
+            ) && <p>Nenhuma seção encontrada.</p>}
+        </nav>
+        <div className="settings-content" aria-live="polite">
+          {activeSection === 'general' && (
+            <section className="settings-section">
+              <h2>Perfil</h2>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void store.run((repo) => repo.saveSetting('name', name), 'Nome salvo.');
+                }}
+              >
+                <label htmlFor="profile-name">Como podemos chamar você?</label>
+                <div className="name-field">
+                  <input
+                    id="profile-name"
+                    required
+                    maxLength={80}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={store.busy}
+                  />
+                  <button className="secondary-button" disabled={store.busy || !name.trim()}>
+                    Salvar
+                  </button>
+                </div>
+              </form>
+              <GeneralProfile />
+            </section>
+          )}
+          {activeSection === 'appearance' && (
+            <section className="settings-section">
+              <h2>Aparência</h2>
+              <p>Escolha o tema do RUMAR.</p>
+              <div className="theme-options" role="group" aria-label="Tema">
+                {themes.map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    aria-pressed={store.data!.settings.theme === value}
+                    disabled={store.busy}
+                    onClick={() => void store.run((repo) => repo.saveSetting('theme', value))}
+                  >
+                    <Icon size={22} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+          {activeSection === 'general' && (
+            <section className="settings-section">
+              <h2>Preferências</h2>
+              <div className="preference-row">
+                <span>Primeiro dia da semana</span>
+                <strong>Segunda-feira</strong>
+              </div>
+            </section>
+          )}
+          {activeSection === 'windows' && <WindowsSettings />}
+          {activeSection === 'templates' && (
+            <section className="settings-section">
+              <h2>Templates</h2>
+              <p>
+                Reutilize estruturas de tarefas, projetos, rotinas, planos de treino e refeições.
+              </p>
+              <button
+                className="secondary-button"
+                aria-expanded={templatesOpen}
+                onClick={() => setTemplatesOpen((current) => !current)}
+              >
+                {templatesOpen ? 'Fechar templates' : 'Abrir meus templates'}
+              </button>
+              {templatesOpen && <TemplatesGallery />}
+            </section>
+          )}
+          {activeSection === 'notifications' && (
+            <section className="settings-section">
+              <h2>Notificações</h2>
+              <NotificationSettings />
+            </section>
+          )}
+          {activeSection === 'data' && (
+            <section className="settings-section">
+              <h2>Dados</h2>
+              <DataCenter onImported={store.retry} />
+              <p>O banco fica neste computador. Backups manuais são salvos onde você escolher.</p>
+              {dataInfo && (
+                <p className="data-path">
+                  <strong>Banco local:</strong> {dataInfo.databasePath}
+                </p>
+              )}
+              <div className="name-field backup-preferences">
+                <label htmlFor="backup-frequency">Backup automático</label>
+                <select
+                  id="backup-frequency"
+                  value={frequency}
+                  disabled={busy}
+                  onChange={(event) => setFrequency(event.target.value)}
+                >
+                  <option value="off">Desativado</option>
+                  <option value="daily">Diário</option>
+                  <option value="weekly">Semanal</option>
+                </select>
+                <label htmlFor="backup-keep">Manter</label>
+                <input
+                  id="backup-keep"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={keepCount}
+                  disabled={busy}
+                  onChange={(event) => setKeepCount(Number(event.target.value))}
+                />
+                <button
+                  className="secondary-button"
+                  disabled={busy || keepCount < 1 || keepCount > 50}
+                  onClick={() =>
+                    void action(async () => {
+                      const db = await getDatabase();
+                      await db.execute(
+                        'UPDATE backup_preferences SET frequency=$1,keep_count=$2 WHERE id=1',
+                        [frequency, keepCount],
+                      );
+                      const backup = await invoke<string | null>('automatic_backup');
+                      if (backup) setLastAutomatic(String(Math.floor(Date.now() / 1000)));
+                      return 'Preferência de backup salva.';
+                    })
+                  }
+                >
+                  Salvar backup automático
+                </button>
+              </div>
+              <p>
+                Último backup automático:{' '}
+                {lastAutomatic
+                  ? new Date(Number(lastAutomatic) * 1000).toLocaleString('pt-BR')
+                  : 'ainda não criado'}
+              </p>
+              <div className="name-field">
+                <button
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() => void manualBackup()}
+                >
+                  Criar backup agora
+                </button>
+                <button
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() => void chooseRestore()}
+                >
+                  Restaurar backup
+                </button>
+                <button
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() => void action(() => invoke<string>('check_integrity'))}
+                >
+                  Verificar banco
+                </button>
+              </div>
+              {selected && (
+                <div className="settings-restore">
+                  <p>
+                    <strong>Backup selecionado:</strong> {selected.path}
+                  </p>
+                  <p>
+                    Schema {selected.schemaVersion} · criado em{' '}
+                    {new Date(Number(selected.createdAt) * 1000).toLocaleString('pt-BR')}
+                  </p>
+                  <p>
+                    Restaurar substituirá os dados atuais. O RUMAR criará antes um backup
+                    preventivo.
+                  </p>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={confirmed}
+                      onChange={(event) => setConfirmed(event.target.checked)}
+                    />{' '}
+                    Entendo que os dados atuais serão substituídos
+                  </label>
+                  <button
+                    className="primary-button"
+                    disabled={busy || !confirmed}
+                    onClick={() => void restore()}
+                  >
+                    Confirmar restauração
+                  </button>
+                </div>
+              )}
+              {result && <p role="status">{result}</p>}
+              {error && (
+                <p role="alert" className="dialog-error">
+                  {error}
+                </p>
+              )}
+            </section>
+          )}
+          {activeSection === 'privacy' && (
+            <section className="settings-section">
+              <h2>Privacidade</h2>
+              <p>
+                O RUMAR guarda seus dados localmente. Se você ativar Google Agenda, somente os
+                eventos escolhidos serão enviados ao Google como espelho. Os backups contêm seus
+                dados pessoais; guarde-os em local seguro.
+              </p>
+              <label className="preference-row">
+                <input
+                  type="checkbox"
+                  checked={hideValues}
+                  disabled={busy}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    void action(async () => {
+                      await (
+                        await getDatabase()
+                      ).execute('UPDATE finance_preferences SET hide_values=$1 WHERE id=1', [
+                        next ? 1 : 0,
+                      ]);
+                      setHideValues(next);
+                      return 'Preferência de privacidade salva.';
+                    });
+                  }}
+                />{' '}
+                Ocultar valores financeiros
+              </label>
+              <label className="preference-row">
+                <input
+                  type="checkbox"
+                  checked={timelinePrivate}
+                  disabled={busy}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    void action(async () => {
+                      await new TimelineRepository(await getDatabase()).setPrivateMode(next);
+                      setTimelinePrivate(next);
+                      return 'Privacidade da Timeline salva.';
+                    });
+                  }}
+                />{' '}
+                Ocultar conteúdo sensível na Timeline
+              </label>
+            </section>
+          )}
+          {activeSection === 'planning' && <PlannerSettings />}
+          {activeSection === 'automations' && <AutomationsSettings />}
+          {activeSection === 'integrations' && (
+            <section className="settings-section">
+              <h2>Integrações</h2>
+              <GoogleCalendarSettings />
+            </section>
+          )}
+          {activeSection === 'about' && (
+            <section className="settings-section about">
+              <h2>
+                RUMAR <span>{dataInfo?.appVersion ?? '1.8.0'}</span>
+              </h2>
+              <p>Clareza para o seu dia.</p>
+              <p>
+                Seus dados ficam neste computador. A integração com Google Agenda é opcional e
+                unilateral. Sem telemetria.
+              </p>
+            </section>
+          )}
         </div>
-        <p>
-          Último backup automático:{' '}
-          {lastAutomatic
-            ? new Date(Number(lastAutomatic) * 1000).toLocaleString('pt-BR')
-            : 'ainda não criado'}
-        </p>
-        <div className="name-field">
-          <button className="secondary-button" disabled={busy} onClick={() => void manualBackup()}>
-            Criar backup agora
-          </button>
-          <button className="secondary-button" disabled={busy} onClick={() => void chooseRestore()}>
-            Restaurar backup
-          </button>
-          <button
-            className="secondary-button"
-            disabled={busy}
-            onClick={() => void action(() => invoke<string>('check_integrity'))}
-          >
-            Verificar banco
-          </button>
-        </div>
-        {selected && (
-          <div className="settings-restore">
-            <p>
-              <strong>Backup selecionado:</strong> {selected.path}
-            </p>
-            <p>
-              Schema {selected.schemaVersion} · criado em{' '}
-              {new Date(Number(selected.createdAt) * 1000).toLocaleString('pt-BR')}
-            </p>
-            <p>Restaurar substituirá os dados atuais. O RUMAR criará antes um backup preventivo.</p>
-            <label>
-              <input
-                type="checkbox"
-                checked={confirmed}
-                onChange={(event) => setConfirmed(event.target.checked)}
-              />{' '}
-              Entendo que os dados atuais serão substituídos
-            </label>
-            <button
-              className="primary-button"
-              disabled={busy || !confirmed}
-              onClick={() => void restore()}
-            >
-              Confirmar restauração
-            </button>
-          </div>
-        )}
-        {result && <p role="status">{result}</p>}
-        {error && (
-          <p role="alert" className="dialog-error">
-            {error}
-          </p>
-        )}
-      </section>
-      <section className="settings-section">
-        <h2>Privacidade</h2>
-        <p>
-          O RUMAR guarda seus dados localmente. Se você ativar Google Agenda, somente os eventos
-          escolhidos serão enviados ao Google como espelho. Os backups contêm seus dados pessoais;
-          guarde-os em local seguro.
-        </p>
-        <label className="preference-row">
-          <input
-            type="checkbox"
-            checked={hideValues}
-            disabled={busy}
-            onChange={(event) => {
-              const next = event.target.checked;
-              void action(async () => {
-                await (
-                  await getDatabase()
-                ).execute('UPDATE finance_preferences SET hide_values=$1 WHERE id=1', [
-                  next ? 1 : 0,
-                ]);
-                setHideValues(next);
-                return 'Preferência de privacidade salva.';
-              });
-            }}
-          />{' '}
-          Ocultar valores financeiros
-        </label>
-        <label className="preference-row">
-          <input
-            type="checkbox"
-            checked={timelinePrivate}
-            disabled={busy}
-            onChange={(event) => {
-              const next = event.target.checked;
-              void action(async () => {
-                await new TimelineRepository(await getDatabase()).setPrivateMode(next);
-                setTimelinePrivate(next);
-                return 'Privacidade da Timeline salva.';
-              });
-            }}
-          />{' '}
-          Ocultar conteúdo sensível na Timeline
-        </label>
-      </section>
-      <PlannerSettings />
-      <AutomationsSettings />
-      <section className="settings-section">
-        <h2>Integrações</h2>
-        <GoogleCalendarSettings />
-      </section>
-      <section className="settings-section about">
-        <h2>
-          RUMAR <span>{dataInfo?.appVersion ?? '1.8.0'}</span>
-        </h2>
-        <p>Clareza para o seu dia.</p>
-        <p>
-          Seus dados ficam neste computador. A integração com Google Agenda é opcional e unilateral.
-          Sem telemetria.
-        </p>
-      </section>
-    </>
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 # RUMAR visual system
 
-This document describes the implemented RUMAR visual system. The global recalibration strengthens the existing foundation without changing module workflows or migrating Thoughts, Timeline, Reviews or Settings.
+This document describes the implemented RUMAR visual system. The global recalibration and screen migrations preserve the existing module workflows and domain data.
 
 ## Visual principles
 
@@ -153,35 +153,47 @@ Habit overview rows prioritize the native check-in or existing quantity form, wi
 
 The preview harness uses invented records and never loads a personal database. The Core Experience capture in ignored `artifacts/ui-core-experience/` covers both themes and checks 900×620 through 2560×1440 for page errors and horizontal overflow. Some harness views are source-informed static compositions; Body Progress uses the real chart component and Home uses the real Home composition with synthetic slots.
 
+### Legacy experience migration
+
+Thoughts is a writing surface. The saved-note list supports search and selection, while the editor gives title and content most of the space. Autosave state is visible. Markdown preview and the existing attachment, conversion and archive actions remain reachable through a quiet disclosure. Thoughts does not introduce tags, categories or a rich-text editor because those are not stored in the current domain.
+
+Timeline is a chronological record. Real events remain grouped by day and link to their source; time, source, title and summary form each row. Common source filters and search are visible, while existing period, group, objective, source and privacy controls live in an advanced disclosure. There is no invented activity summary or calendar aggregation.
+
+Reviews guide reflection before detailed metrics. Weekly and monthly views start with a compact summary from existing data, then the existing free-text note; detailed domain metrics are progressively disclosed. The weekly view also surfaces existing next-week counts. There is no completion status or separate saved answers for prompts because the review domain stores one note per period.
+
+Settings is a findable set of real preferences. A searchable secondary navigation selects the existing settings sections; the selected item uses `aria-current`. Profile, theme, notifications, planning, automations, Windows, templates, backup/data, privacy, integrations and About retain their existing controls and behavior. Language, timezone and start-page settings shown in conceptual mockups are not added because the product does not support them.
+
+All four screens use existing semantic tokens, focus-visible behavior and the established desktop width ceilings. The ignored `artifacts/ui-legacy-experience/` preview uses synthetic content, covers light and dark at 1366×768 and representative views at 1920×1080, and checks 900×620 through 2560×1440 for horizontal overflow. It is a source-informed visual fixture; repository-backed tests verify real interactions separately.
+
 ### Visual debt for later phases
 
-Thoughts, Timeline, Reviews and Settings still need their dedicated visual migration. The other migrated modules retain their current structure.
+The global final polish may adjust cross-module details after these dedicated migrations. Do not add new domain fields to imitate conceptual mockups.
 
 ## UI migration status
 
-| Area                        | Status  |
-| --------------------------- | ------- |
-| Foundation                  | DONE    |
-| Global Visual Recalibration | DONE    |
-| Core Experience Polish      | DONE    |
-| Shell                       | DONE    |
-| Sidebar                     | DONE    |
-| Home                        | DONE    |
-| Tasks                       | DONE    |
-| Inbox                       | DONE    |
-| Projects                    | DONE    |
-| Objectives                  | DONE    |
-| Habits                      | DONE    |
-| Routines                    | DONE    |
-| Calendar                    | DONE    |
-| Workouts                    | DONE    |
-| Body Progress               | DONE    |
-| Nutrition                   | DONE    |
-| Finance                     | DONE    |
-| Financial Connections       | DONE    |
-| Thoughts                    | PENDING |
-| Timeline                    | PENDING |
-| Reviews                     | PENDING |
-| Settings                    | PENDING |
+| Area                        | Status |
+| --------------------------- | ------ |
+| Foundation                  | DONE   |
+| Global Visual Recalibration | DONE   |
+| Core Experience Polish      | DONE   |
+| Shell                       | DONE   |
+| Sidebar                     | DONE   |
+| Home                        | DONE   |
+| Tasks                       | DONE   |
+| Inbox                       | DONE   |
+| Projects                    | DONE   |
+| Objectives                  | DONE   |
+| Habits                      | DONE   |
+| Routines                    | DONE   |
+| Calendar                    | DONE   |
+| Workouts                    | DONE   |
+| Body Progress               | DONE   |
+| Nutrition                   | DONE   |
+| Finance                     | DONE   |
+| Financial Connections       | DONE   |
+| Thoughts                    | DONE   |
+| Timeline                    | DONE   |
+| Reviews                     | DONE   |
+| Settings                    | DONE   |
 
-The contrast fix in Reviews remains a foundational correction; Reviews is pending full visual migration.
+Legacy Screen Migration: COMPLETE.

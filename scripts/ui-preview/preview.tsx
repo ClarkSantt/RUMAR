@@ -42,6 +42,7 @@ import '../../src/styles/calendar-workouts-body.css';
 import { TemporalFitnessPreview } from './temporal-fitness';
 import { NutritionFinancePreview } from './nutrition-finance';
 import '../../src/styles/nutrition-finance-connections.css';
+import { LegacyExperiencePreview } from './legacy-experience';
 
 const today = '2026-10-04';
 function task(
@@ -469,7 +470,13 @@ function Preview() {
                       ? 'nutrition'
                       : screen.startsWith('finance-')
                         ? 'finance'
-                        : screen
+                        : screen === 'timeline-filters'
+                          ? 'timeline'
+                          : screen === 'reviews' || screen === 'reviews-monthly'
+                            ? 'review'
+                            : screen === 'settings-data'
+                              ? 'settings'
+                              : screen
         }
         inboxCount={2}
         ready
@@ -479,6 +486,15 @@ function Preview() {
       />
       <main id="main" tabIndex={-1}>
         <div className="content">
+          {[
+            'thoughts',
+            'timeline',
+            'timeline-filters',
+            'reviews',
+            'reviews-monthly',
+            'settings',
+            'settings-data',
+          ].includes(screen) && <LegacyExperiencePreview screen={screen} />}
           {(screen.startsWith('nutrition-') || screen.startsWith('finance-')) && (
             <NutritionFinancePreview screen={screen} />
           )}
