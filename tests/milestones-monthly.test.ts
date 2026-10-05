@@ -26,6 +26,18 @@ async function objective(db: ReturnType<typeof database>['connection']) {
 }
 
 describe('Marcos de objetivos', () => {
+  it('resume marcos reais para a lista de objetivos sem alterar a conclusão', async () => {
+    const { sqlite, connection } = database();
+    const id = await objective(connection);
+    const milestones = new MilestonesRepository(connection);
+    const first = await milestones.save(id, { ...emptyMilestone(), title: 'Começar' });
+    await milestones.save(id, { ...emptyMilestone(), title: 'Continuar' });
+    await milestones.complete(first, true);
+    expect(await new ObjectivesRepository(connection).milestoneCounts()).toEqual(
+      expect.arrayContaining([{ objective_id: id, total: 2, completed: 1 }]),
+    );
+    sqlite.close();
+  });
   it('trocar origem da conclusão não revive status manual antigo e confirmação repetida preserva data', async () => {
     const { sqlite, connection } = database(),
       repo = new MilestonesRepository(connection),

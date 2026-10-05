@@ -119,6 +119,11 @@ export class ObjectivesRepository {
        GROUP BY o.id ORDER BY CASE o.status WHEN 'active' THEN 0 WHEN 'paused' THEN 1 WHEN 'completed' THEN 2 ELSE 3 END,o.updated_at DESC`,
     );
   }
+  milestoneCounts() {
+    return this.db.select<{ objective_id: string; total: number; completed: number }[]>(
+      `${milestoneReadSql} SELECT objective_id,COUNT(*) total,SUM(CASE WHEN effective_status='completed' THEN 1 ELSE 0 END) completed FROM milestone_read GROUP BY objective_id`,
+    );
+  }
   async get(id: string) {
     return (
       (await this.db.select<Objective[]>('SELECT * FROM objectives WHERE id=$1', [id]))[0] ?? null

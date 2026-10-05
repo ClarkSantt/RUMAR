@@ -4,11 +4,19 @@ import { AppSidebar } from '../../src/components/AppSidebar';
 import { Home } from '../../src/features/home/Home';
 import { InboxPage } from '../../src/features/inbox/Inbox';
 import { Tasks } from '../../src/features/tasks/Tasks';
+import { ProjectCard } from '../../src/features/projects/ProjectCard';
+import { ProjectDetailOverview } from '../../src/features/projects/ProjectDetailOverview';
+import { ObjectiveCard } from '../../src/features/objectives/ObjectiveCard';
+import { ObjectiveDetailOverview } from '../../src/features/objectives/ObjectiveDetailOverview';
+import type { ProjectSummary } from '../../src/features/projects/types';
+import type { Objective, ObjectiveProgress } from '../../src/features/objectives/repository';
+import { FolderKanban, Plus, Target } from 'lucide-react';
 import type { RumoStore } from '../../src/hooks/useRumo';
 import type { Snapshot, Task } from '../../src/types/models';
 import '../../src/styles/global.css';
 import '../../src/styles/visual-foundation.css';
 import '../../src/styles/tasks-inbox.css';
+import '../../src/styles/projects-objectives.css';
 
 const today = '2026-10-04';
 function task(
@@ -68,12 +76,153 @@ const data: Snapshot = {
   settings: { name: 'Ana', theme: 'light' },
 };
 const store = { data, busy: false, run: async () => true } as unknown as RumoStore;
+const projectFixtures: ProjectSummary[] = [
+  {
+    id: 'p1',
+    name: 'Organizar o espaço de trabalho',
+    description: 'Criar uma rotina mais clara para projetos e materiais.',
+    status: 'active',
+    start_date: '2026-08-10',
+    target_date: '2026-11-30',
+    created_at: today,
+    updated_at: today,
+    completed_at: null,
+    archived_at: null,
+    sort_order: 0,
+    task_count: 12,
+    completed_count: 8,
+    next_task: 'Revisar o planejamento da semana',
+  },
+  {
+    id: 'p2',
+    name: 'Preparar uma viagem',
+    description: 'Definir roteiro, reservas e documentos com calma.',
+    status: 'active',
+    start_date: '2026-09-01',
+    target_date: '2026-12-12',
+    created_at: today,
+    updated_at: today,
+    completed_at: null,
+    archived_at: null,
+    sort_order: 1,
+    task_count: 9,
+    completed_count: 3,
+    next_task: 'Conferir os documentos',
+  },
+  {
+    id: 'p3',
+    name: 'Estudar um novo idioma',
+    description: 'Construir consistência nas aulas e na prática diária.',
+    status: 'active',
+    start_date: '2026-07-01',
+    target_date: null,
+    created_at: today,
+    updated_at: today,
+    completed_at: null,
+    archived_at: null,
+    sort_order: 2,
+    task_count: 16,
+    completed_count: 10,
+    next_task: 'Praticar conversação',
+  },
+  {
+    id: 'p4',
+    name: 'Renovar o escritório',
+    description: 'Melhorar ergonomia e deixar o ambiente confortável.',
+    status: 'active',
+    start_date: '2026-08-01',
+    target_date: '2026-10-25',
+    created_at: today,
+    updated_at: today,
+    completed_at: null,
+    archived_at: null,
+    sort_order: 3,
+    task_count: 7,
+    completed_count: 5,
+    next_task: 'Finalizar a iluminação',
+  },
+];
+const objectiveFixtures: (Objective & { link_count: number })[] = [
+  {
+    id: 'o1',
+    name: 'Ter mais energia no cotidiano',
+    description: 'Cuidar da saúde com consistência e criar espaço para o que importa.',
+    category: 'health',
+    status: 'active',
+    start_date: '2026-04-01',
+    target_date: '2027-04-01',
+    progress_mode: 'manual',
+    progress_ref: null,
+    manual_current: 7,
+    manual_target: 10,
+    manual_unit: 'pontos',
+    body_baseline: null,
+    body_target: null,
+    created_at: today,
+    updated_at: today,
+    completed_at: null,
+    archived_at: null,
+    link_count: 3,
+  },
+  {
+    id: 'o2',
+    name: 'Aprender uma nova língua',
+    description: 'Ser capaz de conversar com segurança em situações reais.',
+    category: 'learning',
+    status: 'active',
+    start_date: '2026-07-01',
+    target_date: '2027-06-30',
+    progress_mode: 'manual',
+    progress_ref: null,
+    manual_current: 4,
+    manual_target: 10,
+    manual_unit: 'etapas',
+    body_baseline: null,
+    body_target: null,
+    created_at: today,
+    updated_at: today,
+    completed_at: null,
+    archived_at: null,
+    link_count: 2,
+  },
+  {
+    id: 'o3',
+    name: 'Construir uma reserva de emergência',
+    description: 'Criar uma base financeira estável ao longo do ano.',
+    category: 'finance',
+    status: 'active',
+    start_date: '2026-01-01',
+    target_date: '2027-01-01',
+    progress_mode: 'none',
+    progress_ref: null,
+    manual_current: null,
+    manual_target: null,
+    manual_unit: '',
+    body_baseline: null,
+    body_target: null,
+    created_at: today,
+    updated_at: today,
+    completed_at: null,
+    archived_at: null,
+    link_count: 1,
+  },
+];
+const objectiveProgress: ObjectiveProgress[] = [
+  { label: 'Progresso informado', current: 7, target: 10, unit: 'pontos', percent: 70 },
+  { label: 'Progresso informado', current: 4, target: 10, unit: 'etapas', percent: 40 },
+];
 function Preview() {
   const screen = new URLSearchParams(window.location.search).get('screen') ?? 'home';
   return (
     <div className="app-shell">
       <AppSidebar
-        activePage={screen}
+        activePage={
+          screen === 'project-detail'
+            ? 'projects'
+            : screen === 'objective-detail'
+              ? 'objectives'
+              : screen
+        }
         inboxCount={2}
         ready
         onNavigate={() => {}}
@@ -86,6 +235,161 @@ function Preview() {
             <Tasks store={store} day={today} onOpen={() => {}} onCreate={() => {}} />
           )}
           {screen === 'inbox' && <InboxPage store={store} />}
+          {screen === 'projects' && (
+            <div className="projects-page">
+              <header className="page-header header-with-action module-header">
+                <div className="module-heading">
+                  <span className="module-heading-icon">
+                    <FolderKanban size={22} />
+                  </span>
+                  <div>
+                    <h1>Projetos</h1>
+                    <p>Transforme ideias em resultados reais.</p>
+                  </div>
+                </div>
+                <button className="primary-button">
+                  <Plus size={17} /> Novo projeto
+                </button>
+              </header>
+              <nav className="tabs project-tabs" aria-label="Status dos projetos">
+                <button aria-current="page">Ativos</button>
+                <button>Pausados</button>
+                <button>Concluídos</button>
+                <button>Arquivados</button>
+              </nav>
+              <div className="project-list">
+                {projectFixtures.map((project) => (
+                  <ProjectCard key={project.id} project={project} onOpen={() => {}} />
+                ))}
+              </div>
+            </div>
+          )}
+          {screen === 'project-detail' && (
+            <div className="projects-page">
+              <button className="text-button project-back">← Todos os projetos</button>
+              <ProjectDetailOverview project={projectFixtures[0]} onEdit={() => {}} />
+              <div className="project-detail-toolbar">
+                <button className="secondary-button">Pausar projeto</button>
+                <button className="secondary-button">Mais ações</button>
+              </div>
+              <section className="project-section">
+                <header className="project-section-header">
+                  <div>
+                    <h2>Próximas etapas</h2>
+                    <span>3 tarefas</span>
+                  </div>
+                </header>
+                <div className="project-preview-tasks">
+                  <p>□ Revisar o planejamento da semana</p>
+                  <p>□ Organizar os documentos</p>
+                  <p>✓ Definir a estrutura inicial</p>
+                </div>
+              </section>
+            </div>
+          )}
+          {screen === 'objectives' && (
+            <div className="objectives-page">
+              <header className="page-header header-with-action module-header">
+                <div className="module-heading">
+                  <span className="module-heading-icon objective-heading-icon">
+                    <Target size={22} />
+                  </span>
+                  <div>
+                    <h1>Objetivos</h1>
+                    <p>Grandes conquistas começam com passos consistentes.</p>
+                  </div>
+                </div>
+                <button className="primary-button">
+                  <Plus size={17} /> Novo objetivo
+                </button>
+              </header>
+              <nav className="tabs objective-category-tabs" aria-label="Categorias dos objetivos">
+                <button aria-current="page">
+                  Todos <span>3</span>
+                </button>
+                <button>
+                  Saúde e corpo <span>1</span>
+                </button>
+                <button>
+                  Aprendizado <span>1</span>
+                </button>
+                <button>
+                  Financeiro <span>1</span>
+                </button>
+              </nav>
+              <div className="objective-list">
+                {objectiveFixtures.map((objective, index) => (
+                  <ObjectiveCard
+                    key={objective.id}
+                    objective={objective}
+                    category={
+                      objective.category === 'health'
+                        ? 'Saúde e corpo'
+                        : objective.category === 'learning'
+                          ? 'Aprendizado'
+                          : 'Financeiro'
+                    }
+                    progress={objectiveProgress[index] ?? null}
+                    milestones={
+                      index === 0
+                        ? { total: 4, completed: 2 }
+                        : index === 1
+                          ? { total: 3, completed: 1 }
+                          : undefined
+                    }
+                    onOpen={() => {}}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          {screen === 'objective-detail' && (
+            <div className="objectives-page">
+              <button className="text-button objective-back">← Todos os objetivos</button>
+              <ObjectiveDetailOverview
+                objective={objectiveFixtures[0]}
+                category="Saúde e corpo"
+                status="Ativo"
+                progress={objectiveProgress[0]}
+                focusSeconds={0}
+                actions={
+                  <>
+                    <button className="secondary-button">Editar</button>
+                    <button className="secondary-button">Ver Timeline</button>
+                    <select aria-label="Status do objetivo" defaultValue="active">
+                      <option value="active">Ativo</option>
+                    </select>
+                  </>
+                }
+              />
+              <section className="review-section objective-preview-milestones">
+                <div className="section-heading">
+                  <h2>Marcos</h2>
+                  <button className="secondary-button">+ Novo marco</button>
+                </div>
+                <p className="field-help">
+                  2 de 4 concluídos. O objetivo permanece sob seu controle.
+                </p>
+                <ol className="milestone-list">
+                  <li>✓ Base estabelecida</li>
+                  <li>✓ Rotina consistente</li>
+                  <li>○ Evolução perceptível</li>
+                  <li>○ Resultado desejado</li>
+                </ol>
+              </section>
+              <section className="review-section objective-related">
+                <h2>Relacionados</h2>
+                <h3>Projetos</h3>
+                <div className="objective-link">
+                  <button>Organizar o espaço de trabalho</button>
+                </div>
+                <h3>Hábitos</h3>
+                <div className="objective-link">
+                  <button>Caminhar diariamente</button>
+                </div>
+              </section>
+            </div>
+          )}
           {screen === 'home' && (
             <>
               <div className="home-layout">

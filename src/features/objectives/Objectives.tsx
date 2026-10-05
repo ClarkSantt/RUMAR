@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Link2, Plus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Link2, Plus, Target, X } from 'lucide-react';
 import { getDatabase } from '../../lib/database/connection';
 import { FocusRepository } from '../calendar/planner-repository';
-import { durationLabel } from '../calendar/planner-domain';
 import { Attachments } from '../attachments/Attachments';
 import { Milestones } from './Milestones';
+import { ObjectiveCard } from './ObjectiveCard';
+import { ObjectiveDetailOverview } from './ObjectiveDetailOverview';
 import {
   ObjectivesRepository,
   emptyObjectiveDraft,
@@ -14,6 +15,7 @@ import {
   type ObjectiveLink,
   type ObjectiveLinkType,
   type ObjectiveProgress,
+  type ObjectiveCategory,
   type ObjectiveUpdate,
 } from './repository';
 
@@ -47,6 +49,34 @@ type Candidate = { entity_type: ObjectiveLinkType; entity_id: string; name: stri
 type Page =
   'tasks' | 'projects' | 'habits' | 'routines' | 'workouts' | 'finance' | 'thoughts' | 'nutrition';
 
+async function loadOverview(repo: ObjectivesRepository) {
+  const list = await repo.list();
+  const counts = await repo.milestoneCounts();
+  const indicators = await Promise.all(
+    list.map(async (objective) => {
+      try {
+        return [objective.id, await repo.progress(objective)] as const;
+      } catch {
+        return [objective.id, null] as const;
+      }
+    }),
+  );
+  return {
+    list,
+    indicators: Object.fromEntries(indicators) as Record<string, ObjectiveProgress | null>,
+    milestones: Object.fromEntries(
+      counts.map(({ objective_id, total, completed }) => [objective_id, { total, completed }]),
+    ) as Record<string, { total: number; completed: number }>,
+  };
+}
+let rememberedObjectiveCategory: ObjectiveCategory | 'all' = 'all';
+export function objectivesForCategory<T extends { category: ObjectiveCategory }>(
+  rows: T[],
+  category: ObjectiveCategory | 'all',
+) {
+  return category === 'all' ? rows : rows.filter((row) => row.category === category);
+}
+
 export function Objectives({
   initialId,
   onNavigate,
@@ -57,6 +87,13 @@ export function Objectives({
   onTimeline: (id: string) => void;
 }) {
   const [rows, setRows] = useState<(Objective & { link_count: number })[]>([]);
+  const [listProgress, setListProgress] = useState<Record<string, ObjectiveProgress | null>>({});
+  const [milestoneCounts, setMilestoneCounts] = useState<
+    Record<string, { total: number; completed: number }>
+  >({});
+  const [categoryFilter, setCategoryFilter] = useState<ObjectiveCategory | 'all'>(
+    rememberedObjectiveCategory,
+  );
   const [selected, setSelected] = useState<string | null>(initialId ?? null);
   const [draft, setDraft] = useState<ObjectiveDraft | null>(null);
   const [editing, setEditing] = useState(false);
@@ -72,11 +109,14 @@ export function Objectives({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const current = rows.find((row) => row.id === selected);
+  const visibleObjectives = objectivesForCategory(rows, categoryFilter);
 
   async function refresh(id = selected) {
     const repo = new ObjectivesRepository(await getDatabase());
-    const list = await repo.list();
+    const { list, indicators, milestones } = await loadOverview(repo);
     setRows(list);
+    setListProgress(indicators);
+    setMilestoneCounts(milestones);
     if (id) {
       const found = list.find((row) => row.id === id);
       if (found) {
@@ -96,9 +136,13 @@ export function Objectives({
   useEffect(() => {
     let active = true;
     void getDatabase()
-      .then((db) => new ObjectivesRepository(db).list())
-      .then((list) => {
-        if (active) setRows(list);
+      .then((db) => loadOverview(new ObjectivesRepository(db)))
+      .then(({ list, indicators, milestones }) => {
+        if (active) {
+          setRows(list);
+          setListProgress(indicators);
+          setMilestoneCounts(milestones);
+        }
       })
       .catch(() => {
         if (active) setError('Não foi possível carregar os objetivos.');
@@ -213,12 +257,23 @@ export function Objectives({
   const fields = (key: keyof ObjectiveDraft, value: ObjectiveDraft[keyof ObjectiveDraft]) =>
     setDraft((current) => (current ? { ...current, [key]: value } : current));
   return (
-    <>
-      <header className="page-header">
-        <p className="eyebrow">ORGANIZAÇÃO</p>
-        <h1>Objetivos</h1>
-        <p>Conecte o que você faz ao que quer construir ou acompanhar.</p>
-      </header>
+    <div className="objectives-page">
+      {!selected && !editing && (
+        <header className="page-header header-with-action module-header">
+          <div className="module-heading">
+            <span className="module-heading-icon objective-heading-icon" aria-hidden="true">
+              <Target size={22} />
+            </span>
+            <div>
+              <h1>Objetivos</h1>
+              <p>Grandes conquistas começam com passos consistentes.</p>
+            </div>
+          </div>
+          <button className="primary-button" onClick={startNew}>
+            <Plus size={17} /> Novo objetivo
+          </button>
+        </header>
+      )}
       {error && <p role="alert">{error}</p>}
       {editing && draft ? (
         <section className="review-section objective-editor">
@@ -413,66 +468,43 @@ export function Objectives({
         </section>
       ) : selected && current ? (
         <>
-          <button className="text-button" onClick={() => setSelected(null)}>
+          <button className="text-button objective-back" onClick={() => setSelected(null)}>
             <ArrowLeft size={16} /> Todos os objetivos
           </button>
-          <section className="review-section objective-detail">
-            <p className="eyebrow">
-              {categories[current.category]} · {statuses[current.status]}
-            </p>
-            <h2>{current.name}</h2>
-            {current.description && <p>{current.description}</p>}
-            <p>
-              Desde {current.start_date.split('-').reverse().join('/')}
-              {current.target_date
-                ? ` · Prazo ${current.target_date.split('-').reverse().join('/')}`
-                : ''}
-            </p>
-            {focusSeconds > 0 && (
-              <p className="field-help">Tempo de foco registrado: {durationLabel(focusSeconds)}</p>
-            )}
-            {progress && (
-              <div className="objective-progress">
-                <strong>{progress.label}</strong>
-                <span>
-                  {progress.hidden
-                    ? 'Valores ocultos'
-                    : `${progress.current.toLocaleString('pt-BR')}${progress.target !== null ? ` / ${progress.target.toLocaleString('pt-BR')}` : ''} ${progress.unit}`}
-                </span>
-                {!progress.hidden && progress.percent !== null && (
-                  <progress
-                    value={progress.percent}
-                    max={100}
-                    aria-label="Progresso do indicador"
-                  />
-                )}
-              </div>
-            )}
-            <div className="review-actions">
-              <button className="secondary-button" onClick={() => startEdit(current)}>
-                Editar
-              </button>
-              <button className="secondary-button" onClick={() => onTimeline(current.id)}>
-                Ver Timeline <ArrowRight size={15} />
-              </button>
-              <select
-                aria-label="Status do objetivo"
-                value={current.status}
-                onChange={(e) =>
-                  void mutate((repo) =>
-                    repo.status(current.id, e.target.value as Objective['status']),
-                  )
-                }
-              >
-                {Object.entries(statuses).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </section>
-          <section className="review-section">
+          <ObjectiveDetailOverview
+            objective={current}
+            category={categories[current.category]}
+            status={statuses[current.status]}
+            progress={progress}
+            focusSeconds={focusSeconds}
+            actions={
+              <>
+                <button className="secondary-button" onClick={() => startEdit(current)}>
+                  Editar
+                </button>
+                <button className="secondary-button" onClick={() => onTimeline(current.id)}>
+                  Ver Timeline <ArrowRight size={15} />
+                </button>
+                <select
+                  aria-label="Status do objetivo"
+                  value={current.status}
+                  onChange={(e) =>
+                    void mutate((repo) =>
+                      repo.status(current.id, e.target.value as Objective['status']),
+                    )
+                  }
+                >
+                  {Object.entries(statuses).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </>
+            }
+          />
+          <Milestones objectiveId={current.id} onChanged={() => void refresh(current.id)} />
+          <section className="review-section objective-related">
             <h2>Relacionados</h2>
             {links.length === 0 ? (
               <p>Nenhum item vinculado.</p>
@@ -606,9 +638,8 @@ export function Objectives({
               </button>
             </div>
           </section>
-          <Milestones objectiveId={current.id} onChanged={() => void refresh(current.id)} />
           <Attachments entityType="objective" entityId={current.id} />
-          <section className="review-section">
+          <section className="review-section objective-updates">
             <h2>Atualizações</h2>
             <label htmlFor="objective-update">Nota curta opcional</label>
             <textarea
@@ -640,12 +671,32 @@ export function Objectives({
         </>
       ) : (
         <>
-          <div className="section-heading">
-            <h2>Meus objetivos</h2>
-            <button className="primary-button" onClick={startNew}>
-              <Plus size={16} /> Novo objetivo
+          <nav className="tabs objective-category-tabs" aria-label="Categorias dos objetivos">
+            <button
+              aria-current={categoryFilter === 'all' ? 'page' : undefined}
+              onClick={() => {
+                rememberedObjectiveCategory = 'all';
+                setCategoryFilter('all');
+              }}
+            >
+              Todos <span>{rows.length}</span>
             </button>
-          </div>
+            {objectiveCategories.map((category) => {
+              const count = rows.filter((row) => row.category === category).length;
+              return count ? (
+                <button
+                  key={category}
+                  aria-current={categoryFilter === category ? 'page' : undefined}
+                  onClick={() => {
+                    rememberedObjectiveCategory = category;
+                    setCategoryFilter(category);
+                  }}
+                >
+                  {categories[category]} <span>{count}</span>
+                </button>
+              ) : null;
+            })}
+          </nav>
           {rows.length === 0 ? (
             <section className="empty-state">
               <h2>Nenhum objetivo ainda.</h2>
@@ -657,27 +708,27 @@ export function Objectives({
                 Criar objetivo
               </button>
             </section>
-          ) : (
+          ) : visibleObjectives.length ? (
             <div className="objective-list">
-              {rows.map((row) => (
-                <button key={row.id} className="review-section" onClick={() => setSelected(row.id)}>
-                  <span className="eyebrow">
-                    {categories[row.category]} · {statuses[row.status]}
-                  </span>
-                  <strong>{row.name}</strong>
-                  <span>
-                    {row.link_count}{' '}
-                    {row.link_count === 1 ? 'item relacionado' : 'itens relacionados'}
-                    {row.target_date
-                      ? ` · Prazo ${row.target_date.split('-').reverse().join('/')}`
-                      : ''}
-                  </span>
-                </button>
+              {visibleObjectives.map((row) => (
+                <ObjectiveCard
+                  key={row.id}
+                  objective={row}
+                  category={categories[row.category]}
+                  progress={listProgress[row.id]}
+                  milestones={milestoneCounts[row.id]}
+                  onOpen={() => setSelected(row.id)}
+                />
               ))}
             </div>
+          ) : (
+            <section className="empty-state">
+              <h2>Nenhum objetivo nesta categoria.</h2>
+              <p>Escolha outra categoria para ver seus objetivos.</p>
+            </section>
           )}
         </>
       )}
-    </>
+    </div>
   );
 }

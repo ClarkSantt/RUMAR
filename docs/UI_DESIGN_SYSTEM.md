@@ -57,9 +57,17 @@ The local preview harness in `scripts/ui-preview/` renders synthetic data only. 
 
 For Tasks and Inbox, run `node scripts/ui-preview/capture-tasks-inbox.mjs`. It captures both themes at 900×620, 1280×720, 1366×768, 1440×900, 1920×1080 and 2560×1440 under the ignored `artifacts/ui-tasks-inbox/` directory and rejects horizontal overflow or page errors.
 
+For Projects and Objectives, run `node scripts/ui-preview/capture-projects-objectives.mjs` against the same local Vite preview. It captures list and detail presentations in both themes at the same six desktop sizes under ignored `artifacts/ui-projects-objectives/`. The fixtures are invented and never query the personal database.
+
 ## Mockup translation: Tasks and Inbox
 
 The approved concepts guide contextual headers, compact tabs, light list rows, prominent Inbox capture and restrained blue accents. The implementation keeps the existing four task views, QuickEntry, task drawer, conversions, editing, deletion and undo behavior. It does not add conceptual task filters, Inbox item types or a new database-backed master/detail route. Less frequent Inbox actions live in a keyboard-accessible disclosure menu; converting to a task remains visible on the row. The task drawer remains the existing editing surface so no behavior is lost.
+
+## Mockup translation: Projects and Objectives
+
+Projects emphasize execution. The overview preserves the real active, paused, completed and archived filters and presents status, task completion, next action and deadline from existing project data. Detail keeps sections, task rows, section ordering, creation, templates, linked habits and attachments. Rare project and section actions use a disclosure menu with Escape and focus return. An empty status filter has different copy from a genuinely empty project collection. The current status filter is remembered only in memory while the app runs.
+
+Objectives emphasize direction. The list uses real categories, existing linked-item counts and the repository's existing progress calculation, including its financial privacy state; only a real percentage receives a ring with text. Detail puts the established milestones ahead of related items, attachments and updates. Category filtering uses existing categories and is remembered only in memory. No featured objective, cover image, new relationship, timeline query, project cover, schema change or migration was introduced to reproduce the conceptual art.
 
 ## Do / don't
 
@@ -73,25 +81,27 @@ The approved concepts guide contextual headers, compact tabs, light list rows, p
 
 ## UI migration status
 
-| Area       | Status  |
-| ---------- | ------- |
-| Foundation | DONE    |
-| Shell      | DONE    |
-| Sidebar    | DONE    |
-| Home       | DONE    |
-| Tasks      | DONE    |
-| Inbox      | DONE    |
-| Projects   | PENDING |
-| Objectives | PENDING |
-| Habits     | PENDING |
-| Routines   | PENDING |
-| Calendar   | PENDING |
-| Workouts   | PENDING |
-| Nutrition  | PENDING |
-| Finance    | PENDING |
-| Thoughts   | PENDING |
-| Reviews    | PENDING |
-| Timeline   | PENDING |
-| Settings   | PENDING |
+| Area                  | Status  |
+| --------------------- | ------- |
+| Foundation            | DONE    |
+| Shell                 | DONE    |
+| Sidebar               | DONE    |
+| Home                  | DONE    |
+| Tasks                 | DONE    |
+| Inbox                 | DONE    |
+| Projects              | DONE    |
+| Objectives            | DONE    |
+| Habits                | PENDING |
+| Routines              | PENDING |
+| Calendar              | PENDING |
+| Workouts              | PENDING |
+| Body Progress         | PENDING |
+| Nutrition             | PENDING |
+| Finance               | PENDING |
+| Financial Connections | PENDING |
+| Thoughts              | PENDING |
+| Timeline              | PENDING |
+| Reviews               | PENDING |
+| Settings              | PENDING |
 
 The contrast fix in Reviews and error-color fix in Nutrition are foundational corrections only; those screens remain pending full visual migration.

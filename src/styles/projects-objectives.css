@@ -1,0 +1,707 @@
+/* Projects are operational; objectives show direction and real progress. */
+@layer components {
+  .projects-page,
+  .objectives-page {
+    max-width: 1120px;
+    min-width: 0;
+  }
+  .projects-page .module-header,
+  .objectives-page .module-header {
+    margin-bottom: 26px;
+  }
+  .project-tabs,
+  .objective-category-tabs {
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    border: 0;
+  }
+  .project-tabs button,
+  .objective-category-tabs button {
+    min-height: 40px;
+    padding: 0 15px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-control);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+  .project-tabs button:hover,
+  .objective-category-tabs button:hover {
+    background: var(--color-hover);
+  }
+  .project-tabs [aria-current],
+  .objective-category-tabs [aria-current] {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    border-color: var(--color-primary-soft);
+  }
+  .objective-category-tabs button span {
+    margin-left: 4px;
+    font-size: 12px;
+    opacity: 0.75;
+  }
+  .project-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 385px), 1fr));
+    gap: 14px;
+    border: 0;
+  }
+  .project-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 252px;
+    width: 100%;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      border-color var(--motion-normal) var(--motion-ease),
+      box-shadow var(--motion-normal) var(--motion-ease),
+      transform var(--motion-fast) var(--motion-ease);
+  }
+  .project-card:hover {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+  }
+  .project-card:active {
+    transform: translateY(0);
+  }
+  .project-card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+  .project-card-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-control);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .project-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--color-success-soft);
+    color: var(--color-success);
+    font-size: 12px;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+  .project-status-paused {
+    background: var(--color-warning-soft);
+    color: var(--color-warning);
+  }
+  .project-status-completed {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .project-status-archived {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+  }
+  .project-card-arrow {
+    margin-left: auto;
+    color: var(--color-text-tertiary);
+  }
+  .project-card-copy {
+    display: grid;
+    gap: 5px;
+    margin-top: 14px;
+    min-height: 60px;
+    min-width: 0;
+  }
+  .project-card-copy strong {
+    font-size: 17px;
+    line-height: 1.35;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+  }
+  .project-card-copy > span {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .project-card-progress {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    margin-top: 14px;
+  }
+  .project-card-progress-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .project-card-progress-label strong {
+    color: var(--color-text);
+    font-size: 13px;
+  }
+  .project-card-progress progress,
+  .project-summary progress {
+    display: block;
+    width: 100%;
+    height: 7px;
+    margin: 0;
+    accent-color: var(--color-primary);
+  }
+  .projects-page progress,
+  .objective-detail-hero progress {
+    appearance: none;
+    overflow: hidden;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-border);
+  }
+  .projects-page progress::-webkit-progress-bar,
+  .objective-detail-hero progress::-webkit-progress-bar {
+    border-radius: 999px;
+    background: var(--color-border);
+  }
+  .projects-page progress::-webkit-progress-value,
+  .objective-detail-hero progress::-webkit-progress-value {
+    border-radius: 999px;
+    background: var(--color-primary);
+  }
+  .projects-page progress::-moz-progress-bar,
+  .objective-detail-hero progress::-moz-progress-bar {
+    border-radius: 999px;
+    background: var(--color-primary);
+  }
+  .project-card-count {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .project-card-bottom {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 16px;
+  }
+  .project-card-next {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+  .project-card-next small {
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+  }
+  .project-card-next > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text);
+    font-size: 12px;
+  }
+  .project-card-date {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 5px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .projects-page .empty-state,
+  .objectives-page .empty-state {
+    margin-top: 16px;
+  }
+  .project-back,
+  .objective-back {
+    margin: 0 0 20px;
+    min-height: 36px;
+  }
+  .project-detail-header .module-heading {
+    align-items: start;
+  }
+  .project-detail-header .project-status {
+    margin-bottom: 8px;
+  }
+  .project-detail-header .project-description {
+    max-width: 66ch;
+    margin-top: 8px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .project-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 32px;
+    padding: 22px 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .project-summary-main {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+  }
+  .project-summary-label {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .project-summary-main > strong {
+    font-size: 16px;
+    font-weight: 650;
+  }
+  .project-summary-main p {
+    display: flex;
+    gap: 12px;
+    margin: 0;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  .project-summary-main p span {
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+  .project-summary-dates {
+    display: grid;
+    align-content: center;
+    gap: 8px;
+    min-width: 145px;
+  }
+  .project-summary-dates p {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .project-summary-dates strong {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+  .project-detail-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 18px 0 32px;
+  }
+  .project-detail-toolbar > .text-button {
+    min-height: 40px;
+  }
+  .project-menu {
+    position: relative;
+  }
+  .project-menu > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    list-style: none;
+  }
+  .project-menu > summary::-webkit-details-marker {
+    display: none;
+  }
+  .project-menu > summary:hover {
+    background: var(--color-hover);
+    color: var(--color-text);
+  }
+  .project-menu-content {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 5px);
+    z-index: 10;
+    display: grid;
+    min-width: 208px;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-surface);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-md);
+  }
+  .project-menu-content button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--color-text);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .project-menu-content button:hover:not(:disabled) {
+    background: var(--color-hover);
+  }
+  .project-menu-content .danger {
+    color: var(--color-danger);
+  }
+  .project-section {
+    margin: 30px 0 0;
+  }
+  .project-section-header {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .project-section-header > div {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+  }
+  .project-section-header h2 {
+    margin: 0;
+    font-size: 17px;
+  }
+  .project-section-header span {
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+  }
+  .project-section .task-list {
+    border: 0;
+  }
+  .objective-heading-icon,
+  .objective-detail-symbol,
+  .objective-card-symbol {
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+  }
+  .objective-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .objective-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      border-color var(--motion-normal) var(--motion-ease),
+      box-shadow var(--motion-normal) var(--motion-ease);
+  }
+  .objective-card:hover {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-sm);
+  }
+  .objective-card-symbol,
+  .objective-detail-symbol {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+  }
+  .objective-card-main {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+  }
+  .objective-card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .objective-card-main > strong {
+    font-size: 17px;
+    line-height: 1.35;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+  }
+  .objective-card-description {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .objective-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin-top: 4px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .objective-card-meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .objective-card-end {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--color-text-tertiary);
+  }
+  .objective-progress-ring {
+    display: grid;
+    place-items: center;
+    flex: 0 0 68px;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: conic-gradient(var(--color-primary) var(--progress), var(--color-border) 0);
+  }
+  .objective-progress-ring > span {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .objective-card-no-progress {
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .objective-detail-hero {
+    display: grid;
+    gap: 16px;
+    padding: 24px;
+    margin-bottom: 30px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .objective-detail-top {
+    display: flex;
+    gap: 14px;
+    align-items: start;
+  }
+  .objective-detail-top > div {
+    min-width: 0;
+  }
+  .objective-kicker {
+    margin: 0 0 7px;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .objective-detail-top h1 {
+    margin: 0;
+    font-size: 28px;
+    overflow-wrap: anywhere;
+  }
+  .objective-description {
+    max-width: 72ch;
+    margin: 8px 0 0;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .objective-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    padding-left: 58px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+  .objective-detail-meta > span {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .objective-detail-hero .objective-progress {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 16px;
+    width: min(520px, 100%);
+    max-width: none;
+    margin-left: 58px;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .objective-detail-hero .objective-progress > strong {
+    font-size: 13px;
+  }
+  .objective-detail-hero .objective-progress > span:nth-child(2) {
+    grid-column: 1;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+  .objective-progress-percent {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
+    color: var(--color-primary);
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .objective-detail-hero .objective-progress progress {
+    grid-column: 1 / -1;
+    height: 7px;
+    accent-color: var(--color-primary);
+  }
+  .objective-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+  }
+  .objective-detail-actions select {
+    width: auto;
+    min-width: 170px;
+    max-width: 100%;
+  }
+  .objectives-page > .review-section {
+    margin-bottom: 22px;
+  }
+  .objectives-page > .review-section:not(.objective-editor) {
+    padding: 0 0 20px;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
+  }
+  .objectives-page > .review-section h2 {
+    font-size: 18px;
+  }
+  .objectives-page .milestone-list {
+    list-style: none;
+    margin: 14px 0;
+    padding: 0;
+  }
+  .objectives-page .milestone-list > li {
+    padding: 12px 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .objectives-page .milestone-list .review-actions {
+    gap: 6px;
+  }
+  .objectives-page .milestone-list .review-actions button {
+    min-height: 36px;
+  }
+  .objective-related h3 {
+    margin: 20px 0 8px;
+    font-size: 14px;
+  }
+  .objective-related .objective-link {
+    max-width: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .objective-related .objective-link > button:first-child {
+    min-height: 40px;
+  }
+  .objective-related .objective-link-picker {
+    margin-top: 22px;
+  }
+  .objective-updates .review-detail {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .objective-editor {
+    padding: 24px;
+  }
+  @media (max-width: 1080px) {
+    .project-summary {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .project-summary-dates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+    }
+  }
+  @media (max-width: 760px) {
+    .projects-page .module-header,
+    .objectives-page .module-header {
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .project-card-bottom {
+      align-items: start;
+      flex-direction: column;
+    }
+    .objective-card {
+      gap: 12px;
+      padding: 16px;
+    }
+    .objective-card-symbol {
+      display: none;
+    }
+    .objective-card-end {
+      gap: 6px;
+    }
+    .objective-progress-ring {
+      width: 56px;
+      height: 56px;
+      flex-basis: 56px;
+    }
+    .objective-progress-ring > span {
+      width: 46px;
+      height: 46px;
+      font-size: 12px;
+    }
+    .objective-detail-meta,
+    .objective-detail-hero .objective-progress {
+      margin-left: 0;
+      padding-left: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .project-card,
+    .objective-card {
+      transition: none;
+    }
+    .project-card:hover {
+      transform: none;
+    }
+  }
+}

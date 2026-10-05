@@ -5,12 +5,15 @@ import { EmptyState } from '../../components/EmptyState';
 import { QuickEntry } from '../../components/QuickEntry';
 import type { RumoStore } from '../../hooks/useRumo';
 import { getDatabase } from '../../lib/database/connection';
-import { formatDate, localDate } from '../../lib/dates';
+import { localDate } from '../../lib/dates';
 import type { TaskOccurrence } from '../../types/models';
 import { nextOccurrence, occurrence } from '../tasks/domain';
 import { TaskList } from '../tasks/TaskList';
 import { HomeHabits } from '../habits/Habits';
 import { ProjectEditor } from './ProjectEditor';
+import { ProjectCard } from './ProjectCard';
+import { ProjectDetailOverview } from './ProjectDetailOverview';
+import { ProjectActionMenu } from './ProjectActionMenu';
 import { ProjectsRepository } from './repository';
 import { SaveTemplateButton } from '../templates/SaveTemplateButton';
 import { Attachments } from '../attachments/Attachments';
@@ -23,7 +26,28 @@ const statuses: Record<ProjectStatus, string> = {
   completed: 'Concluídos',
   archived: 'Arquivados',
 };
+const emptyStatus: Record<ProjectStatus, string> = {
+  active: 'ativo',
+  paused: 'pausado',
+  completed: 'concluído',
+  archived: 'arquivado',
+};
+export function projectEmptyCopy(view: ProjectStatus, hasProjects: boolean) {
+  return hasProjects
+    ? {
+        title: `Nenhum projeto ${emptyStatus[view]}.`,
+        description: 'Você não possui projetos com esse status.',
+      }
+    : {
+        title: 'Nenhum projeto ainda.',
+        description: 'Projetos reúnem tarefas e etapas para realizar um plano.',
+      };
+}
+export function projectsForStatus(projects: ProjectSummary[], view: ProjectStatus) {
+  return projects.filter((project) => project.status === view);
+}
 const repository = async () => new ProjectsRepository(await getDatabase());
+let rememberedProjectView: ProjectStatus = 'active';
 export function Projects({
   store,
   onOpen,
@@ -36,7 +60,7 @@ export function Projects({
 }) {
   const [projects, setProjects] = useState<ProjectSummary[]>([]),
     [selected, setSelected] = useState<string | null>(initialProjectId ?? null),
-    [view, setView] = useState<ProjectStatus>('active');
+    [view, setView] = useState<ProjectStatus>(rememberedProjectView);
   const [sections, setSections] = useState<ProjectSection[]>([]),
     [error, setError] = useState('');
   const [editor, setEditor] = useState<'new' | 'edit' | null>(null),
@@ -68,6 +92,7 @@ export function Projects({
     };
   }, [store.data, selected]);
   const project = projects.find((p) => p.id === selected);
+  const visibleProjects = projectsForStatus(projects, view);
   const run = (action: (repo: ProjectsRepository) => Promise<unknown>, message?: string) =>
     store.run(async () => action(await repository()), message);
   async function save(input: ProjectInput) {
@@ -102,52 +127,54 @@ export function Projects({
     )
     .map((t) => occurrence(t, nextOccurrence(t, localDate()), store.data!));
   function sectionBlock(section: ProjectSection | null, index: number) {
+    const sectionRows = rows.filter(
+      (row) => (row.task.project_section_id ?? null) === (section?.id ?? null),
+    );
     return (
       <section className="project-section" key={section?.id ?? 'unsectioned'}>
         <header className="project-section-header">
-          <h2>{section?.name ?? 'Sem seção'}</h2>
+          <div>
+            <h2>{section?.name ?? 'Sem seção'}</h2>
+            <span>
+              {sectionRows.length} {sectionRows.length === 1 ? 'tarefa' : 'tarefas'}
+            </span>
+          </div>
           {section && (
-            <div className="project-actions">
+            <ProjectActionMenu label={`Ações da seção ${section.name}`} compact>
               <button
-                className="icon-button"
                 aria-label={`Mover ${section.name} para cima`}
                 disabled={store.busy || index === 0}
                 onClick={() => void run((repo) => repo.moveSection(project!.id, section.id, -1))}
               >
-                <ArrowUp size={16} />
+                <ArrowUp size={16} /> Mover para cima
               </button>
               <button
-                className="icon-button"
                 aria-label={`Mover ${section.name} para baixo`}
                 disabled={store.busy || index === sections.length - 1}
                 onClick={() => void run((repo) => repo.moveSection(project!.id, section.id, 1))}
               >
-                <ArrowDown size={16} />
+                <ArrowDown size={16} /> Mover para baixo
               </button>
               <button
-                className="icon-button"
                 aria-label={`Renomear ${section.name}`}
                 onClick={() => {
                   setSectionEdit(section);
                   setSectionName(section.name);
                 }}
               >
-                <Pencil size={16} />
+                <Pencil size={16} /> Renomear
               </button>
               <button
-                className="icon-button"
                 aria-label={`Excluir seção ${section.name}`}
                 onClick={() => setDeleteSection(section)}
               >
-                <Trash2 size={16} />
+                <Trash2 size={16} /> Excluir seção
               </button>
-            </div>
+            </ProjectActionMenu>
           )}
         </header>
         <TaskList
-          rows={rows.filter(
-            (row) => (row.task.project_section_id ?? null) === (section?.id ?? null),
-          )}
+          rows={sectionRows}
           store={store}
           onOpen={onOpen}
           showDate
@@ -177,7 +204,7 @@ export function Projects({
     );
   }
   return (
-    <>
+    <div className="projects-page">
       {error && <p role="alert">{error}</p>}
       {project ? (
         <>
@@ -185,44 +212,11 @@ export function Projects({
             <ArrowLeft size={16} />
             Todos os projetos
           </button>
-          <header className="page-header header-with-action">
-            <div>
-              <p className="eyebrow">PROJETO · {statuses[project.status].toUpperCase()}</p>
-              <h1>{project.name}</h1>
-              {project.description && <p className="project-description">{project.description}</p>}
-            </div>
-            <button className="secondary-button" onClick={() => setEditor('edit')}>
-              Editar projeto
-            </button>
-          </header>
-          <div className="project-summary">
-            <div>
-              <strong>
-                {project.task_count
-                  ? `${project.completed_count} de ${project.task_count} tarefas concluídas`
-                  : '0 tarefas'}
-              </strong>
-              {project.task_count > 0 && (
-                <progress
-                  aria-label="Progresso do projeto"
-                  max={project.task_count}
-                  value={project.completed_count}
-                />
-              )}
-              <p>
-                {project.next_task ? `Próxima: ${project.next_task}` : 'Nenhuma tarefa pendente.'}
-              </p>
-            </div>
-            <div>
-              {project.start_date && <p>Início {formatDate(project.start_date)}</p>}
-              {project.target_date && <p>Prazo {formatDate(project.target_date)}</p>}
-            </div>
-          </div>
-          <div className="project-actions project-status-actions">
-            <SaveTemplateButton kind="project" sourceId={project.id} initialName={project.name} />
+          <ProjectDetailOverview project={project} onEdit={() => setEditor('edit')} />
+          <div className="project-detail-toolbar">
             {project.status !== 'active' && (
               <button
-                className="secondary-button"
+                className="primary-button"
                 disabled={store.busy}
                 onClick={() => status('active')}
               >
@@ -238,33 +232,28 @@ export function Projects({
                 Pausar projeto
               </button>
             )}
-            {project.status !== 'completed' && (
+            <SaveTemplateButton kind="project" sourceId={project.id} initialName={project.name} />
+            <ProjectActionMenu label="Mais ações do projeto">
+              {project.status !== 'completed' && (
+                <button disabled={store.busy} onClick={() => status('completed')}>
+                  Concluir projeto
+                </button>
+              )}
+              {project.status !== 'archived' && (
+                <button disabled={store.busy} onClick={() => status('archived')}>
+                  Arquivar
+                </button>
+              )}
               <button
-                className="secondary-button"
-                disabled={store.busy}
-                onClick={() => status('completed')}
+                className="danger"
+                onClick={() => {
+                  setDeleteTasks(false);
+                  setConfirm('delete');
+                }}
               >
-                Concluir projeto
+                Excluir projeto
               </button>
-            )}
-            {project.status !== 'archived' && (
-              <button
-                className="text-button"
-                disabled={store.busy}
-                onClick={() => status('archived')}
-              >
-                Arquivar
-              </button>
-            )}
-            <button
-              className="text-button danger"
-              onClick={() => {
-                setDeleteTasks(false);
-                setConfirm('delete');
-              }}
-            >
-              Excluir projeto
-            </button>
+            </ProjectActionMenu>
           </div>
           {sectionBlock(null, -1)}
           {sections.map((section, index) => sectionBlock(section, index))}
@@ -283,65 +272,51 @@ export function Projects({
         </>
       ) : (
         <>
-          <header className="page-header header-with-action">
-            <div>
-              <p className="eyebrow">UM PASSO DE CADA VEZ</p>
-              <h1>Projetos</h1>
-              <p>Dê espaço aos planos que precisam de mais de uma tarefa.</p>
+          <header className="page-header header-with-action module-header">
+            <div className="module-heading">
+              <span className="module-heading-icon" aria-hidden="true">
+                <FolderKanban size={22} />
+              </span>
+              <div>
+                <h1>Projetos</h1>
+                <p>Transforme ideias em resultados reais.</p>
+              </div>
             </div>
             <button className="primary-button" onClick={() => setEditor('new')}>
               <Plus size={17} />
               Novo projeto
             </button>
           </header>
-          <nav className="tabs" aria-label="Status dos projetos">
+          <nav className="tabs project-tabs" aria-label="Status dos projetos">
             {(Object.keys(statuses) as ProjectStatus[]).map((s) => (
               <button
                 key={s}
                 aria-current={view === s ? 'page' : undefined}
-                onClick={() => setView(s)}
+                onClick={() => {
+                  rememberedProjectView = s;
+                  setView(s);
+                }}
               >
                 {statuses[s]}
               </button>
             ))}
           </nav>
-          {projects.filter((p) => p.status === view).length ? (
+          {visibleProjects.length ? (
             <div className="project-list">
-              {projects
-                .filter((p) => p.status === view)
-                .map((p) => (
-                  <button className="project-row" key={p.id} onClick={() => setSelected(p.id)}>
-                    <span>
-                      <strong>{p.name}</strong>
-                      {p.description && (
-                        <span className="project-row-description">{p.description}</span>
-                      )}
-                      <span className="project-row-next">
-                        {p.next_task ? `Próxima: ${p.next_task}` : 'Nenhuma tarefa pendente'}
-                      </span>
-                      {p.task_count > 0 && (
-                        <progress
-                          aria-label={`Progresso de ${p.name}`}
-                          max={p.task_count}
-                          value={p.completed_count}
-                        />
-                      )}
-                    </span>
-                    <span className="project-row-meta">
-                      {p.task_count
-                        ? `${Math.round((p.completed_count / p.task_count) * 100)}% · ${p.completed_count}/${p.task_count} tarefas`
-                        : '0 tarefas'}
-                      {p.target_date && <span>{formatDate(p.target_date)}</span>}
-                    </span>
-                  </button>
-                ))}
+              {visibleProjects.map((p) => (
+                <ProjectCard key={p.id} project={p} onOpen={() => setSelected(p.id)} />
+              ))}
             </div>
           ) : (
             <EmptyState
-              title="Nenhum projeto ainda."
-              description="Projetos organizam objetivos que precisam de mais de uma ação."
+              title={projectEmptyCopy(view, projects.length > 0).title}
+              description={projectEmptyCopy(view, projects.length > 0).description}
               icon={FolderKanban}
-              action={{ label: 'Criar primeiro projeto', onClick: () => setEditor('new') }}
+              action={
+                !projects.length
+                  ? { label: 'Criar primeiro projeto', onClick: () => setEditor('new') }
+                  : undefined
+              }
             />
           )}
         </>
@@ -467,6 +442,6 @@ export function Projects({
           </footer>
         </Dialog>
       )}
-    </>
+    </div>
   );
 }
