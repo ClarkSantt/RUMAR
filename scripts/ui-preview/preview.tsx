@@ -33,6 +33,13 @@ import '../../src/styles/visual-foundation.css';
 import '../../src/styles/tasks-inbox.css';
 import '../../src/styles/projects-objectives.css';
 import '../../src/styles/habits-routines.css';
+import '../../src/features/calendar/calendar.css';
+import '../../src/features/calendar/planner.css';
+import '../../src/features/workouts/workouts.css';
+import '../../src/features/workouts/execution.css';
+import '../../src/features/body-progress/body-progress.css';
+import '../../src/styles/calendar-workouts-body.css';
+import { TemporalFitnessPreview } from './temporal-fitness';
 
 const today = '2026-10-04';
 function task(
@@ -452,7 +459,11 @@ function Preview() {
               ? 'objectives'
               : screen === 'routine-execution'
                 ? 'routines'
-                : screen
+                : screen === 'planner' || screen === 'planner-week'
+                  ? 'calendar'
+                  : screen === 'body-progress' || screen.startsWith('workout-')
+                    ? 'workouts'
+                    : screen
         }
         inboxCount={2}
         ready
@@ -466,6 +477,15 @@ function Preview() {
             <Tasks store={store} day={today} onOpen={() => {}} onCreate={() => {}} />
           )}
           {screen === 'inbox' && <InboxPage store={store} />}
+          {[
+            'calendar',
+            'planner',
+            'planner-week',
+            'workouts',
+            'workout-session',
+            'workout-history',
+            'body-progress',
+          ].includes(screen) && <TemporalFitnessPreview screen={screen} />}
           {screen === 'habits' && (
             <section className="habit-section habits-page" aria-label="Hábitos">
               <header className="page-header header-with-action module-header">

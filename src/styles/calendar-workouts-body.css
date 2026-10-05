@@ -1,0 +1,455 @@
+@layer components {
+  /* Calendar: time and planning stay visually central. */
+  .calendar-toolbar {
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    min-width: 0;
+  }
+  .calendar-toolbar h2 {
+    min-width: 0;
+    margin: 0;
+    padding-inline: var(--space-2);
+    font-size: var(--subheading);
+    font-weight: 650;
+  }
+  .calendar-grid {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-surface);
+    border-left: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .calendar-weekday {
+    padding: var(--space-3) var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: var(--caption);
+    font-weight: 650;
+  }
+  .calendar-cell {
+    min-height: clamp(74px, 10.5vh, 118px);
+    padding: var(--space-2);
+    border-color: var(--color-border);
+    border-left: 0;
+    border-top: 0;
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: background-color var(--motion-fast) var(--motion-ease);
+  }
+  .calendar-cell:hover {
+    background: var(--color-hover);
+  }
+  .calendar-cell:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline-offset: -3px;
+  }
+  .calendar-cell[aria-current='date'] {
+    background: var(--color-primary-soft);
+    box-shadow: none;
+  }
+  .calendar-cell[aria-pressed='true'] {
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+  }
+  .calendar-day-number {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 13px;
+  }
+  .calendar-cell[aria-current='date'] .calendar-day-number {
+    background: var(--color-primary);
+    color: var(--color-surface);
+  }
+  .calendar-event {
+    padding: 3px 6px;
+    border-radius: 5px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: var(--caption);
+    line-height: 1.3;
+  }
+  .calendar-event[data-kind='habit'],
+  .calendar-event[data-kind='workout'] {
+    background: var(--color-success-soft);
+    color: var(--color-success);
+  }
+  .calendar-event[data-kind='routine'],
+  .calendar-event[data-kind='milestone'] {
+    background: var(--color-warning-soft);
+    color: var(--color-warning);
+  }
+  .calendar-event[data-kind='external'] {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+  }
+  .calendar-cell small,
+  .outside-month {
+    color: var(--color-text-tertiary);
+  }
+  .outside-month {
+    background: var(--color-surface-subtle);
+  }
+  .calendar-event.calendar-done {
+    text-decoration: line-through;
+  }
+
+  .planner-toolbar {
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+  .planner-toolbar > strong {
+    font-size: var(--body);
+    font-weight: 650;
+  }
+  .planner-views {
+    border-color: var(--color-border);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-subtle);
+  }
+  .planner-views button {
+    min-height: 34px;
+    padding-inline: var(--space-3);
+    font-size: var(--caption);
+  }
+  .planner-views button[aria-pressed='true'] {
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-primary);
+  }
+  .planner-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(215px, 240px);
+    gap: var(--space-4);
+  }
+  .planner-scroll {
+    max-height: calc(100vh - 236px);
+    min-height: 360px;
+    border-color: var(--color-border);
+    border-radius: var(--radius-surface);
+    background: var(--color-surface);
+  }
+  .planner-head strong {
+    font-size: var(--caption);
+    color: var(--color-text-secondary);
+  }
+  .planner-head [aria-current='date'] {
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+  }
+  .planner-all-day > small,
+  .planner-hours span {
+    font-size: var(--caption);
+    color: var(--color-text-secondary);
+  }
+  .planner-column {
+    border-color: var(--color-border);
+  }
+  .planner-block {
+    border-radius: 6px;
+    background: var(--color-primary-soft);
+  }
+  .planner-block-open {
+    padding: 6px 8px;
+  }
+  .planner-block-open small {
+    color: var(--color-text-secondary);
+    font-size: 11px;
+  }
+  .planner-resize::after {
+    content: '';
+    width: 26px;
+    height: 2px;
+    margin-top: 3px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.45;
+  }
+  .planner-now {
+    height: 2px;
+  }
+  .planner-now::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-primary);
+  }
+  .planner-now span {
+    font-size: 11px;
+  }
+  .planner-unscheduled {
+    max-height: calc(100vh - 236px);
+    padding: var(--space-4);
+    border-color: var(--color-border);
+    border-radius: var(--radius-surface);
+    background: var(--color-surface);
+  }
+  .planner-unscheduled-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+  .planner-unscheduled-heading h2 {
+    margin: 0;
+    font-size: var(--subheading);
+  }
+  .planner-unscheduled-heading span {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: var(--caption);
+    font-weight: 650;
+  }
+  .planner-candidate {
+    font-size: var(--caption);
+  }
+
+  /* Workouts: the next session and its primary action lead. */
+  .workout-today {
+    position: relative;
+    overflow: hidden;
+    max-width: 100%;
+    margin-bottom: var(--space-4);
+    padding: var(--space-6);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .workout-today-scheduled,
+  .workout-today-active {
+    background: linear-gradient(115deg, var(--color-surface) 60%, var(--color-primary-soft));
+  }
+  .workout-today-active {
+    border-color: var(--color-primary);
+  }
+  .workout-kicker {
+    margin: 0 0 var(--space-2);
+    color: var(--color-primary);
+    font-size: var(--caption);
+    font-weight: 700;
+  }
+  .workout-today h2 {
+    margin: 0 0 var(--space-2);
+    font-size: clamp(20px, 2.2vw, 28px);
+    letter-spacing: -0.03em;
+  }
+  .workout-today > p:not(.workout-kicker) {
+    margin: 0 0 var(--space-4);
+    color: var(--color-text-secondary);
+  }
+  .workout-today .primary-button {
+    min-height: 44px;
+  }
+  .workout-today .field-help {
+    margin-top: var(--space-3);
+  }
+  .workout-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding: var(--space-4) 0;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
+  }
+  .workout-overview .workout-kicker {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .workout-overview h2 {
+    margin: 0;
+    font-size: var(--subheading);
+  }
+  .workout-overview > p:not(.workout-kicker) {
+    margin: 0;
+  }
+  .workout-choose {
+    max-width: 570px;
+  }
+  .workout-history-row {
+    border-bottom: 1px solid var(--color-border);
+  }
+  .workout-history-row:hover {
+    background: var(--color-surface-subtle);
+  }
+  .workout-session > .page-header {
+    margin-top: var(--space-4);
+  }
+  .workout-execution-exercise {
+    margin-bottom: 0;
+    padding: var(--space-8) 0;
+  }
+  .workout-execution-exercise h2 {
+    font-size: var(--heading);
+  }
+  .workout-previous {
+    padding: var(--space-3) var(--space-4);
+    border-left-color: var(--color-primary);
+    border-radius: 0 var(--radius-control) var(--radius-control) 0;
+    background: var(--color-surface-subtle);
+  }
+  .workout-set {
+    border-color: var(--color-border);
+  }
+  .workout-set:focus-within {
+    background: var(--color-primary-soft);
+  }
+
+  /* Body progress: a measured trend, then a compact history table. */
+  .body-progress .workout-section-heading {
+    margin-bottom: var(--space-6);
+  }
+  .body-overview {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+    gap: 0;
+    margin: 0 0 var(--space-8);
+    padding-block: var(--space-4);
+    border-block: 1px solid var(--color-border);
+  }
+  .body-overview > div {
+    border: 0;
+    border-right: 1px solid var(--color-border);
+    border-radius: 0;
+    padding: var(--space-2) var(--space-4);
+  }
+  .body-overview > div:last-child {
+    border-right: 0;
+  }
+  .body-overview strong {
+    font-size: clamp(20px, 2vw, 26px);
+    font-variant-numeric: tabular-nums;
+  }
+  .body-section {
+    margin: var(--space-5) 0;
+    padding-top: var(--space-4);
+  }
+  .body-section:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .body-chart {
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .body-chart svg {
+    max-height: 280px;
+  }
+  .body-chart-grid {
+    stroke: var(--color-border);
+    stroke-width: 1;
+  }
+  .body-chart-area {
+    fill: var(--color-primary);
+    opacity: 0.08;
+  }
+  .body-chart circle:focus-visible {
+    outline: none;
+    stroke-width: 4;
+  }
+  .body-chart svg text {
+    fill: var(--color-text-secondary);
+    font-size: 11px;
+  }
+  .body-metric-grid {
+    display: block;
+    border-top: 1px solid var(--color-border);
+  }
+  .body-metric-grid > div {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(85px, 0.65fr) minmax(160px, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-2);
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
+  }
+  .body-metric-grid strong {
+    font-variant-numeric: tabular-nums;
+  }
+  .body-metric-grid small {
+    color: var(--color-text-secondary);
+  }
+  .body-table-wrap thead,
+  .body-history-table thead {
+    background: var(--color-surface-subtle);
+  }
+  .body-table-wrap tbody tr:hover,
+  .body-history-table tbody tr:hover {
+    background: var(--color-surface-subtle);
+  }
+  .body-editor {
+    border-color: var(--color-border);
+    border-radius: var(--radius-card);
+  }
+
+  @media (max-width: 1200px) {
+    .planner-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .planner-unscheduled {
+      max-height: 270px;
+    }
+  }
+  @media (max-width: 1050px) {
+    .calendar-toolbar {
+      flex-wrap: wrap;
+    }
+    .calendar-toolbar h2 {
+      flex-basis: calc(100% - 170px);
+    }
+    .calendar-cell {
+      min-height: 74px;
+      padding: var(--space-1);
+    }
+    .calendar-event {
+      font-size: 11px;
+    }
+    .planner-views {
+      order: 5;
+      width: 100%;
+    }
+    .planner-views button {
+      flex: 1;
+    }
+    .body-overview {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .body-overview > div:nth-child(odd) {
+      border-right: 1px solid var(--color-border);
+    }
+    .body-overview > div:nth-child(-n + 2) {
+      border-bottom: 1px solid var(--color-border);
+    }
+  }
+  @media (max-width: 720px) {
+    .workout-overview {
+      grid-template-columns: 1fr;
+    }
+    .body-metric-grid > div {
+      grid-template-columns: minmax(100px, 1fr) minmax(70px, 0.6fr);
+    }
+    .body-metric-grid small {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .calendar-cell {
+      transition: none;
+    }
+  }
+}

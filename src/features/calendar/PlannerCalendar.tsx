@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState, memo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, GripVertical, Play } from 'lucide-react';
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  GripVertical,
+  Play,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { Dialog } from '../../components/Dialog';
 import { getDatabase } from '../../lib/database/connection';
 import { addDays, fullDate, localDate, parseDate } from '../../lib/dates';
@@ -277,6 +285,9 @@ export function PlannerCalendar({
         (b.occurrence_date ?? b.block_date) === i.date,
     );
   const derived = items.filter((i) => i.time && !scheduled(i));
+  const visibleCandidates = candidates.filter(
+    (candidate) => panelFilter === 'all' || candidate.type === panelFilter,
+  );
   async function drop(event: React.DragEvent<HTMLDivElement>, targetDate: string) {
     event.preventDefault();
     if (busy) return;
@@ -322,10 +333,16 @@ export function PlannerCalendar({
   }
   return (
     <>
-      <header className="page-header">
-        <p className="eyebrow">PLANEJAR → EXECUTAR</p>
-        <h1>Calendário</h1>
-        <p>O prazo diz o que precisa ser feito. O bloco reserva quando você pretende fazer.</p>
+      <header className="page-header module-header">
+        <div className="module-heading">
+          <span className="module-heading-icon">
+            <CalendarDays size={22} />
+          </span>
+          <div>
+            <h1>Calendário</h1>
+            <p>O prazo diz o que precisa ser feito. O bloco reserva quando você pretende fazer.</p>
+          </div>
+        </div>
       </header>
       <div className="planner-toolbar">
         <button
@@ -347,6 +364,7 @@ export function PlannerCalendar({
           hidden={view === 'month'}
           className="icon-button"
           aria-label="Período anterior"
+          title="Período anterior"
           onClick={() => moveDate(-1)}
         >
           <ChevronLeft size={18} />
@@ -355,6 +373,7 @@ export function PlannerCalendar({
           hidden={view === 'month'}
           className="icon-button"
           aria-label="Próximo período"
+          title="Próximo período"
           onClick={() => moveDate(1)}
         >
           <ChevronRight size={18} />
@@ -383,10 +402,14 @@ export function PlannerCalendar({
           className="secondary-button"
           onClick={() => setFilters(true)}
         >
-          Filtros
+          <SlidersHorizontal size={16} /> Filtros
         </button>
         {view !== 'month' && (
-          <button className="text-button" aria-expanded={panel} onClick={() => setPanel(!panel)}>
+          <button
+            className="secondary-button planner-panel-toggle"
+            aria-expanded={panel}
+            onClick={() => setPanel(!panel)}
+          >
             Não agendado
           </button>
         )}
@@ -655,7 +678,10 @@ export function PlannerCalendar({
           </div>
           {panel && (
             <aside className="planner-unscheduled">
-              <h2>Não agendado</h2>
+              <div className="planner-unscheduled-heading">
+                <h2>Não agendado</h2>
+                <span>{visibleCandidates.length}</span>
+              </div>
               <p className="field-help">Arraste para um horário ou use Agendar.</p>
               <label>
                 Mostrar
@@ -666,27 +692,27 @@ export function PlannerCalendar({
                   <option value="workout">Treinos</option>
                 </select>
               </label>
-              {candidates
-                .filter((c) => panelFilter === 'all' || c.type === panelFilter)
-                .map((c) => (
-                  <div
-                    className="planner-candidate"
-                    key={c.type + c.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData(
-                        'application/rumo-planner',
-                        JSON.stringify({ kind: 'candidate', id: c.id }),
-                      );
-                    }}
-                  >
-                    <span>{c.name}</span>
-                    <button className="text-button" onClick={() => newBlock(date, '09:00', c)}>
-                      Agendar
-                    </button>
-                  </div>
-                ))}
-              {!candidates.length && <p className="field-help">Nenhum item para encaixar.</p>}
+              {visibleCandidates.map((c) => (
+                <div
+                  className="planner-candidate"
+                  key={c.type + c.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(
+                      'application/rumo-planner',
+                      JSON.stringify({ kind: 'candidate', id: c.id }),
+                    );
+                  }}
+                >
+                  <span>{c.name}</span>
+                  <button className="text-button" onClick={() => newBlock(date, '09:00', c)}>
+                    Agendar
+                  </button>
+                </div>
+              ))}
+              {!visibleCandidates.length && (
+                <p className="field-help">Nenhum item para encaixar.</p>
+              )}
               <button className="secondary-button" onClick={onCreate}>
                 + Nova tarefa
               </button>

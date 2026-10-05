@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { EnergyPanel } from '../energy/EnergyPanel';
+import { Dialog } from '../../components/Dialog';
 import { Activity, Plus, Trash2 } from 'lucide-react';
 import { getDatabase } from '../../lib/database/connection';
 import { addDays, formatDate, localDate } from '../../lib/dates';
@@ -36,11 +37,24 @@ function MetricChart({
   return (
     <div className="body-chart">
       <svg viewBox="0 0 600 150" role="img" aria-label={`Evolução de ${label}`}>
+        {[40, 75, 110].map((y) => (
+          <line key={y} x1="36" x2="564" y1={y} y2={y} className="body-chart-grid" />
+        ))}
         <line x1="36" x2="564" y1="122" y2="122" className="body-chart-axis" />
+        <polygon
+          className="body-chart-area"
+          points={`36,122 ${plotted.map(({ x, y }) => `${x},${y}`).join(' ')} 564,122`}
+        />
         <polyline points={plotted.map(({ x, y }) => `${x},${y}`).join(' ')} />
         {plotted.map((point, index) => (
           <g key={point.date}>
-            <circle cx={point.x} cy={point.y} r="4">
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r="4"
+              tabIndex={0}
+              aria-label={`${formatDate(point.date)}: ${formatMeasurement(point.value, unit)}`}
+            >
               <title>{`${formatDate(point.date)}: ${formatMeasurement(point.value, unit)}`}</title>
             </circle>
             {(index === 0 || index === plotted.length - 1) && (
@@ -87,6 +101,7 @@ export function BodyProgress() {
   const [revision, setRevision] = useState(0);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirmDate, setConfirmDate] = useState<string | null>(null);
   useEffect(() => {
     if (!editing) return;
     editorRef.current?.scrollIntoView({ block: 'start' });
@@ -168,12 +183,16 @@ export function BodyProgress() {
     }
   }
   async function remove(date: string) {
-    if (!repo || !window.confirm(`Excluir a medição de ${formatDate(date)}?`)) return;
+    if (!repo || busy) return;
+    setBusy(true);
     try {
       await repo.remove(date);
+      setConfirmDate(null);
       setRevision((current) => current + 1);
     } catch {
       setError('Não foi possível excluir a medição.');
+    } finally {
+      setBusy(false);
     }
   }
   const latest = useMemo(() => repo?.latestValues(records) ?? {}, [repo, records]);
@@ -202,7 +221,6 @@ export function BodyProgress() {
           <Plus size={16} /> Nova medição
         </button>
       </div>
-      <EnergyPanel activity revision={revision} />
       {error && <p role="alert">{error}</p>}
       {!records.length ? (
         <div className="body-empty">
@@ -347,7 +365,10 @@ export function BodyProgress() {
                   <button
                     className="icon-button"
                     aria-label={`Excluir medição de ${formatDate(record.date)}`}
-                    onClick={() => void remove(record.date)}
+                    onClick={() => {
+                      setError('');
+                      setConfirmDate(record.date);
+                    }}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -356,6 +377,35 @@ export function BodyProgress() {
             </div>
           </section>
         </>
+      )}
+      <EnergyPanel activity revision={revision} />
+      {confirmDate && (
+        <Dialog
+          title="Excluir medição"
+          onClose={() => setConfirmDate(null)}
+          busy={busy}
+          error={error}
+        >
+          <div className="dialog-content">
+            <p>Excluir a medição de {formatDate(confirmDate)}?</p>
+            <div className="form-actions">
+              <button
+                className="secondary-button"
+                disabled={busy}
+                onClick={() => setConfirmDate(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="danger-button"
+                disabled={busy}
+                onClick={() => void remove(confirmDate)}
+              >
+                Excluir medição
+              </button>
+            </div>
+          </div>
+        </Dialog>
       )}
       {editing && (
         <div className="body-editor" ref={editorRef}>

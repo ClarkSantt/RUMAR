@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { getDatabase } from '../../lib/database/connection';
 import { addDays, fullDate, localDate, parseDate, weekdays } from '../../lib/dates';
 import { Dialog } from '../../components/Dialog';
@@ -99,25 +99,21 @@ export function Calendar({
   return (
     <>
       {!embedded && (
-        <header className="page-header">
-          <p className="eyebrow">COMPROMISSOS NO TEMPO</p>
-          <h1>Calendário</h1>
-          <p>Tarefas, hábitos, rotinas, treinos e prazos em um só lugar.</p>
+        <header className="page-header module-header">
+          <div className="module-heading">
+            <span className="module-heading-icon">
+              <CalendarDays size={22} />
+            </span>
+            <div>
+              <h1>Calendário</h1>
+              <p>Tarefas, hábitos, rotinas, treinos e prazos em um só lugar.</p>
+            </div>
+          </div>
         </header>
       )}
       <div className="calendar-toolbar">
-        <button className="secondary-button" onClick={() => setFilters(true)}>
-          Filtros
-        </button>
-        <button className="icon-button" aria-label="Mês anterior" onClick={() => move(-1)}>
-          <ChevronLeft size={20} />
-        </button>
-        <h2>{parseDate(month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</h2>
-        <button className="icon-button" aria-label="Próximo mês" onClick={() => move(1)}>
-          <ChevronRight size={20} />
-        </button>
         <button
-          className="text-button"
+          className="secondary-button calendar-today"
           onClick={() => {
             setLoading(true);
             setMonth(day.slice(0, 7) + '-01');
@@ -125,6 +121,28 @@ export function Calendar({
           }}
         >
           Hoje
+        </button>
+        <button
+          className="icon-button"
+          aria-label="Mês anterior"
+          title="Mês anterior"
+          onClick={() => move(-1)}
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <h2 aria-live="polite">
+          {parseDate(month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+        </h2>
+        <button
+          className="icon-button"
+          aria-label="Próximo mês"
+          title="Próximo mês"
+          onClick={() => move(1)}
+        >
+          <ChevronRight size={20} />
+        </button>
+        <button className="secondary-button calendar-filters" onClick={() => setFilters(true)}>
+          <SlidersHorizontal size={16} /> Filtros
         </button>
       </div>
       {error && <p role="alert">{error}</p>}
@@ -188,11 +206,16 @@ export function Calendar({
               className={`calendar-cell ${date.slice(0, 7) !== month.slice(0, 7) ? 'outside-month' : ''}`}
               aria-label={`${fullDate(date)}: ${rows.length} itens`}
               aria-current={date === day ? 'date' : undefined}
+              aria-pressed={date === selected}
               onClick={() => setSelected(date)}
             >
-              <strong>{parseDate(date).getDate()}</strong>
+              <strong className="calendar-day-number">{parseDate(date).getDate()}</strong>
               {rows.slice(0, 2).map((item) => (
-                <span key={item.kind + item.id} className={item.completed ? 'calendar-done' : ''}>
+                <span
+                  key={item.kind + item.id}
+                  data-kind={item.kind}
+                  className={`calendar-event ${item.completed ? 'calendar-done' : ''}`}
+                >
                   {item.time ? item.time + ' ' : ''}
                   {item.name}
                 </span>

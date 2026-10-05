@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dumbbell } from 'lucide-react';
+import { Dumbbell, Play } from 'lucide-react';
 import { EmptyState } from '../../components/EmptyState';
 import { getDatabase } from '../../lib/database/connection';
 import { formatDate } from '../../lib/dates';
@@ -71,10 +71,16 @@ export function Workouts({
     );
   return (
     <>
-      <header className="page-header">
-        <p className="eyebrow">MOVIMENTO E CONTINUIDADE</p>
-        <h1>Treinos</h1>
-        <p>Planeje, registre e acompanhe seu próprio ritmo.</p>
+      <header className="page-header module-header">
+        <div className="module-heading">
+          <span className="module-heading-icon">
+            <Dumbbell size={22} />
+          </span>
+          <div>
+            <h1>Treinos</h1>
+            <p>Planeje, registre e acompanhe seu próprio ritmo.</p>
+          </div>
+        </div>
       </header>
       <nav className="tabs" aria-label="Seções de treinos">
         {tabs.map((item) => (
@@ -196,8 +202,8 @@ function WorkoutToday({
       ) : (
         <>
           {current && (
-            <section className="workout-today">
-              <p className="eyebrow">TREINO EM ANDAMENTO</p>
+            <section className="workout-today workout-today-active">
+              <p className="workout-kicker">Treino em andamento</p>
               <h2>{current.day_name}</h2>
               <p>
                 Iniciado em {formatDate(current.session_date)} às{' '}
@@ -207,7 +213,7 @@ function WorkoutToday({
                 })}
               </p>
               <button className="primary-button" onClick={() => onOpen(current.id)}>
-                Continuar treino
+                <Play size={16} fill="currentColor" /> Continuar treino
               </button>
               <p className="field-help">Você pode descartar a sessão ao abri-la.</p>
             </section>
@@ -215,8 +221,8 @@ function WorkoutToday({
           {rows
             .filter((r) => !r.in_progress)
             .map((row) => (
-              <section className="workout-today" key={row.id}>
-                <p className="eyebrow">TREINO DE HOJE</p>
+              <section className="workout-today workout-today-scheduled" key={row.id}>
+                <p className="workout-kicker">Treino de hoje</p>
                 <h2>{row.name}</h2>
                 <p>{row.completed ? 'Concluído' : `${row.exercise_count} exercícios`}</p>
                 <button
@@ -226,13 +232,14 @@ function WorkoutToday({
                     row.session_id ? onOpen(row.session_id) : void start(row.day_id!)
                   }
                 >
+                  {!row.completed && <Play size={16} fill="currentColor" />}
                   {row.completed ? 'Ver sessão' : 'Iniciar treino'}
                 </button>
               </section>
             ))}
           {!rows.length && !current && (planName || lastSession) && (
             <section className="workout-today workout-overview">
-              <p className="eyebrow">SEU PLANO</p>
+              <p className="workout-kicker">Seu plano</p>
               <h2>{planName || 'Nenhum treino planejado para hoje'}</h2>
               {planName && (
                 <p>Nenhum treino fixo para hoje. Você pode escolher um dia do plano abaixo.</p>

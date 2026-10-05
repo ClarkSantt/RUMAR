@@ -61,6 +61,8 @@ For Projects and Objectives, run `node scripts/ui-preview/capture-projects-objec
 
 For Habits and Routines, run `node scripts/ui-preview/capture-habits-routines.mjs`. It captures both themes for the habit overview, routine overview and routine execution at the same six desktop sizes under ignored `artifacts/ui-habits-routines/`. The preview reuses the app's presentational cards with invented entries and occurrences; it never queries personal data.
 
+For Calendar, Workouts and Body Progress, run `node scripts/ui-preview/capture-temporal-fitness.mjs` with the same local Vite preview. The synthetic harness captures the month, daily planner, workout Today and body overview in both themes at all six desktop sizes. Week planning, an active workout and workout history are captured at 1366×768 and 1920×1080. Files go to ignored `artifacts/ui-calendar-workouts-body/`; the fixtures contain no personal data.
+
 ## Mockup translation: Tasks and Inbox
 
 The approved concepts guide contextual headers, compact tabs, light list rows, prominent Inbox capture and restrained blue accents. The implementation keeps the existing four task views, QuickEntry, task drawer, conversions, editing, deletion and undo behavior. It does not add conceptual task filters, Inbox item types or a new database-backed master/detail route. Less frequent Inbox actions live in a keyboard-accessible disclosure menu; converting to a task remains visible on the row. The task drawer remains the existing editing surface so no behavior is lost.
@@ -76,6 +78,14 @@ Objectives emphasize direction. The list uses real categories, existing linked-i
 Habits communicate **consistency** and put **check-in** first. The overview shows only metrics derived from existing entries: completed eligible habits today, weekly registrations and 30-day consistency. Cards adapt to the existing boolean and quantity types, retain a native checkbox or explicit quantity form, and show seven days of actual records without a new streak, score or reminder rule. Editing, past-record correction, project association, pause and archive remain in the existing drawer.
 
 Routines communicate **sequence** and put **execution** first. An active occurrence expands to show ordered native-checkbox steps, completion count, the next incomplete step and the established start, complete and reopen actions. Other routines stay compact until expanded. The editor retains ordering, item editing, templates, calendar visibility and Google mirror controls. Home summaries keep their compact rendering. No new duration model, occurrence state, schema change or migration was introduced.
+
+## Mockup translation: Calendar, Workouts and Body Progress
+
+Calendar communicates **time**; its primary action is **plan**. The month grid carries the visual weight, with a distinct today marker, compact source-aware events and a separate selected-day outline. Day and week retain the existing hour grid, all-day items, overlapping blocks, drag/drop, resize, current-time line and keyboard creation. The unscheduled list stays secondary and can be hidden; below 1200px it moves beneath the time grid so the page does not overflow. No new calendar source, event type or Google sync behavior was introduced.
+
+Workouts communicate **execution**; the primary action is **train**. The scheduled or active session leads, while plan context becomes a quieter line. Existing tabs, plan actions, library, history and session persistence remain. During a session, exercise headings, previous loads and editable set rows receive a clearer hierarchy without adding estimated duration, invented training scores or new records.
+
+Body Progress communicates **evolution**; the primary action is **track**. Existing weight, body-fat and left/right measurements form the summary and compact measure list. The line chart gains quiet grid lines and an area cue, while the existing history table supplies a full textual alternative; each SVG point has a date/value label. Measurement removal now uses the shared accessible Dialog instead of a browser confirm. No photo tracking, body composition model, goal metric or medical interpretation was added from the concept art.
 
 ## Do / don't
 
@@ -101,9 +111,9 @@ Routines communicate **sequence** and put **execution** first. An active occurre
 | Objectives            | DONE    |
 | Habits                | DONE    |
 | Routines              | DONE    |
-| Calendar              | PENDING |
-| Workouts              | PENDING |
-| Body Progress         | PENDING |
+| Calendar              | DONE    |
+| Workouts              | DONE    |
+| Body Progress         | DONE    |
 | Nutrition             | PENDING |
 | Finance               | PENDING |
 | Financial Connections | PENDING |
