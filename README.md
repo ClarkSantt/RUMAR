@@ -191,6 +191,8 @@ Somente tarefas avulsas pendentes entram em Atrasadas. Ocorrências recorrentes 
 
 As migrations ficam em `src-tauri/migrations/` e são registradas em `src-tauri/src/lib.rs` com versão inteira crescente e `MigrationKind::Up`. O primeiro `Database.load()` aplica as migrations pelo plugin antes da leitura de dados, permitindo exibir falhas no frontend. Nenhum componente cria tabelas. O SQLx registra versões/checksums em `_sqlx_migrations` e aplica migrations transacionalmente. Consulte a [documentação do plugin SQL](https://v2.tauri.app/plugin/sql/).
 
+**APPLIED MIGRATIONS MUST NEVER BE EDITED.** O checksum SQLx cobre os bytes UTF-8 exatos, incluindo comentários, whitespace e line endings. Qualquer mudança de schema ou dados deve ser uma nova migration forward-only. As migrations históricas `0002` e `0004` preservam CRLF por compatibilidade com bancos já distribuídos; regras específicas em `.gitattributes` impedem normalização desses bytes. O teste de regressão de checksums deve falhar se qualquer migration publicada for alterada.
+
 Para evoluir o schema:
 
 1. Crie uma migration com o próximo número disponível, preservando dados existentes.

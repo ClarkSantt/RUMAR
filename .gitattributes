@@ -1,1 +1,5 @@
 * text=auto eol=lf
+
+# SQLx checksums published migration bytes. These two historical files intentionally use CRLF.
+src-tauri/migrations/0002_organization.sql -text whitespace=cr-at-eol
+src-tauri/migrations/0004_nutrition.sql -text whitespace=cr-at-eol

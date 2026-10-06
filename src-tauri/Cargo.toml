@@ -29,6 +29,10 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-global-shortcut = "2"
 
+[dev-dependencies]
+sqlx = { version = "0.8.6", default-features = false, features = ["sqlite", "runtime-tokio", "migrate"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
 [profile.release]
 strip = true
 lto = "thin"
