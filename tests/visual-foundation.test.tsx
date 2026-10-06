@@ -84,7 +84,7 @@ it('indica seções fora da área visível e permite avançar pela navegação',
   Object.defineProperty(nav, 'scrollHeight', { configurable: true, value: 780 });
   nav.scrollBy = vi.fn();
   act(() => window.dispatchEvent(new Event('resize')));
-  const cue = screen.getByRole('button', { name: 'Ver mais seções da navegação' });
+  const cue = screen.getByRole('button', { name: 'Ver mais seções abaixo na navegação' });
   await userEvent.setup().click(cue);
   expect(nav.scrollBy).toHaveBeenCalledWith(0, 180);
   Object.defineProperty(nav, 'scrollTop', { configurable: true, value: 540 });
@@ -108,6 +108,21 @@ it('oferece ação principal e secundária no estado vazio contextual', async ()
   await user.click(screen.getByRole('button', { name: 'Ver tarefas' }));
   expect(primary).toHaveBeenCalledOnce();
   expect(secondary).toHaveBeenCalledOnce();
+});
+
+it('mantém ilustração de estado vazio decorativa e conteúdo textual acessível', () => {
+  const view = render(
+    <EmptyState
+      title="Nenhum projeto ainda"
+      description="Crie seu primeiro projeto."
+      illustration="/assets/rumar/empty-states/empty-projects.png"
+    />,
+  );
+  const illustration = view.container.querySelector('img');
+  expect(illustration?.getAttribute('alt')).toBe('');
+  expect(illustration?.getAttribute('aria-hidden')).toBe('true');
+  expect(screen.getByRole('heading', { name: 'Nenhum projeto ainda' })).toBeTruthy();
+  expect(screen.getByText('Crie seu primeiro projeto.')).toBeTruthy();
 });
 
 function task(id: string, date: string, status: Task['status']): Task {

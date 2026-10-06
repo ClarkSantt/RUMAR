@@ -50,6 +50,19 @@
   .nutrition-page {
     gap: var(--space-6);
   }
+  .nutrition-meal-empty,
+  .finance-recent-empty {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  .nutrition-meal-empty img,
+  .finance-recent-empty img {
+    flex: none;
+    width: 104px;
+    height: 96px;
+    object-fit: contain;
+  }
   .nutrition-page > .section-heading:first-child {
     margin-bottom: calc(-1 * var(--space-3));
   }
@@ -163,10 +176,51 @@
     align-items: start;
     border-bottom: 1px solid var(--color-border);
   }
+  .finance-tab-scroll {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .finance-tab-arrow {
+    display: none;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 40px;
+    color: var(--color-primary);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-subtle);
+  }
   .finance-toolbar .nutrition-tabs {
     overflow-x: auto;
     scrollbar-width: thin;
     flex-wrap: nowrap;
+  }
+  @media (max-width: 1100px) {
+    .finance-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .finance-tab-scroll {
+      grid-column: 1 / -1;
+      max-width: 100%;
+    }
+    .finance-tab-arrow {
+      display: flex;
+    }
+    .finance-toolbar .nutrition-tabs {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .finance-toolbar .nutrition-tabs::-webkit-scrollbar {
+      display: none;
+    }
+    .finance-toolbar > .text-button {
+      grid-column: 2;
+      justify-self: end;
+    }
   }
   .finance-toolbar .nutrition-tabs button {
     white-space: nowrap;
@@ -334,6 +388,20 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-surface);
     background: var(--color-surface-subtle);
+  }
+  .finance-connections-empty {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  .finance-connections-empty img {
+    flex: none;
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+  }
+  .finance-connections-empty p {
+    margin: 0;
   }
   .finance-connections > label {
     display: grid;

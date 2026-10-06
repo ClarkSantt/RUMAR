@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AppSidebar } from '../../src/components/AppSidebar';
+import { Dialog } from '../../src/components/Dialog';
+import { EmptyState } from '../../src/components/EmptyState';
 import { Home } from '../../src/features/home/Home';
 import { InboxPage } from '../../src/features/inbox/Inbox';
 import { Tasks } from '../../src/features/tasks/Tasks';
@@ -45,6 +47,17 @@ import '../../src/styles/nutrition-finance-connections.css';
 import { LegacyExperiencePreview } from './legacy-experience';
 
 const today = '2026-10-04';
+const emptyLabels: Record<string, string> = {
+  tasks: 'Nenhuma tarefa ainda',
+  projects: 'Nenhum projeto ainda',
+  habits: 'Nenhum hábito ainda',
+  routines: 'Nenhuma rotina ainda',
+  workouts: 'Nenhum treino ainda',
+  nutrition: 'Nenhuma refeição ainda',
+  finance: 'Nenhuma transação ainda',
+  thoughts: 'Nenhum pensamento ainda',
+  timeline: 'Nenhum evento ainda',
+};
 function task(
   id: string,
   title: string,
@@ -486,6 +499,72 @@ function Preview() {
       />
       <main id="main" tabIndex={-1}>
         <div className="content">
+          {screen.startsWith('empty-') && (
+            <section className="projects-page">
+              <header className="page-header">
+                <h1>Estado vazio</h1>
+              </header>
+              <EmptyState
+                title={emptyLabels[screen.slice(6)] ?? 'Nenhum registro ainda'}
+                description="Os primeiros registros aparecerão aqui quando você começar."
+                illustration={
+                  screen === 'empty-reviews'
+                    ? undefined
+                    : `/assets/rumar/empty-states/empty-${screen.slice(6)}.png`
+                }
+                action={{ label: 'Começar', onClick: () => {} }}
+              />
+            </section>
+          )}
+          {screen === 'global-search' && (
+            <Dialog title="Buscar no RUMAR" onClose={() => {}}>
+              <div className="search-head">
+                <input aria-label="Buscar no RUMAR" defaultValue="projeto" />
+                <button className="icon-button" aria-label="Fechar busca">
+                  ×
+                </button>
+              </div>
+              <div className="search-results" role="listbox" aria-label="Resultados da busca">
+                <section role="group" aria-label="Projetos">
+                  <h3>Projetos</h3>
+                  <button role="option" aria-selected="true">
+                    <strong>Projeto pessoal</strong>
+                    <span>8 de 12 tarefas concluídas</span>
+                  </button>
+                </section>
+              </div>
+              <p className="search-help">↑ ↓ selecionar · Enter abrir · Esc fechar</p>
+            </Dialog>
+          )}
+          {screen === 'quick-add' && (
+            <Dialog title="Adicionar ao RUMAR" onClose={() => {}}>
+              <div className="form-grid">
+                <label>
+                  O que você quer registrar?
+                  <input defaultValue="Revisar o projeto amanhã" />
+                </label>
+                <label>
+                  Tipo
+                  <select defaultValue="task">
+                    <option value="task">Tarefa</option>
+                  </select>
+                </label>
+                <button className="primary-button">Adicionar</button>
+              </div>
+            </Dialog>
+          )}
+          {screen === 'drawer' && (
+            <Dialog title="Detalhes da tarefa" onClose={() => {}} drawer>
+              <div className="drawer-body">
+                <p>Revisar as prioridades da semana.</p>
+                <label>
+                  Notas
+                  <textarea defaultValue="Próximos passos e contexto." />
+                </label>
+                <button className="primary-button">Salvar</button>
+              </div>
+            </Dialog>
+          )}
           {[
             'thoughts',
             'timeline',

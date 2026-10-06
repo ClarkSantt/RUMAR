@@ -163,6 +163,16 @@
     padding: var(--space-8) var(--space-6);
     color: var(--color-text-secondary);
   }
+  .thought-empty-illustration {
+    display: block;
+    width: 120px;
+    height: 108px;
+    margin: 0 auto var(--space-3);
+    object-fit: contain;
+  }
+  .thought-empty p {
+    margin: 0;
+  }
   .thought-layout > .thought-empty {
     display: grid;
     align-content: center;

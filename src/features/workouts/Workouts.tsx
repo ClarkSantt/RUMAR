@@ -216,6 +216,12 @@ function WorkoutToday({
             <div className="workout-today-main">
               {current && (
                 <section className="workout-today workout-today-active">
+                  <img
+                    className="workout-today-illustration"
+                    src="/assets/rumar/illustrations/workout-dumbbell.png"
+                    alt=""
+                    aria-hidden="true"
+                  />
                   <p className="workout-kicker">Treino em andamento</p>
                   <h2>{current.day_name}</h2>
                   <p>
@@ -233,8 +239,19 @@ function WorkoutToday({
               )}
               {rows
                 .filter((r) => !r.in_progress)
-                .map((row) => (
-                  <section className="workout-today workout-today-scheduled" key={row.id}>
+                .map((row, index) => (
+                  <section
+                    className={`workout-today workout-today-scheduled ${!current && index === 0 ? 'workout-today-illustrated' : ''}`}
+                    key={row.id}
+                  >
+                    {!current && index === 0 && (
+                      <img
+                        className="workout-today-illustration"
+                        src="/assets/rumar/illustrations/workout-dumbbell.png"
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    )}
                     <p className="workout-kicker">Treino de hoje</p>
                     <h2>{row.name}</h2>
                     <p>{row.completed ? 'Concluído' : `${row.exercise_count} exercícios`}</p>
@@ -331,6 +348,7 @@ function WorkoutToday({
           )}
           {!days.length ? (
             <EmptyState
+              illustration="/assets/rumar/empty-states/empty-workouts.png"
               icon={Dumbbell}
               title="Nenhum plano de treino ainda."
               description="Crie seu primeiro plano para começar, ou ative um plano existente."

@@ -83,6 +83,16 @@
   }
   .body-chart .body-chart-current {
     stroke-width: 3;
+    fill: var(--primary);
+  }
+  .body-chart .body-chart-current-halo {
+    fill: var(--color-primary-soft);
+    stroke: var(--primary);
+    stroke-width: 1;
+  }
+  .body-chart circle:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 3px;
   }
   .body-chart-axis {
     stroke: var(--chart-axis);

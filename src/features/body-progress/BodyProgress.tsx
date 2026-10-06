@@ -80,6 +80,15 @@ export function MetricChart({
         <polyline points={plotted.map(({ x, y }) => `${x},${y}`).join(' ')} />
         {plotted.map((point, index) => (
           <g key={point.date}>
+            {index === plotted.length - 1 && (
+              <circle
+                className="body-chart-current-halo"
+                cx={point.x}
+                cy={point.y}
+                r="10"
+                aria-hidden="true"
+              />
+            )}
             <circle
               className={index === plotted.length - 1 ? 'body-chart-current' : undefined}
               cx={point.x}

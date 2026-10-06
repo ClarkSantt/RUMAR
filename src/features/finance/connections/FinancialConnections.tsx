@@ -384,16 +384,20 @@ export function FinancialConnections({
           >
             {effectiveProvider.id === 'fake'
               ? 'Conectar instituição de teste'
-              : personal
-                ? 'Continuar com Meu Pluggy'
-                : 'Conectar instituição'}
+              : 'Conectar instituição'}
           </button>
         </>
       )}
       {!connections.length && (
-        <p className="finance-connections-empty">
-          Nenhuma instituição conectada. Você pode continuar usando Finanças sem conexão.
-        </p>
+        <div className="finance-connections-empty">
+          <img
+            src="/assets/rumar/illustrations/connections-bank.png"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+          />
+          <p>Nenhuma instituição conectada. Você pode continuar usando Finanças sem conexão.</p>
+        </div>
       )}
       {connections.length > 0 && (
         <label>

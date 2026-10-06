@@ -463,6 +463,13 @@ export function Settings({ store }: { store: RumoStore }) {
           )}
           {activeSection === 'about' && (
             <section className="settings-section about">
+              <img
+                className="settings-about-mark"
+                src="/assets/rumar/brand/mountain-mark.png"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+              />
               <h2>
                 RUMAR <span>{dataInfo?.appVersion ?? '1.8.0'}</span>
               </h2>

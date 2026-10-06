@@ -175,8 +175,14 @@
     width: 29px;
     height: 29px;
     border-radius: var(--radius-control);
-    border-color: var(--color-sidebar-border);
+    border: 0;
     color: var(--color-sidebar-text);
+  }
+  .brand-symbol img {
+    display: block;
+    width: 29px;
+    height: 29px;
+    object-fit: contain;
   }
   .sidebar-actions {
     display: grid;
@@ -352,12 +358,10 @@
     justify-content: center;
     gap: 6px;
     width: 100%;
-    min-height: 30px;
-    color: var(--color-sidebar-muted);
+    min-height: 36px;
+    border-top: 1px solid var(--color-sidebar-border);
+    color: var(--color-sidebar-text);
     font-size: 11.5px;
-  }
-  .sidebar-scroll-cue svg {
-    transform: rotate(90deg);
   }
   .sidebar-scroll-cue:focus-visible,
   .sidebar :focus-visible {
@@ -458,6 +462,19 @@
     padding: var(--space-10) var(--space-6);
     border-radius: var(--radius-card);
     background: var(--color-surface-subtle);
+  }
+  .empty-illustration {
+    display: block;
+    width: clamp(124px, 15vw, 168px);
+    height: clamp(112px, 14vw, 160px);
+    margin-bottom: var(--space-2);
+    object-fit: contain;
+  }
+  @media (max-width: 900px) {
+    .empty-illustration {
+      width: 124px;
+      height: 112px;
+    }
   }
   .empty-symbol {
     margin-bottom: var(--space-2);
@@ -765,11 +782,55 @@
     margin-top: var(--space-4);
   }
   .home-experience .home-glance {
-    max-width: 640px;
-    margin-top: var(--space-8);
+    max-width: none;
+    margin-top: var(--space-6);
   }
   .home-experience .capture-hint {
     margin-top: var(--space-5);
+  }
+  .home-experience .capture-hint.review-hint {
+    min-height: 148px;
+    margin-top: var(--space-4);
+    padding: var(--space-6);
+    justify-content: space-between;
+    align-items: end;
+    border: 0;
+    border-radius: var(--radius-card);
+    color: var(--color-text);
+    background:
+      url('/assets/rumar/decorative/mountain-progress.png') right 24px center / 156px auto no-repeat,
+      var(--color-primary-soft);
+  }
+  .home-experience .review-hint > span {
+    max-width: min(65%, 390px);
+  }
+  .home-experience .review-hint strong {
+    color: var(--color-primary);
+  }
+  .home-experience .review-hint:hover {
+    color: var(--color-text);
+  }
+  @media (max-width: 1100px) {
+    .home-experience .capture-hint.review-hint {
+      min-height: 108px;
+      padding: var(--space-4);
+    }
+  }
+  @media (max-width: 760px) {
+    .home-experience .capture-hint.review-hint {
+      min-height: 0;
+      padding: var(--space-3) 0;
+      color: var(--color-text-secondary);
+      border-top: 1px solid var(--color-border);
+      border-radius: 0;
+      background: none;
+    }
+    .home-experience .review-hint > span {
+      max-width: none;
+    }
+    .home-experience .review-hint strong {
+      color: var(--color-primary);
+    }
   }
   .home-experience .home-more {
     margin-top: var(--space-6);

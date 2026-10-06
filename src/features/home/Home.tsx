@@ -56,100 +56,102 @@ export function Home({
         </div>
       )}
       <div className="home-focus-layout">
-        <section className="today-section" id="home-tasks">
-          <div className="section-heading home-today-heading">
-            <h2>Hoje</h2>
-            {!quickSummary && (
-              <span aria-live="polite">
-                {rows.length
-                  ? `${completed} de ${rows.length} concluídas`
-                  : 'Sem tarefas previstas'}
-              </span>
+        <div className="home-primary">
+          <section className="today-section" id="home-tasks">
+            <div className="section-heading home-today-heading">
+              <h2>Hoje</h2>
+              {!quickSummary && (
+                <span aria-live="polite">
+                  {rows.length
+                    ? `${completed} de ${rows.length} concluídas`
+                    : 'Sem tarefas previstas'}
+                </span>
+              )}
+            </div>
+            {rows.length > 0 && !quickSummary && (
+              <progress
+                className="day-progress"
+                aria-label="Progresso de hoje"
+                max={rows.length}
+                value={completed}
+              />
             )}
-          </div>
-          {rows.length > 0 && !quickSummary && (
-            <progress
-              className="day-progress"
-              aria-label="Progresso de hoje"
-              max={rows.length}
-              value={completed}
+            <TaskList
+              rows={rows}
+              store={store}
+              onOpen={onOpen}
+              emptyTitle="Nada para hoje."
+              emptyDescription="Adicione uma tarefa ou simplesmente aproveite o espaço livre."
             />
+            <QuickEntry
+              placeholder="Adicionar tarefa para hoje…"
+              busy={store.busy}
+              onSave={(title) =>
+                store.run(
+                  (repo) =>
+                    repo.createTask({
+                      title,
+                      description: '',
+                      priority: 'normal',
+                      due_date: day,
+                      due_time: null,
+                      recurrence: null,
+                    }),
+                  'Tarefa adicionada.',
+                )
+              }
+            />
+          </section>
+          <div className="home-glance" aria-label="Outros itens do dia">
+            <button onClick={onInbox}>
+              <span className="summary-label">Inbox</span>
+              <strong>{data.inbox.length}</strong>
+              <span className="summary-caption">
+                {data.inbox.length === 1 ? 'item para organizar' : 'itens para organizar'}{' '}
+                <ArrowRight size={14} />
+              </span>
+            </button>
+            <button onClick={() => setShowOverdue(!showOverdue)} aria-expanded={showOverdue}>
+              <span className="summary-label">Para retomar</span>
+              <strong>{overdue.length}</strong>
+              <span className="summary-caption">
+                {overdue.length === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}
+              </span>
+            </button>
+          </div>
+          {showOverdue && (
+            <section className="secondary-section">
+              <div className="section-heading">
+                <h2>Para retomar</h2>
+                <span>{overdue.length} atrasadas</span>
+              </div>
+              <TaskList
+                rows={overdue}
+                store={store}
+                onOpen={onOpen}
+                showDate
+                emptyTitle="Tudo em dia."
+              />
+            </section>
           )}
-          <TaskList
-            rows={rows}
-            store={store}
-            onOpen={onOpen}
-            emptyTitle="Nada para hoje."
-            emptyDescription="Adicione uma tarefa ou simplesmente aproveite o espaço livre."
-          />
-          <QuickEntry
-            placeholder="Adicionar tarefa para hoje…"
-            busy={store.busy}
-            onSave={(title) =>
-              store.run(
-                (repo) =>
-                  repo.createTask({
-                    title,
-                    description: '',
-                    priority: 'normal',
-                    due_date: day,
-                    due_time: null,
-                    recurrence: null,
-                  }),
-                'Tarefa adicionada.',
-              )
-            }
-          />
-        </section>
+          <button className="capture-hint" onClick={onInbox}>
+            <Inbox size={16} />
+            <span>Uma ideia para depois? Guarde no Inbox.</span>
+            <kbd>Ctrl + Espaço</kbd>
+          </button>
+          <button className="capture-hint review-hint" onClick={onReview}>
+            <span>
+              <strong>REVISÃO SEMANAL</strong> Veja o que foi registrado e prepare a próxima semana.
+            </span>
+            <ArrowRight size={16} />
+          </button>
+        </div>
         {continuation && (
           <aside className="home-continuation" aria-label="Continuidade do dia">
             {continuation}
           </aside>
         )}
       </div>
-      <div className="home-glance" aria-label="Outros itens do dia">
-        <button onClick={onInbox}>
-          <span className="summary-label">Inbox</span>
-          <strong>{data.inbox.length}</strong>
-          <span className="summary-caption">
-            {data.inbox.length === 1 ? 'item para organizar' : 'itens para organizar'}{' '}
-            <ArrowRight size={14} />
-          </span>
-        </button>
-        <button onClick={() => setShowOverdue(!showOverdue)} aria-expanded={showOverdue}>
-          <span className="summary-label">Para retomar</span>
-          <strong>{overdue.length}</strong>
-          <span className="summary-caption">
-            {overdue.length === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}
-          </span>
-        </button>
-      </div>
-      {showOverdue && (
-        <section className="secondary-section">
-          <div className="section-heading">
-            <h2>Para retomar</h2>
-            <span>{overdue.length} atrasadas</span>
-          </div>
-          <TaskList
-            rows={overdue}
-            store={store}
-            onOpen={onOpen}
-            showDate
-            emptyTitle="Tudo em dia."
-          />
-        </section>
-      )}
-      <button className="capture-hint" onClick={onInbox}>
-        <Inbox size={16} />
-        <span>Uma ideia para depois? Guarde no Inbox.</span>
-        <kbd>Ctrl + Espaço</kbd>
-      </button>
-      <button className="capture-hint review-hint" onClick={onReview}>
-        <span>
-          <strong>REVISÃO SEMANAL</strong> Veja o que foi registrado e prepare a próxima semana.
-        </span>
-        <ArrowRight size={16} />
-      </button>
     </>
   );
 }

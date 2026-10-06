@@ -324,6 +324,13 @@ export function Timeline({
       {loading && !events.length && <p role="status">Carregando Timeline…</p>}
       {!loading && !events.length && !error && (
         <section className="empty-state">
+          <img
+            className="empty-illustration"
+            src="/assets/rumar/empty-states/empty-timeline.png"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+          />
           <h2>Nenhum registro neste período.</h2>
           <p>Você pode ampliar as datas ou registrar um momento.</p>
         </section>

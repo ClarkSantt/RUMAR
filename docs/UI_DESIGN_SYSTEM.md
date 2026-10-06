@@ -127,7 +127,7 @@ Primary buttons mean the page's next contextual action. Secondary and ghost cont
 
 ### Rows, tables and empty states
 
-Lists remain rows with quiet dividers, visible hover/selection and metadata at a readable size. Tables use a light horizontal rhythm, restrained headers, horizontal scrolling in narrow containers and a row hover that does not obscure content. The shared `EmptyState` accepts an icon, contextual title, useful description, primary action and optional secondary action. It uses a subtle surface rather than a large illustration. A Home empty state remains unboxed so it does not create a card inside a section. Distinguish no records, no records for this filter and a completed day in copy supplied by each module.
+Lists remain rows with quiet dividers, visible hover/selection and metadata at a readable size. Tables use a light horizontal rhythm, restrained headers, horizontal scrolling in narrow containers and a row hover that does not obscure content. The shared `EmptyState` accepts an icon or one optional illustration, contextual title, useful description, primary action and optional secondary action. It uses a subtle surface and keeps illustrations below 200px. A Home empty state remains unboxed so it does not create a card inside a section. Distinguish no records, no records for this filter and a completed day in copy supplied by each module.
 
 ### Charts
 
@@ -197,3 +197,17 @@ The global final polish may adjust cross-module details after these dedicated mi
 | Settings                    | DONE   |
 
 Legacy Screen Migration: COMPLETE.
+
+## RUMAR VISUAL ASSETS
+
+The official blue mountain mark supplied by the brand guide is the source for the compact sidebar mark, About and the desktop icon. Do not substitute the experimental R or road symbols. The desktop PNG and ICO are technical resizes of that mark on a navy rounded square; no signing or Windows behavior changes are part of the visual asset integration.
+
+Use individual production assets from `public/assets/rumar/` only where they improve orientation or a genuinely empty state. The shared illustrated `EmptyState` keeps the current title, explanation and next action in accessible text, with a contained 124–168px image. Module-specific empty illustrations may appear in existing empty rows. Search-filter emptiness and completed days must not imply that the user has no records. Keep the Calendar grid and active Reviews writing surface free of decorative empty art.
+
+Home may use one contextual mountain illustration in its weekly-review prompt. Workouts Today may use one 140–205px dumbbell illustration beside the primary action; future sessions, exercise rows and active forms stay text-led. Other decorative assets need a real contextual purpose and must not be repeated per card or row. Never use illustration files as charts or bank logos.
+
+Photographs and large heroes are optional supporting media, never a default page structure. Prefer quiet, brand-compatible landscapes without a prominent person, and keep the primary task, status and action visually ahead of the image. The supplied media packs were inspected, but no photograph was added to the final bundle because the selected mountain illustration served Home with less competition and lower asset cost.
+
+Decorative images use `alt=""` and `aria-hidden="true"`; all information and actions remain in the DOM. Reserve image dimensions, preserve aspect ratio with `object-fit: contain`, and lazy-load imagery outside the initial task path. Use the same files in light and dark without hue inversion; adjust the surrounding semantic surface instead. Reduce or hide decorative media on compact viewports before compromising controls. Copy only referenced production files to the bundle; no remote visual assets or preview boards are shipped. Less is more.
+
+Global Final Polish: DONE. Asset Integration: DONE.

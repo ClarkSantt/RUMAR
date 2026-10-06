@@ -106,6 +106,7 @@ function RoutineCollection({
           <p className="muted">Nenhuma rotina prevista para hoje.</p>
         ) : (
           <EmptyState
+            illustration="/assets/rumar/empty-states/empty-routines.png"
             icon={ListChecks}
             title="Nenhuma rotina ainda."
             description="Crie uma sequência para organizar atividades que você costuma fazer juntas."

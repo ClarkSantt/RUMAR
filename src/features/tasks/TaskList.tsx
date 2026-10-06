@@ -80,6 +80,7 @@ export function TaskList({
   showDate = false,
   emptyTitle = 'Nenhuma tarefa aqui.',
   emptyDescription,
+  emptyIllustration,
 }: {
   rows: TaskOccurrence[];
   store: RumoStore;
@@ -87,8 +88,16 @@ export function TaskList({
   showDate?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyIllustration?: string;
 }) {
-  if (!rows.length) return <EmptyState title={emptyTitle} description={emptyDescription} />;
+  if (!rows.length)
+    return (
+      <EmptyState
+        title={emptyTitle}
+        description={emptyDescription}
+        illustration={emptyIllustration}
+      />
+    );
   return (
     <div className="task-list">
       {rows.map((row) => (

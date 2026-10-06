@@ -309,9 +309,18 @@ export function Thoughts({
             );
           })}
           {!items.length && (
-            <p className="thought-empty">
-              {search ? 'Nenhum pensamento encontrado.' : 'Suas ideias começam aqui.'}
-            </p>
+            <div className="thought-empty">
+              {!search && (
+                <img
+                  className="thought-empty-illustration"
+                  src="/assets/rumar/empty-states/empty-thoughts.png"
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                />
+              )}
+              <p>{search ? 'Nenhum pensamento encontrado.' : 'Suas ideias começam aqui.'}</p>
+            </div>
           )}
           {items.length === 100 && (
             <p>Mostrando os 100 mais recentes. Use a busca para encontrar anteriores.</p>

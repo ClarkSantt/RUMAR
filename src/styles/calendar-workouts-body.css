@@ -223,9 +223,19 @@
     border-radius: var(--radius-card);
     background: var(--color-surface);
   }
-  .workout-today-scheduled,
+  .workout-today-illustrated,
   .workout-today-active {
     background: linear-gradient(115deg, var(--color-surface) 60%, var(--color-primary-soft));
+    padding-right: clamp(180px, 25%, 220px);
+  }
+  .workout-today-illustration {
+    position: absolute;
+    inset: 50% 8px auto auto;
+    width: clamp(142px, 25%, 205px);
+    height: 160px;
+    transform: translateY(-50%);
+    object-fit: contain;
+    pointer-events: none;
   }
   .workout-today-active {
     border-color: var(--color-primary);
@@ -342,6 +352,13 @@
     }
     .workout-next-list {
       grid-template-columns: minmax(0, 1fr);
+    }
+    .workout-today-illustrated,
+    .workout-today-active {
+      padding-right: var(--space-6);
+    }
+    .workout-today-illustration {
+      display: none;
     }
   }
   .workout-overview {

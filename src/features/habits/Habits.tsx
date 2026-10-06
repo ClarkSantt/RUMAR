@@ -175,6 +175,7 @@ function HabitCollection({
           </p>
         ) : (
           <EmptyState
+            illustration="/assets/rumar/empty-states/empty-habits.png"
             icon={Repeat2}
             title="Nenhum hábito ainda."
             description="Crie um hábito para acompanhar pequenas ações que você quer manter no dia a dia."

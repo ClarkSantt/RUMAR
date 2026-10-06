@@ -156,9 +156,17 @@ export function NutritionTodayMeals({
           ))}
         </div>
       ) : (
-        <p className="field-help">
-          Nada registrado hoje. O diário está pronto quando você precisar.
-        </p>
+        <div className="nutrition-meal-empty">
+          <img
+            src="/assets/rumar/empty-states/empty-nutrition.png"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+          />
+          <p className="field-help">
+            Nada registrado hoje. O diário está pronto quando você precisar.
+          </p>
+        </div>
       )}
     </div>
   );

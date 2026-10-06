@@ -215,6 +215,7 @@ export function Calendar({
                   key={item.kind + item.id}
                   data-kind={item.kind}
                   className={`calendar-event ${item.completed ? 'calendar-done' : ''}`}
+                  title={`${item.time ? `${item.time} · ` : ''}${item.name}`}
                 >
                   {item.time ? item.time + ' ' : ''}
                   {item.name}

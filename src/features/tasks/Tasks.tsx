@@ -130,7 +130,13 @@ export function Tasks({
               </section>
             ))
           ) : (
-            <TaskList rows={rows} store={listStore} onOpen={onOpen} showDate={view !== 'Hoje'} />
+            <TaskList
+              rows={rows}
+              store={listStore}
+              onOpen={onOpen}
+              showDate={view !== 'Hoje'}
+              emptyIllustration="/assets/rumar/empty-states/empty-tasks.png"
+            />
           ))}
         {view !== 'Concluídas' && (
           <QuickEntry

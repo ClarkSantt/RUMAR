@@ -309,6 +309,9 @@ export function Projects({
             </div>
           ) : (
             <EmptyState
+              illustration={
+                !projects.length ? '/assets/rumar/empty-states/empty-projects.png' : undefined
+              }
               title={projectEmptyCopy(view, projects.length > 0).title}
               description={projectEmptyCopy(view, projects.length > 0).description}
               icon={FolderKanban}

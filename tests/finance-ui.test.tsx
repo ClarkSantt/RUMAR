@@ -77,6 +77,28 @@ it('cria conta e movimentação pela UI, atualiza resumo e oculta valores', asyn
   });
 });
 
+it('expõe affordance e percurso por teclado na navegação compacta', async () => {
+  const user = userEvent.setup();
+  render(<Finance day="2026-09-27" />);
+  const previous = await screen.findByRole('button', {
+    name: 'Mostrar seções anteriores de Finanças',
+  });
+  expect(screen.getByRole('button', { name: 'Mostrar mais seções de Finanças' })).toBeTruthy();
+  previous.focus();
+  await user.tab();
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Visão geral' }));
+  for (const label of [
+    'Transações',
+    'Planejamento',
+    'Objetivos',
+    'Patrimônio',
+    'Contas conectadas',
+  ]) {
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: label }));
+  }
+});
+
 it('Home consulta resumo compacto somente quando há dados', async () => {
   const { sqlite } = db;
   const view = render(<HomeFinance day="2026-09-27" onNavigate={() => {}} />);

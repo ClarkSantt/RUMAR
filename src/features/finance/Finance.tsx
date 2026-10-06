@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getDatabase } from '../../lib/database/connection';
 import { available, money, parseMoney, projectGoal } from './domain';
 import { decodeOfxBytes, fileHash, parseOfx, type OfxDocument } from './ofx';
@@ -157,6 +158,7 @@ export function Finance({
   day: string;
   searchTarget?: { group: string; title: string; detail: string };
 }) {
+  const financeTabsRef = useRef<HTMLElement>(null);
   const [repo, setRepo] = useState<FinanceRepository | null>(null),
     [tab, setTab] = useState<Tab>(
       searchTarget?.group === 'Transações'
@@ -446,17 +448,45 @@ export function Finance({
           <p>Seu dinheiro, organizado com clareza.</p>
         </header>
         <div className="finance-toolbar">
-          <nav className="nutrition-tabs" aria-label="Seções de Finanças">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                aria-current={tab === t.id ? 'page' : undefined}
-                onClick={() => setTab(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </nav>
+          <div className="finance-tab-scroll">
+            <button
+              type="button"
+              className="finance-tab-arrow"
+              aria-label="Mostrar seções anteriores de Finanças"
+              onClick={() => financeTabsRef.current?.scrollBy?.({ left: -240 })}
+            >
+              <ChevronLeft size={17} aria-hidden="true" />
+            </button>
+            <nav
+              className="nutrition-tabs"
+              aria-label="Seções de Finanças"
+              ref={financeTabsRef}
+              onFocusCapture={(event) =>
+                event.target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+              }
+            >
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  aria-current={tab === t.id ? 'page' : undefined}
+                  onClick={(event) => {
+                    setTab(t.id);
+                    event.currentTarget.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+            <button
+              type="button"
+              className="finance-tab-arrow"
+              aria-label="Mostrar mais seções de Finanças"
+              onClick={() => financeTabsRef.current?.scrollBy?.({ left: 240 })}
+            >
+              <ChevronRight size={17} aria-hidden="true" />
+            </button>
+          </div>
           <button
             className="text-button"
             onClick={() =>
@@ -707,7 +737,15 @@ export function Finance({
                   ))}
                 </ul>
               ) : (
-                <p className="field-help">Nenhuma transação neste mês.</p>
+                <div className="finance-recent-empty">
+                  <img
+                    src="/assets/rumar/empty-states/empty-finance.png"
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                  />
+                  <p className="field-help">Nenhuma transação neste mês.</p>
+                </div>
               )}
             </section>
           </>

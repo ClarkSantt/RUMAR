@@ -240,7 +240,13 @@ function WorkoutsPreview() {
       <div className="workout-today-page">
         <div className="workout-today-top">
           <div className="workout-today-main">
-            <section className="workout-today workout-today-scheduled">
+            <section className="workout-today workout-today-scheduled workout-today-illustrated">
+              <img
+                className="workout-today-illustration"
+                src="/assets/rumar/illustrations/workout-dumbbell.png"
+                alt=""
+                aria-hidden="true"
+              />
               <p className="workout-kicker">Treino de hoje</p>
               <h2>Força · membros superiores</h2>
               <p>6 exercícios</p>

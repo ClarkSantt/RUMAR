@@ -1,7 +1,7 @@
 @layer tokens, base, layout, components;
 @layer components {
   .settings-page {
-    max-width: var(--page-width-standard);
+    max-width: 1120px;
     margin-inline: auto;
   }
   .settings-header {
@@ -9,9 +9,10 @@
   }
   .settings-layout {
     display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns: 208px minmax(0, 820px);
     gap: var(--space-5);
     align-items: start;
+    justify-content: center;
   }
   .settings-nav {
     display: grid;
@@ -56,7 +57,7 @@
   }
   .settings-content .settings-section {
     margin: 0 0 var(--space-5);
-    padding: var(--space-5);
+    padding: var(--space-4) 0 var(--space-5);
   }
   .settings-content .settings-section h2 {
     margin-top: 0;
@@ -64,6 +65,25 @@
   }
   .settings-content .preference-row {
     gap: var(--space-4);
+  }
+  .settings-content .preference-row:not(label) {
+    display: grid;
+    grid-template-columns: minmax(0, 220px) minmax(0, 240px);
+    justify-content: start;
+    align-items: center;
+  }
+  .settings-content .name-field {
+    max-width: 540px;
+  }
+  .settings-content .backup-preferences {
+    max-width: 700px;
+  }
+  .settings-about-mark {
+    display: block;
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin-bottom: var(--space-3);
   }
   .settings-content .theme-options {
     justify-content: flex-start;
@@ -81,7 +101,7 @@
       gap: var(--space-3);
     }
     .settings-content .settings-section {
-      padding: var(--space-4);
+      padding: var(--space-3) 0 var(--space-4);
     }
   }
 }

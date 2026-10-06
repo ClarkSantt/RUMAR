@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowUpRight,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Dumbbell,
@@ -138,7 +138,7 @@ export function AppSidebar({
       <div className="sidebar-brand-row">
         <div className="wordmark" aria-label="RUMAR">
           <span className="brand-symbol" aria-hidden="true">
-            <ArrowUpRight size={19} strokeWidth={2.2} />
+            <img src="/assets/rumar/brand/mountain-mark.png" alt="" />
           </span>
           <span className="sidebar-label">RUMAR</span>
         </div>
@@ -206,13 +206,13 @@ export function AppSidebar({
       {hasMoreNavigation && (
         <button
           className="sidebar-scroll-cue"
-          aria-label="Ver mais seções da navegação"
-          title="Ver mais seções da navegação"
+          aria-label="Ver mais seções abaixo na navegação"
+          title="Ver mais seções abaixo"
           onClick={() =>
             navigationRef.current?.scrollBy(0, navigationRef.current.clientHeight * 0.75)
           }
         >
-          <ChevronRight size={15} aria-hidden="true" />
+          <ChevronDown size={15} aria-hidden="true" />
           <span className="sidebar-label">Mais seções</span>
         </button>
       )}

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { NutrientSummary, NutritionTodayMeals } from '../../src/features/nutrition/Nutrition';
 import { FinanceOverviewMetrics } from '../../src/features/finance/Finance';
 import {
@@ -75,6 +76,7 @@ const summary = {
 };
 
 export function NutritionFinancePreview({ screen }: { screen: string }) {
+  const financeTabsRef = useRef<HTMLElement>(null);
   const [hidden, setHidden] = useState(false);
   const nutrition = screen.startsWith('nutrition-');
   const connections = screen.startsWith('finance-connection');
@@ -208,20 +210,36 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
       ) : (
         <>
           <div className="finance-toolbar">
-            <nav className="nutrition-tabs" aria-label="Seções de Finanças">
-              {[
-                'Visão geral',
-                'Transações',
-                'Planejamento',
-                'Objetivos',
-                'Patrimônio',
-                'Contas conectadas',
-              ].map((label) => (
-                <button key={label} aria-current={financeTab === label ? 'page' : undefined}>
-                  {label}
-                </button>
-              ))}
-            </nav>
+            <div className="finance-tab-scroll">
+              <button
+                className="finance-tab-arrow"
+                aria-label="Mostrar seções anteriores de Finanças"
+                onClick={() => financeTabsRef.current?.scrollBy({ left: -240 })}
+              >
+                <ChevronLeft size={17} aria-hidden="true" />
+              </button>
+              <nav className="nutrition-tabs" aria-label="Seções de Finanças" ref={financeTabsRef}>
+                {[
+                  'Visão geral',
+                  'Transações',
+                  'Planejamento',
+                  'Objetivos',
+                  'Patrimônio',
+                  'Contas conectadas',
+                ].map((label) => (
+                  <button key={label} aria-current={financeTab === label ? 'page' : undefined}>
+                    {label}
+                  </button>
+                ))}
+              </nav>
+              <button
+                className="finance-tab-arrow"
+                aria-label="Mostrar mais seções de Finanças"
+                onClick={() => financeTabsRef.current?.scrollBy({ left: 240 })}
+              >
+                <ChevronRight size={17} aria-hidden="true" />
+              </button>
+            </div>
             <button className="text-button" onClick={() => setHidden(!hidden)}>
               {hidden ? 'Mostrar valores' : 'Ocultar valores'}
             </button>
@@ -444,79 +462,97 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
                 ))}
               </ol>
               <p className="field-help">Ambiente de demonstração com dados fictícios.</p>
-              <button className="secondary-button">Continuar com Meu Pluggy</button>
-              <label>
-                1. Instituição conectada
-                <select>
-                  <option>Banco de teste</option>
-                </select>
-              </label>
-              <p className="finance-connection-status">
-                Estado: Conectada · Última sincronização: não realizada
-              </p>
-              <h3 className="finance-flow-heading">2. Escolher destino no RUMAR</h3>
-              <div className="preference-row finance-account-mapping">
-                <div className="finance-mapping-source">
-                  <small>Conta externa</small>
-                  <strong>Conta de demonstração</strong>
-                  <span>BRL · •••• 0000</span>
-                </div>
-                <span className="finance-mapping-arrow" aria-hidden="true">
-                  →
-                </span>
-                <label>
-                  Conta de destino no RUMAR
-                  <select>
-                    <option>Conta local fictícia</option>
-                  </select>
-                </label>
-                <button className="text-button">Criar conta RUMAR</button>
-              </div>
-              <p className="field-help">
-                Origem e destino: Conta de demonstração → Conta local fictícia.
-              </p>
-              <h3 className="finance-flow-heading">3. Revisar antes de importar</h3>
-              <label>
-                Período inicial
-                <select>
-                  <option>90 dias</option>
-                </select>
-              </label>
-              <div className="form-actions">
-                <button className="secondary-button">Prévia</button>
-                <button className="primary-button">Revisar importação</button>
-              </div>
-              {(screen === 'finance-connection-preview' ||
-                screen === 'finance-connection-confirmation') && (
-                <section className="finance-connection-preview" aria-label="Prévia da importação">
-                  <h3>Origem, destino e transações</h3>
-                  <p>2 registros · 2 novos · 0 para revisão · 0 já existentes</p>
-                  <FinancialPreviewRows
-                    rows={previewRows}
-                    localAccounts={[{ id: 'local-finance', name: 'Conta local fictícia' }]}
-                    hidden={hidden}
+              <button className="secondary-button">Conectar instituição</button>
+              {screen === 'finance-connection-institution' ? (
+                <div className="finance-connections-empty">
+                  <img
+                    src="/assets/rumar/illustrations/connections-bank.png"
+                    alt=""
+                    aria-hidden="true"
                   />
-                </section>
-              )}
-              {screen === 'finance-connection-confirmation' && (
-                <FinancialImportConfirmation
-                  connection={{
-                    id: 'demo',
-                    provider: 'fake',
-                    external_connection_id: 'demo',
-                    institution_name: 'Banco de teste',
-                    status: 'connected',
-                    consent_expires_at: null,
-                    last_synced_at: null,
-                  }}
-                  mappedAccounts={[fakeExternalAccount]}
-                  localAccounts={[{ id: 'local-finance', name: 'Conta local fictícia' }]}
-                  days={90}
-                  counts={{ total: 2, new: 2, update: 0, review: 0, existing: 0 }}
-                  busy={false}
-                  onClose={() => {}}
-                  onConfirm={() => {}}
-                />
+                  <p>
+                    Nenhuma instituição conectada. Você pode continuar usando Finanças sem conexão.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <label>
+                    1. Instituição conectada
+                    <select>
+                      <option>Banco de teste</option>
+                    </select>
+                  </label>
+                  <p className="finance-connection-status">
+                    Estado: Conectada · Última sincronização: não realizada
+                  </p>
+                  <h3 className="finance-flow-heading">2. Escolher destino no RUMAR</h3>
+                  <div className="preference-row finance-account-mapping">
+                    <div className="finance-mapping-source">
+                      <small>Conta externa</small>
+                      <strong>Conta de demonstração</strong>
+                      <span>BRL · •••• 0000</span>
+                    </div>
+                    <span className="finance-mapping-arrow" aria-hidden="true">
+                      →
+                    </span>
+                    <label>
+                      Conta de destino no RUMAR
+                      <select>
+                        <option>Conta local fictícia</option>
+                      </select>
+                    </label>
+                    <button className="text-button">Criar conta RUMAR</button>
+                  </div>
+                  <p className="field-help">
+                    Origem e destino: Conta de demonstração → Conta local fictícia.
+                  </p>
+                  <h3 className="finance-flow-heading">3. Revisar antes de importar</h3>
+                  <label>
+                    Período inicial
+                    <select>
+                      <option>90 dias</option>
+                    </select>
+                  </label>
+                  <div className="form-actions">
+                    <button className="secondary-button">Prévia</button>
+                    <button className="primary-button">Revisar importação</button>
+                  </div>
+                  {(screen === 'finance-connection-preview' ||
+                    screen === 'finance-connection-confirmation') && (
+                    <section
+                      className="finance-connection-preview"
+                      aria-label="Prévia da importação"
+                    >
+                      <h3>Origem, destino e transações</h3>
+                      <p>2 registros · 2 novos · 0 para revisão · 0 já existentes</p>
+                      <FinancialPreviewRows
+                        rows={previewRows}
+                        localAccounts={[{ id: 'local-finance', name: 'Conta local fictícia' }]}
+                        hidden={hidden}
+                      />
+                    </section>
+                  )}
+                  {screen === 'finance-connection-confirmation' && (
+                    <FinancialImportConfirmation
+                      connection={{
+                        id: 'demo',
+                        provider: 'fake',
+                        external_connection_id: 'demo',
+                        institution_name: 'Banco de teste',
+                        status: 'connected',
+                        consent_expires_at: null,
+                        last_synced_at: null,
+                      }}
+                      mappedAccounts={[fakeExternalAccount]}
+                      localAccounts={[{ id: 'local-finance', name: 'Conta local fictícia' }]}
+                      days={90}
+                      counts={{ total: 2, new: 2, update: 0, review: 0, existing: 0 }}
+                      busy={false}
+                      onClose={() => {}}
+                      onConfirm={() => {}}
+                    />
+                  )}
+                </>
               )}
             </section>
           )}
