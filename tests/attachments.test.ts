@@ -5,6 +5,7 @@ import { database } from './database';
 const date = '2026-09-29T12:00:00.000Z';
 const projectId = 'project-test';
 const thoughtId = 'thought-test';
+const taskId = 'task-test';
 const firstId = '11111111-1111-4111-8111-111111111111';
 const secondId = '22222222-2222-4222-8222-222222222222';
 
@@ -17,6 +18,11 @@ function insertThought(sqlite: ReturnType<typeof database>['sqlite']) {
   sqlite
     .prepare('INSERT INTO thoughts(id,title,created_at,updated_at) VALUES(?,?,?,?)')
     .run(thoughtId, 'Ideia', date, date);
+}
+function insertTask(sqlite: ReturnType<typeof database>['sqlite']) {
+  sqlite
+    .prepare('INSERT INTO tasks(id,title,created_at,updated_at) VALUES(?,?,?,?)')
+    .run(taskId, 'Documento', date, date);
 }
 function add(
   sqlite: ReturnType<typeof database>['sqlite'],
@@ -91,6 +97,20 @@ describe('metadata de anexos', () => {
     add(sqlite, firstId, 'project', projectId);
     sqlite.prepare('DELETE FROM projects WHERE id=?').run(projectId);
     expect(sqlite.prepare('SELECT COUNT(*) AS n FROM attachments').get()).toEqual({ n: 0 });
+    expect(sqlite.prepare('SELECT relative_path FROM attachment_cleanup').all()).toEqual([
+      { relative_path: `attachments/${firstId}/file.pdf` },
+    ]);
+    sqlite.close();
+  });
+
+  it('vincula anexos a Task e remove somente a cópia gerenciada ao excluir metadata', () => {
+    const { sqlite } = database();
+    insertTask(sqlite);
+    add(sqlite, firstId, 'task', taskId, 'referência.txt');
+    expect(
+      sqlite.prepare('SELECT entity_type,entity_id FROM attachments WHERE id=?').get(firstId),
+    ).toEqual({ entity_type: 'task', entity_id: taskId });
+    sqlite.prepare('DELETE FROM attachments WHERE id=?').run(firstId);
     expect(sqlite.prepare('SELECT relative_path FROM attachment_cleanup').all()).toEqual([
       { relative_path: `attachments/${firstId}/file.pdf` },
     ]);

@@ -1,11 +1,14 @@
 const BASE = 'https://api.pluggy.ai';
 
 export class PluggyClient {
-  constructor({ clientId, clientSecret, fetchImpl = fetch }) {
+  constructor({ clientId, clientSecret, fetchImpl = fetch, timeoutMs = 15_000 }) {
     if (!clientId || !clientSecret) throw Error('Pluggy credentials missing');
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000)
+      throw Error('Pluggy timeout invalid');
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.fetch = fetchImpl;
+    this.timeoutMs = timeoutMs;
     this.key = null;
     this.keyUntil = 0;
     this.keyPending = null;
@@ -17,7 +20,7 @@ export class PluggyClient {
         method,
         headers: { 'content-type': 'application/json', ...(key ? { 'x-api-key': key } : {}) },
         body: body === undefined ? undefined : JSON.stringify(body),
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
       if (method !== 'GET' || ![429, 500, 502, 503, 504].includes(response.status) || attempt >= 2)
         break;

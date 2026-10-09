@@ -41,23 +41,60 @@ const sections = [
   { id: 'about', label: 'Sobre' },
 ] as const;
 type SettingsSection = (typeof sections)[number]['id'];
+interface DataInfo {
+  databasePath: string;
+  automaticDirectory: string;
+  appVersion: string;
+}
+interface BackupManifest {
+  backupVersion: number;
+  appVersion: string;
+  schemaVersion: number;
+  createdAt: string;
+  databaseSize: number;
+  attachmentCount: number;
+  kind: string;
+  sha256: string;
+}
+interface HealthReport {
+  sqlite: string;
+  foreignKeys: string;
+  schemaVersion: number;
+  expectedSchema: number;
+  attachmentCount: number;
+  attachmentMissing: number;
+  attachmentMismatched: number;
+  orphanFiles: number;
+  backupDirectory: string;
+  backupCount: number;
+  latestBackupAt: string | null;
+  lastBackupError: string;
+}
+const formatBytes = (bytes: number) =>
+  `${(bytes / (1024 * 1024)).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`;
+const nextBackupAt = (frequency: string, last: string | null) => {
+  if (frequency === 'off') return null;
+  const interval = frequency === 'daily' ? 86_400 : 7 * 86_400;
+  const base = last ? Number(last) : Math.floor(Date.now() / 1000) - interval;
+  return Number.isFinite(base) ? new Date((base + interval) * 1000) : null;
+};
 export function Settings({ store }: { store: RumoStore }) {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
   const [sectionQuery, setSectionQuery] = useState('');
   const [name, setName] = useState(store.data!.settings.name);
-  const [dataInfo, setDataInfo] = useState<{ databasePath: string; appVersion: string } | null>(
-    null,
-  );
+  const [dataInfo, setDataInfo] = useState<DataInfo | null>(null);
   const [frequency, setFrequency] = useState('off');
-  const [keepCount, setKeepCount] = useState(10);
+  const [dailyKeep, setDailyKeep] = useState(7);
+  const [weeklyKeep, setWeeklyKeep] = useState(4);
+  const [monthlyKeep, setMonthlyKeep] = useState(6);
   const [lastAutomatic, setLastAutomatic] = useState<string | null>(null);
+  const [health, setHealth] = useState<HealthReport | null>(null);
   const [hideValues, setHideValues] = useState(false);
   const [timelinePrivate, setTimelinePrivate] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [selected, setSelected] = useState<{
     path: string;
-    schemaVersion: number;
-    createdAt: string;
+    manifest: BackupManifest;
   } | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -66,10 +103,19 @@ export function Settings({ store }: { store: RumoStore }) {
   useEffect(() => {
     let active = true;
     void Promise.all([
-      invoke<{ databasePath: string; appVersion: string }>('data_info'),
+      invoke<DataInfo>('data_info'),
       getDatabase().then((db) =>
-        db.select<{ frequency: string; keep_count: number; last_auto_at: string | null }[]>(
-          'SELECT frequency,keep_count,last_auto_at FROM backup_preferences WHERE id=1',
+        db.select<
+          {
+            frequency: string;
+            daily_keep: number;
+            weekly_keep: number;
+            monthly_keep: number;
+            last_auto_at: string | null;
+          }[]
+        >(
+          `SELECT frequency,daily_keep,weekly_keep,monthly_keep,last_auto_at
+           FROM backup_preferences WHERE id=1`,
         ),
       ),
       getDatabase().then((db) =>
@@ -83,7 +129,9 @@ export function Settings({ store }: { store: RumoStore }) {
         if (!active) return;
         setDataInfo(info);
         setFrequency(rows[0]?.frequency ?? 'off');
-        setKeepCount(rows[0]?.keep_count ?? 10);
+        setDailyKeep(rows[0]?.daily_keep ?? 7);
+        setWeeklyKeep(rows[0]?.weekly_keep ?? 4);
+        setMonthlyKeep(rows[0]?.monthly_keep ?? 6);
         setLastAutomatic(rows[0]?.last_auto_at ?? null);
         setHideValues(Boolean(privacy[0]?.hide_values));
         setTimelinePrivate(privateMode);
@@ -136,13 +184,21 @@ export function Settings({ store }: { store: RumoStore }) {
     });
     if (!path || typeof path !== 'string') return;
     await action(async () => {
-      const manifest = await invoke<{ schemaVersion: number; createdAt: string }>(
-        'inspect_backup',
-        { source: path },
-      );
-      setSelected({ path, ...manifest });
+      const manifest = await invoke<BackupManifest>('inspect_backup', { source: path });
+      setSelected({ path, manifest });
       setConfirmed(false);
       return 'Backup validado. Confira os dados abaixo antes de restaurar.';
+    });
+  }
+  async function chooseBackupDirectory() {
+    const path = await open({ multiple: false, directory: true });
+    if (!path || typeof path !== 'string') return;
+    await action(async () => {
+      const automaticDirectory = await invoke<string>('set_backup_directory', {
+        directory: path,
+      });
+      setDataInfo((current) => (current ? { ...current, automaticDirectory } : current));
+      return 'Diretório de backups atualizado.';
     });
   }
   async function restore() {
@@ -295,9 +351,52 @@ export function Settings({ store }: { store: RumoStore }) {
               <DataCenter onImported={store.retry} />
               <p>O banco fica neste computador. Backups manuais são salvos onde você escolher.</p>
               {dataInfo && (
-                <p className="data-path">
-                  <strong>Banco local:</strong> {dataInfo.databasePath}
-                </p>
+                <div className="settings-data-paths">
+                  <p className="data-path">
+                    <strong>Banco local:</strong> {dataInfo.databasePath}
+                  </p>
+                  <p className="data-path">
+                    <strong>Backups automáticos:</strong> {dataInfo.automaticDirectory}
+                  </p>
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={busy}
+                      onClick={() => void chooseBackupDirectory()}
+                    >
+                      Alterar pasta
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={busy}
+                      onClick={() =>
+                        void action(async () => {
+                          await invoke('set_backup_directory', { directory: '' });
+                          const info = await invoke<DataInfo>('data_info');
+                          setDataInfo(info);
+                          return 'Diretório padrão restaurado.';
+                        })
+                      }
+                    >
+                      Usar pasta padrão
+                    </button>
+                    <button
+                      type="button"
+                      className="text-button"
+                      disabled={busy}
+                      onClick={() =>
+                        void action(async () => {
+                          await invoke('open_backup_directory');
+                          return 'Pasta de backups aberta.';
+                        })
+                      }
+                    >
+                      Abrir pasta
+                    </button>
+                  </div>
+                </div>
               )}
               <div className="name-field backup-preferences">
                 <label htmlFor="backup-frequency">Backup automático</label>
@@ -311,25 +410,62 @@ export function Settings({ store }: { store: RumoStore }) {
                   <option value="daily">Diário</option>
                   <option value="weekly">Semanal</option>
                 </select>
-                <label htmlFor="backup-keep">Manter</label>
-                <input
-                  id="backup-keep"
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={keepCount}
-                  disabled={busy}
-                  onChange={(event) => setKeepCount(Number(event.target.value))}
-                />
+                <div className="backup-retention-grid" aria-label="Retenção de backups">
+                  <label htmlFor="backup-daily">
+                    Diários
+                    <input
+                      id="backup-daily"
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={dailyKeep}
+                      disabled={busy}
+                      onChange={(event) => setDailyKeep(Number(event.target.value))}
+                    />
+                  </label>
+                  <label htmlFor="backup-weekly">
+                    Semanais
+                    <input
+                      id="backup-weekly"
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={weeklyKeep}
+                      disabled={busy}
+                      onChange={(event) => setWeeklyKeep(Number(event.target.value))}
+                    />
+                  </label>
+                  <label htmlFor="backup-monthly">
+                    Mensais
+                    <input
+                      id="backup-monthly"
+                      type="number"
+                      min="1"
+                      max="24"
+                      value={monthlyKeep}
+                      disabled={busy}
+                      onChange={(event) => setMonthlyKeep(Number(event.target.value))}
+                    />
+                  </label>
+                </div>
                 <button
                   className="secondary-button"
-                  disabled={busy || keepCount < 1 || keepCount > 50}
+                  disabled={
+                    busy ||
+                    dailyKeep < 1 ||
+                    dailyKeep > 31 ||
+                    weeklyKeep < 1 ||
+                    weeklyKeep > 12 ||
+                    monthlyKeep < 1 ||
+                    monthlyKeep > 24
+                  }
                   onClick={() =>
                     void action(async () => {
                       const db = await getDatabase();
                       await db.execute(
-                        'UPDATE backup_preferences SET frequency=$1,keep_count=$2 WHERE id=1',
-                        [frequency, keepCount],
+                        `UPDATE backup_preferences SET frequency=$1,daily_keep=$2,
+                         weekly_keep=$3,monthly_keep=$4 WHERE id=1`,
+                        [frequency, dailyKeep, weeklyKeep, monthlyKeep],
                       );
                       const backup = await invoke<string | null>('automatic_backup');
                       if (backup) setLastAutomatic(String(Math.floor(Date.now() / 1000)));
@@ -340,11 +476,22 @@ export function Settings({ store }: { store: RumoStore }) {
                   Salvar backup automático
                 </button>
               </div>
+              <p className="field-help">
+                A retenção usa a data do manifest: {dailyKeep} diários, {weeklyKeep} semanais e{' '}
+                {monthlyKeep} mensais. Backups manuais e pré-migration não são removidos.
+              </p>
               <p>
                 Último backup automático:{' '}
                 {lastAutomatic
                   ? new Date(Number(lastAutomatic) * 1000).toLocaleString('pt-BR')
                   : 'ainda não criado'}
+              </p>
+              <p>
+                Próximo backup:{' '}
+                {frequency === 'off'
+                  ? 'desativado'
+                  : (nextBackupAt(frequency, lastAutomatic)?.toLocaleString('pt-BR') ??
+                    'quando o RUMAR estiver disponível')}
               </p>
               <div className="name-field">
                 <button
@@ -364,19 +511,55 @@ export function Settings({ store }: { store: RumoStore }) {
                 <button
                   className="secondary-button"
                   disabled={busy}
-                  onClick={() => void action(() => invoke<string>('check_integrity'))}
+                  onClick={() =>
+                    void action(async () => {
+                      const report = await invoke<HealthReport>('health_check');
+                      setHealth(report);
+                      return 'Verificação de integridade concluída.';
+                    })
+                  }
                 >
-                  Verificar banco
+                  Verificar integridade
                 </button>
               </div>
+              {health && (
+                <div className="settings-health" role="status">
+                  <h3>Estado dos dados</h3>
+                  <p>
+                    SQLite: {health.sqlite} · Chaves estrangeiras: {health.foreignKeys} · Schema{' '}
+                    {health.schemaVersion}/{health.expectedSchema}
+                  </p>
+                  <p>
+                    Anexos:{' '}
+                    {health.attachmentCount -
+                      health.attachmentMissing -
+                      health.attachmentMismatched}
+                    /{health.attachmentCount} íntegros · {health.orphanFiles} sem vínculo
+                  </p>
+                  <p>
+                    Backups encontrados: {health.backupCount}
+                    {health.latestBackupAt
+                      ? ` · último em ${new Date(Number(health.latestBackupAt) * 1000).toLocaleString('pt-BR')}`
+                      : ''}
+                  </p>
+                  {health.lastBackupError && (
+                    <p className="dialog-error">Última falha de backup: {health.lastBackupError}</p>
+                  )}
+                </div>
+              )}
               {selected && (
                 <div className="settings-restore">
                   <p>
                     <strong>Backup selecionado:</strong> {selected.path}
                   </p>
                   <p>
-                    Schema {selected.schemaVersion} · criado em{' '}
-                    {new Date(Number(selected.createdAt) * 1000).toLocaleString('pt-BR')}
+                    RUMAR {selected.manifest.appVersion} · schema {selected.manifest.schemaVersion}{' '}
+                    · criado em{' '}
+                    {new Date(Number(selected.manifest.createdAt) * 1000).toLocaleString('pt-BR')}
+                  </p>
+                  <p>
+                    Banco: {formatBytes(selected.manifest.databaseSize)} · anexos:{' '}
+                    {selected.manifest.attachmentCount} · checksums e integridade validados
                   </p>
                   <p>
                     Restaurar substituirá os dados atuais. O RUMAR criará antes um backup

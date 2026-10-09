@@ -124,6 +124,10 @@ const publishedMigrations = [
     '0030_activity_home_reviews.sql',
     'B9195984E53674EF2E66A936CF10B2B2968BDA8CB0AF24A44DE29FD783F454E7FB29C0691C193B0B76FC4B01B3713E28',
   ],
+  [
+    '0031_productivity_intelligence.sql',
+    '5F9DD2BEBE49CA637C3F895EEAFDCF609F91EBD471D01ABDEE70679BB4F21DD6CF1F4B3BDBD79D0B0138C6842BAA3F06',
+  ],
 ] as const;
 
 describe('published migration checksums', () => {

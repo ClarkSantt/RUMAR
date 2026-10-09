@@ -121,6 +121,7 @@ fn kind(path: &Path, head: &[u8]) -> Result<(&'static str, &'static str), String
 }
 fn is_entity(db: &Connection, entity_type: &str, entity_id: &str) -> Result<bool, String> {
     let table = match entity_type {
+        "task" => "tasks",
         "project" => "projects",
         "thought" => "thoughts",
         "objective" => "objectives",
@@ -289,19 +290,24 @@ pub fn attachment_stats(app: AppHandle) -> Result<StorageSummary, String> {
         )
         .map_err(|error| error.to_string())?;
     let mut backup_bytes = 0u64;
-    let backup_dir = root.join("backups");
+    let backup_dir = crate::backup::backup_directory(&app)?;
     if backup_dir.is_dir() {
         for entry in fs::read_dir(backup_dir).map_err(|error| error.to_string())? {
             let entry = entry.map_err(|error| error.to_string())?;
-            if entry.file_type().map_err(|error| error.to_string())?.is_file() {
-                backup_bytes = backup_bytes.saturating_add(
-                    entry.metadata().map_err(|error| error.to_string())?.len(),
-                );
+            if entry
+                .file_type()
+                .map_err(|error| error.to_string())?
+                .is_file()
+            {
+                backup_bytes = backup_bytes
+                    .saturating_add(entry.metadata().map_err(|error| error.to_string())?.len());
             }
         }
     }
     Ok(StorageSummary {
-        database_bytes: fs::metadata(root.join("rumo.db")).map(|m| m.len()).unwrap_or(0),
+        database_bytes: fs::metadata(root.join("rumo.db"))
+            .map(|m| m.len())
+            .unwrap_or(0),
         attachment_bytes,
         attachment_count,
         backup_bytes,
@@ -409,4 +415,33 @@ pub fn attachment_open(app: AppHandle, id: String, reveal: bool) -> Result<(), S
     command.arg(&target);
     command.spawn().map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn managed_relative_paths_reject_traversal_and_absolute_injection() {
+        for invalid in [
+            "../outside.pdf",
+            "attachments/../file.pdf",
+            "C:/Windows/system.ini",
+            "/attachments/11111111-1111-4111-8111-111111111111/file.pdf",
+            "attachments/11111111-1111-4111-8111-111111111111/../../evil.pdf",
+            "attachments/not-a-uuid/file.pdf",
+            "attachments/11111111-1111-4111-8111-111111111111/script.exe",
+        ] {
+            assert!(validated_relative(invalid).is_err(), "accepted {invalid}");
+        }
+        assert!(
+            validated_relative("attachments/11111111-1111-4111-8111-111111111111/file.pdf").is_ok()
+        );
+    }
+
+    #[test]
+    fn executable_signatures_are_rejected_even_with_allowed_extensions() {
+        assert!(kind(Path::new("document.txt"), b"MZ executable").is_err());
+        assert!(kind(Path::new("document.txt"), b"\x7fELF payload").is_err());
+    }
 }

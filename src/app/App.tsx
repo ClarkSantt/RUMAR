@@ -115,12 +115,22 @@ export default function App() {
   useEffect(() => {
     if (!store.data || autoBackupChecked.current) return;
     autoBackupChecked.current = true;
-    void invoke('automatic_backup').catch(() =>
-      setNotice({
-        error: true,
-        message: 'O backup automático não foi criado. Verifique em Configurações → Dados.',
-      }),
-    );
+    void invoke<string>('quick_health_check')
+      .then(() =>
+        invoke('automatic_backup').catch(() =>
+          setNotice({
+            error: true,
+            message: 'O backup automático não foi criado. Verifique em Configurações → Dados.',
+          }),
+        ),
+      )
+      .catch(() =>
+        setNotice({
+          error: true,
+          message:
+            'Os dados precisam de atenção. Abra Configurações → Backup e dados para verificar ou restaurar.',
+        }),
+      );
   }, [store.data, setNotice]);
   useEffect(() => {
     if (!store.data || store.data.settings.name !== 'Gustavo') return;

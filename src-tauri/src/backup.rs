@@ -5,12 +5,13 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Write},
     path::{Path, PathBuf},
+    process::Command,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Manager};
 use zip::{write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
 
-const CURRENT_SCHEMA: i64 = 31;
+const CURRENT_SCHEMA: i64 = 32;
 const MAX_DB_BYTES: u64 = 1024 * 1024 * 1024;
 const MAX_ATTACHMENT_TOTAL: u64 = 2 * 1024 * 1024 * 1024;
 const MAX_ATTACHMENTS: usize = 10_000;
@@ -25,15 +26,25 @@ struct ManifestAttachment {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
+    #[serde(default = "legacy_backup_version")]
+    backup_version: u32,
     app: String,
     app_version: String,
     schema_version: i64,
     created_at: String,
     database: String,
     sha256: String,
+    #[serde(default)]
+    database_size: u64,
     kind: String,
     #[serde(default)]
+    attachment_count: usize,
+    #[serde(default)]
     attachments: Vec<ManifestAttachment>,
+}
+
+fn legacy_backup_version() -> u32 {
+    1
 }
 
 #[derive(Serialize)]
@@ -42,6 +53,23 @@ pub struct DataInfo {
     database_path: String,
     automatic_directory: String,
     app_version: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HealthReport {
+    sqlite: String,
+    foreign_keys: String,
+    schema_version: i64,
+    expected_schema: i64,
+    attachment_count: u64,
+    attachment_missing: u64,
+    attachment_mismatched: u64,
+    orphan_files: u64,
+    backup_directory: String,
+    backup_count: usize,
+    latest_backup_at: Option<String>,
+    last_backup_error: String,
 }
 
 struct TemporaryDb(PathBuf);
@@ -76,8 +104,34 @@ fn now() -> String {
 fn database_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app.path().app_config_dir().map_err(err)?.join("rumo.db"))
 }
-fn backup_directory(app: &AppHandle) -> Result<PathBuf, String> {
+fn default_backup_directory(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app.path().app_config_dir().map_err(err)?.join("backups"))
+}
+pub(crate) fn backup_directory(app: &AppHandle) -> Result<PathBuf, String> {
+    let default = default_backup_directory(app)?;
+    let path = database_path(app)?;
+    if !path.exists() {
+        return Ok(default);
+    }
+    let db = open_readonly(&path)?;
+    if schema(&db).unwrap_or_default() < 32 {
+        return Ok(default);
+    }
+    let configured: String = db
+        .query_row(
+            "SELECT automatic_directory FROM backup_preferences WHERE id=1",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(err)?;
+    if configured.trim().is_empty() {
+        return Ok(default);
+    }
+    let configured = PathBuf::from(configured);
+    if !configured.is_absolute() {
+        return Err("O diretório configurado para backups não é absoluto.".into());
+    }
+    Ok(configured)
 }
 fn temp_db(parent: &Path) -> Result<TemporaryDb, String> {
     fs::create_dir_all(&parent).map_err(err)?;
@@ -97,6 +151,18 @@ fn integrity(connection: &Connection) -> Result<(), String> {
         .map_err(err)?;
     if result != "ok" {
         return Err("A verificação de integridade do SQLite falhou.".into());
+    }
+    let mut statement = connection
+        .prepare("PRAGMA foreign_key_check")
+        .map_err(err)?;
+    if statement
+        .query([])
+        .map_err(err)?
+        .next()
+        .map_err(err)?
+        .is_some()
+    {
+        return Err("A verificação de chaves estrangeiras encontrou violações.".into());
     }
     Ok(())
 }
@@ -188,14 +254,18 @@ fn create_archive(
     let connection = open_readonly(&snapshot.0)?;
     let attachments = listed_attachments(&connection)?;
     check_attachment_list(&attachments, workdir)?;
+    let database_size = fs::metadata(&snapshot.0).map_err(err)?.len();
     let manifest = Manifest {
+        backup_version: 2,
         app: "RUMAR".into(),
         app_version: env!("CARGO_PKG_VERSION").into(),
         schema_version: schema(&connection)?,
         created_at: now(),
         database: "rumo.db".into(),
         sha256: sha256(&snapshot.0)?,
+        database_size,
         kind: kind.into(),
+        attachment_count: attachments.len(),
         attachments,
     };
     drop(connection);
@@ -282,7 +352,8 @@ fn validated_archive(path: &Path, workdir: &Path) -> Result<(Manifest, StagedBac
     if !["RUMO", "RUMAR"].contains(&manifest.app.as_str())
         || manifest.database != "rumo.db"
         || manifest.schema_version < 1
-        || !["manual", "automatic", "pre_restore"].contains(&manifest.kind.as_str())
+        || !["manual", "automatic", "pre_restore", "pre_migration"]
+            .contains(&manifest.kind.as_str())
     {
         return Err("Este não é um backup válido do RUMAR ou RUMO legado.".into());
     }
@@ -296,6 +367,9 @@ fn validated_archive(path: &Path, workdir: &Path) -> Result<(Manifest, StagedBac
     }
     if archive.len() != 2 + manifest.attachments.len() {
         return Err("Arquivos do backup não correspondem ao manifest.".into());
+    }
+    if manifest.backup_version >= 2 && manifest.attachment_count != manifest.attachments.len() {
+        return Err("A contagem de anexos não corresponde ao manifest.".into());
     }
     let expected: std::collections::HashSet<_> = std::iter::once("manifest.json".to_string())
         .chain(std::iter::once("rumo.db".to_string()))
@@ -322,7 +396,11 @@ fn validated_archive(path: &Path, workdir: &Path) -> Result<(Manifest, StagedBac
         .map_err(err)?;
     let copied = io::copy(&mut entry.take(MAX_DB_BYTES + 1), &mut output).map_err(err)?;
     output.sync_all().map_err(err)?;
-    if copied > MAX_DB_BYTES || copied == 0 || sha256(&temporary.0)? != manifest.sha256 {
+    if copied > MAX_DB_BYTES
+        || copied == 0
+        || (manifest.backup_version >= 2 && copied != manifest.database_size)
+        || sha256(&temporary.0)? != manifest.sha256
+    {
         return Err("O banco do backup está incompleto ou foi alterado.".into());
     }
     let db = open_readonly(&temporary.0)
@@ -377,6 +455,42 @@ fn validated_archive(path: &Path, workdir: &Path) -> Result<(Manifest, StagedBac
     Ok((manifest, staged))
 }
 
+fn archive_manifest(path: &Path) -> Option<Manifest> {
+    let file = File::open(path).ok()?;
+    let mut archive = ZipArchive::new(file).ok()?;
+    let mut bytes = Vec::new();
+    archive
+        .by_name("manifest.json")
+        .ok()?
+        .take(1024 * 1024 + 1)
+        .read_to_end(&mut bytes)
+        .ok()?;
+    if bytes.len() > 1024 * 1024 {
+        return None;
+    }
+    let manifest: Manifest = serde_json::from_slice(&bytes).ok()?;
+    if !["RUMO", "RUMAR"].contains(&manifest.app.as_str()) || manifest.database != "rumo.db" {
+        return None;
+    }
+    Some(manifest)
+}
+
+fn backup_catalog(directory: &Path) -> Result<Vec<(PathBuf, Manifest)>, String> {
+    if !directory.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut found = Vec::new();
+    for entry in fs::read_dir(directory).map_err(err)? {
+        let path = entry.map_err(err)?.path();
+        if path.is_file() {
+            if let Some(manifest) = archive_manifest(&path) {
+                found.push((path, manifest));
+            }
+        }
+    }
+    Ok(found)
+}
+
 #[tauri::command]
 pub fn data_info(app: AppHandle) -> Result<DataInfo, String> {
     Ok(DataInfo {
@@ -388,7 +502,98 @@ pub fn data_info(app: AppHandle) -> Result<DataInfo, String> {
 #[tauri::command]
 pub fn check_integrity(app: AppHandle) -> Result<String, String> {
     integrity(&open_readonly(&database_path(&app)?)?)?;
-    Ok("Banco íntegro (PRAGMA integrity_check: ok).".into())
+    Ok("Banco íntegro (integrity_check: ok; foreign_key_check: ok).".into())
+}
+
+#[tauri::command]
+pub fn quick_health_check(app: AppHandle) -> Result<String, String> {
+    let db = open_readonly(&database_path(&app)?)?;
+    let result: String = db
+        .query_row("PRAGMA quick_check(1)", [], |row| row.get(0))
+        .map_err(err)?;
+    if result != "ok" {
+        return Err("O banco local precisa de recuperação.".into());
+    }
+    let found = schema(&db)?;
+    if found != CURRENT_SCHEMA {
+        return Err(format!(
+            "O schema local está incompleto ({found}/{CURRENT_SCHEMA})."
+        ));
+    }
+    Ok("ok".into())
+}
+
+#[tauri::command]
+pub fn health_check(app: AppHandle) -> Result<HealthReport, String> {
+    let path = database_path(&app)?;
+    let db = open_readonly(&path)?;
+    integrity(&db)?;
+    let schema_version = schema(&db)?;
+    let last_backup_error: String = if schema_version >= 32 {
+        db.query_row(
+            "SELECT last_error FROM backup_preferences WHERE id=1",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(err)?
+    } else {
+        String::new()
+    };
+    drop(db);
+    let attachments = crate::attachments::attachment_check(app.clone())?;
+    let directory = backup_directory(&app)?;
+    let catalog = backup_catalog(&directory)?;
+    let latest_backup_at = catalog
+        .iter()
+        .filter_map(|(_, manifest)| manifest.created_at.parse::<i64>().ok())
+        .max()
+        .map(|value| value.to_string());
+    Ok(HealthReport {
+        sqlite: "ok".into(),
+        foreign_keys: "ok".into(),
+        schema_version,
+        expected_schema: CURRENT_SCHEMA,
+        attachment_count: attachments.attachment_count,
+        attachment_missing: attachments.missing,
+        attachment_mismatched: attachments.mismatched,
+        orphan_files: attachments.orphan_files,
+        backup_directory: directory.display().to_string(),
+        backup_count: catalog.len(),
+        latest_backup_at,
+        last_backup_error,
+    })
+}
+
+#[tauri::command]
+pub fn set_backup_directory(app: AppHandle, directory: String) -> Result<String, String> {
+    let selected = if directory.trim().is_empty() {
+        String::new()
+    } else {
+        let path = PathBuf::from(directory.trim());
+        if !path.is_absolute() || !path.is_dir() {
+            return Err("Escolha um diretório absoluto existente.".into());
+        }
+        fs::read_dir(&path).map_err(|_| "O diretório escolhido não está acessível.".to_string())?;
+        path.display().to_string()
+    };
+    let db = Connection::open(database_path(&app)?).map_err(err)?;
+    db.execute(
+        "UPDATE backup_preferences SET automatic_directory=?1,last_error='' WHERE id=1",
+        [&selected],
+    )
+    .map_err(err)?;
+    Ok(backup_directory(&app)?.display().to_string())
+}
+
+#[tauri::command]
+pub fn open_backup_directory(app: AppHandle) -> Result<(), String> {
+    let directory = backup_directory(&app)?;
+    fs::create_dir_all(&directory).map_err(err)?;
+    Command::new("explorer.exe")
+        .arg(&directory)
+        .spawn()
+        .map_err(err)?;
+    Ok(())
 }
 #[tauri::command]
 pub fn create_backup(app: AppHandle, destination: String) -> Result<Manifest, String> {
@@ -446,10 +651,13 @@ fn restore_archive(
     // SQL backup writes inside a destination transaction. If it fails, restore
     // both the database and its previous managed directory from the preventive state.
     if let Err(error) = sqlite_snapshot(&staged.database.0, current) {
-        let files_rollback = fs::rename(&current_files, &staged_files)
-            .and_then(|_| {
-                if had_files { fs::rename(&previous_files, &current_files) } else { Ok(()) }
-            });
+        let files_rollback = fs::rename(&current_files, &staged_files).and_then(|_| {
+            if had_files {
+                fs::rename(&previous_files, &current_files)
+            } else {
+                Ok(())
+            }
+        });
         // A completed write followed by an integrity error must not leave the
         // original state inaccessible. Restore it from the validated snapshot.
         let rollback = validated_archive(&preventive, workdir)
@@ -471,11 +679,12 @@ fn restore_archive(
 pub fn automatic_backup(app: AppHandle) -> Result<Option<String>, String> {
     let current = database_path(&app)?;
     let db = Connection::open(&current).map_err(err)?;
-    let (frequency, keep, last): (String, i64, Option<String>) = db
+    let (frequency, daily_keep, weekly_keep, monthly_keep, last):
+        (String, usize, usize, usize, Option<String>) = db
         .query_row(
-            "SELECT frequency,keep_count,last_auto_at FROM backup_preferences WHERE id=1",
+            "SELECT frequency,daily_keep,weekly_keep,monthly_keep,last_auto_at FROM backup_preferences WHERE id=1",
             [],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
         )
         .map_err(err)?;
     let seconds = now().parse::<i64>().map_err(err)?;
@@ -483,23 +692,41 @@ pub fn automatic_backup(app: AppHandle) -> Result<Option<String>, String> {
         return Ok(None);
     }
     let directory = backup_directory(&app)?;
-    fs::create_dir_all(&directory).map_err(err)?;
     let destination = directory.join(format!("RUMAR-auto-{seconds}.zip"));
     drop(db);
-    create_archive(
-        &current,
-        &destination,
-        &app.path().app_config_dir().map_err(err)?,
-        "automatic",
-    )?;
+    let result = (|| -> Result<(), String> {
+        fs::create_dir_all(&directory).map_err(err)?;
+        create_archive(
+            &current,
+            &destination,
+            &app.path().app_config_dir().map_err(err)?,
+            "automatic",
+        )?;
+        prune_automatic(&directory, daily_keep, weekly_keep, monthly_keep)
+    })();
     let db = Connection::open(&current).map_err(err)?;
-    db.execute(
-        "UPDATE backup_preferences SET last_auto_at=?1 WHERE id=1",
-        [seconds.to_string()],
-    )
-    .map_err(err)?;
-    prune_automatic(&directory, keep)?;
-    Ok(Some(destination.display().to_string()))
+    match result {
+        Ok(()) => {
+            db.execute(
+                "UPDATE backup_preferences SET last_auto_at=?1,last_error='',last_backup_path=?2 WHERE id=1",
+                rusqlite::params![seconds.to_string(), destination.display().to_string()],
+            )
+            .map_err(err)?;
+            Ok(Some(destination.display().to_string()))
+        }
+        Err(error) => {
+            let safe = if error.len() > 500 {
+                "Falha ao criar o backup automático.".to_string()
+            } else {
+                error.clone()
+            };
+            let _ = db.execute(
+                "UPDATE backup_preferences SET last_error=?1 WHERE id=1",
+                [safe],
+            );
+            Err(error)
+        }
+    }
 }
 
 #[tauri::command]
@@ -536,60 +763,51 @@ fn backup_due(frequency: &str, last: Option<&str>, now: i64) -> bool {
         .and_then(|value| value.parse::<i64>().ok())
         .is_some_and(|value| now - value < interval)
 }
-fn prune_automatic(directory: &Path, keep: i64) -> Result<(), String> {
-    let mut managed: Vec<PathBuf> = fs::read_dir(directory)
-        .map_err(err)?
-        .filter_map(Result::ok)
-        .map(|item| item.path())
-        .filter(|path| {
-            path.is_file()
-                && path
-                    .file_name()
-                    .and_then(|name| name.to_str())
-                    .is_some_and(|name| auto_backup_timestamp(name).is_some())
-        })
-        .filter(|path| {
-            File::open(path)
-                .ok()
-                .and_then(|file| ZipArchive::new(file).ok())
-                .and_then(|mut archive| {
-                    let mut contents = String::new();
-                    archive
-                        .by_name("manifest.json")
-                        .ok()?
-                        .take(16 * 1024)
-                        .read_to_string(&mut contents)
-                        .ok()?;
-                    serde_json::from_str::<Manifest>(&contents).ok()
+fn prune_automatic(
+    directory: &Path,
+    daily_keep: usize,
+    weekly_keep: usize,
+    monthly_keep: usize,
+) -> Result<(), String> {
+    let mut managed: Vec<(PathBuf, i64)> = backup_catalog(directory)?
+        .into_iter()
+        .filter_map(|(path, manifest)| {
+            (manifest.kind == "automatic")
+                .then(|| {
+                    manifest
+                        .created_at
+                        .parse::<i64>()
+                        .ok()
+                        .map(|stamp| (path, stamp))
                 })
-                .is_some_and(|manifest| {
-                    ["RUMO", "RUMAR"].contains(&manifest.app.as_str())
-                        && manifest.kind == "automatic"
-                        && manifest.database == "rumo.db"
-                })
+                .flatten()
         })
         .collect();
-    managed.sort_by_key(|path| {
-        path.file_name()
-            .and_then(|name| name.to_str())
-            .and_then(auto_backup_timestamp)
-            .unwrap_or_default()
-    });
-    for old in managed.into_iter().rev().skip(keep.clamp(1, 50) as usize) {
-        fs::remove_file(old).map_err(err)?;
+    managed.sort_by_key(|(_, stamp)| std::cmp::Reverse(*stamp));
+    let mut keep = std::collections::HashSet::new();
+    let policies = [
+        (86_400_i64, daily_keep.clamp(1, 31)),
+        (7 * 86_400_i64, weekly_keep.clamp(1, 12)),
+        (30 * 86_400_i64, monthly_keep.clamp(1, 24)),
+    ];
+    for (period, limit) in policies {
+        let mut buckets = std::collections::HashSet::new();
+        for (path, stamp) in &managed {
+            let bucket = stamp.div_euclid(period);
+            if buckets.insert(bucket) {
+                keep.insert(path.clone());
+                if buckets.len() >= limit {
+                    break;
+                }
+            }
+        }
+    }
+    for (path, _) in managed {
+        if !keep.contains(&path) {
+            fs::remove_file(path).map_err(err)?;
+        }
     }
     Ok(())
-}
-
-fn auto_backup_timestamp(name: &str) -> Option<i64> {
-    let value = name
-        .strip_prefix("RUMAR-auto-")
-        .or_else(|| name.strip_prefix("RUMO-auto-"))?
-        .strip_suffix(".zip")?;
-    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
-        return None;
-    }
-    value.parse().ok()
 }
 
 #[cfg(test)]
@@ -647,6 +865,25 @@ mod tests {
         }
         writer.finish().unwrap();
     }
+    fn retention_marker(path: &Path, created_at: i64, kind: &str) {
+        let manifest = Manifest {
+            backup_version: 2,
+            app: "RUMAR".into(),
+            app_version: "test".into(),
+            schema_version: CURRENT_SCHEMA,
+            created_at: created_at.to_string(),
+            database: "rumo.db".into(),
+            sha256: "0".repeat(64),
+            database_size: 1,
+            kind: kind.into(),
+            attachment_count: 0,
+            attachments: Vec::new(),
+        };
+        custom_zip(
+            path,
+            &[("manifest.json", serde_json::to_vec(&manifest).unwrap())],
+        );
+    }
     #[test]
     fn snapshot_captures_wal_and_restore_preserves_pre_restore_state() {
         let area = Area::new();
@@ -702,7 +939,8 @@ mod tests {
         let archive = area.0.join("current.zip");
         create_archive(&current, &archive, &area.0, "manual").unwrap();
         let db = Connection::open(&current).unwrap();
-        db.execute("UPDATE settings SET value='state B'", []).unwrap();
+        db.execute("UPDATE settings SET value='state B'", [])
+            .unwrap();
         drop(db);
         restore_archive(&archive, &current, &area.0.join("backups"), &area.0).unwrap();
         let restored = open_readonly(&current).unwrap();
@@ -711,6 +949,27 @@ mod tests {
             .unwrap();
         assert_eq!(value, "state A");
         assert_eq!(schema(&restored).unwrap(), CURRENT_SCHEMA);
+    }
+    #[test]
+    fn pre_migration_archives_validate_and_failed_backup_keeps_last_valid_copy() {
+        let area = Area::new();
+        let current = area.0.join("rumo.db");
+        drop(seed(&current, 11, "legacy"));
+        let previous = area.0.join("previous.zip");
+        create_archive(&current, &previous, &area.0, "pre_migration").unwrap();
+        let previous_hash = sha256(&previous).unwrap();
+        assert_eq!(
+            validated_archive(&previous, &area.0).unwrap().0.kind,
+            "pre_migration"
+        );
+        let occupied = area.0.join("occupied.zip");
+        fs::write(&occupied, b"existing valid generation marker").unwrap();
+        assert!(create_archive(&current, &occupied, &area.0, "automatic").is_err());
+        assert_eq!(
+            fs::read(&occupied).unwrap(),
+            b"existing valid generation marker"
+        );
+        assert_eq!(sha256(&previous).unwrap(), previous_hash);
     }
     #[test]
     fn invalid_and_future_backups_never_change_current_database() {
@@ -779,32 +1038,32 @@ mod tests {
         assert_eq!(sha256(&current).unwrap(), original);
     }
     #[test]
-    fn schedule_and_retention_only_manage_automatic_archives() {
+    fn schedule_and_retention_use_manifest_time_and_preserve_manual_archives() {
         assert!(!backup_due("off", None, 100000));
         assert!(backup_due("daily", None, 100000));
         assert!(!backup_due("daily", Some("100000"), 100001));
         assert!(backup_due("daily", Some("100000"), 186400));
         assert!(!backup_due("weekly", Some("100000"), 186400));
         let area = Area::new();
-        let source = area.0.join("rumo.db");
-        drop(seed(&source, 8, "test"));
         let managed = area.0.join("backups");
         fs::create_dir(&managed).unwrap();
-        for number in 1..=3 {
-            create_archive(
-                &source,
-                &managed.join(format!("RUMO-auto-{number}.zip")),
-                &area.0,
-                "automatic",
-            )
-            .unwrap();
-        }
-        let manual = managed.join("RUMO-auto-0.zip");
-        create_archive(&source, &manual, &area.0, "manual").unwrap();
-        prune_automatic(&managed, 2).unwrap();
-        assert!(!managed.join("RUMO-auto-1.zip").exists());
-        assert!(managed.join("RUMO-auto-2.zip").exists());
-        assert!(managed.join("RUMO-auto-3.zip").exists());
+        retention_marker(
+            &managed.join("newest-unrelated-name.zip"),
+            3 * 86_400,
+            "automatic",
+        );
+        retention_marker(&managed.join("middle.zip"), 2 * 86_400, "automatic");
+        retention_marker(
+            &managed.join("oldest-but-name-says-new.zip"),
+            86_400,
+            "automatic",
+        );
+        let manual = managed.join("RUMAR-auto-999999.zip");
+        retention_marker(&manual, 0, "manual");
+        prune_automatic(&managed, 2, 1, 1).unwrap();
+        assert!(managed.join("newest-unrelated-name.zip").exists());
+        assert!(managed.join("middle.zip").exists());
+        assert!(!managed.join("oldest-but-name-says-new.zip").exists());
         assert!(manual.exists());
     }
     #[test]
@@ -818,22 +1077,38 @@ mod tests {
         fs::write(&file, b"%PDF-1.4 state A").unwrap();
         db.execute(
             "INSERT INTO attachments VALUES(?1,?2,?3)",
-            rusqlite::params![relative, fs::metadata(&file).unwrap().len(), sha256(&file).unwrap()],
-        ).unwrap();
+            rusqlite::params![
+                relative,
+                fs::metadata(&file).unwrap().len(),
+                sha256(&file).unwrap()
+            ],
+        )
+        .unwrap();
         drop(db);
         let archive = area.0.join("a.zip");
         create_archive(&current, &archive, &area.0, "manual").unwrap();
         fs::write(&file, b"%PDF-1.4 state B").unwrap();
         let db = Connection::open(&current).unwrap();
-        db.execute("UPDATE attachments SET file_size=?1,sha256=?2", rusqlite::params![fs::metadata(&file).unwrap().len(), sha256(&file).unwrap()]).unwrap();
-        db.execute("UPDATE settings SET value='state B'", []).unwrap();
+        db.execute(
+            "UPDATE attachments SET file_size=?1,sha256=?2",
+            rusqlite::params![fs::metadata(&file).unwrap().len(), sha256(&file).unwrap()],
+        )
+        .unwrap();
+        db.execute("UPDATE settings SET value='state B'", [])
+            .unwrap();
         drop(db);
-        let preventive = restore_archive(&archive, &current, &area.0.join("backups"), &area.0).unwrap();
+        let preventive =
+            restore_archive(&archive, &current, &area.0.join("backups"), &area.0).unwrap();
         assert_eq!(fs::read(&file).unwrap(), b"%PDF-1.4 state A");
         let restored = open_readonly(&current).unwrap();
-        let value:String = restored.query_row("SELECT value FROM settings",[],|row|row.get(0)).unwrap();
+        let value: String = restored
+            .query_row("SELECT value FROM settings", [], |row| row.get(0))
+            .unwrap();
         assert_eq!(value, "state A");
         let (_, before) = validated_archive(Path::new(&preventive), &area.0).unwrap();
-        assert_eq!(fs::read(before.attachments.join(relative)).unwrap(), b"%PDF-1.4 state B");
+        assert_eq!(
+            fs::read(before.attachments.join(relative)).unwrap(),
+            b"%PDF-1.4 state B"
+        );
     }
 }

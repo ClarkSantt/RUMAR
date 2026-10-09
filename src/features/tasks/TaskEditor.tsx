@@ -8,6 +8,7 @@ import { Subtasks } from './Subtasks';
 import { ProjectFields } from './ProjectFields';
 import { SaveTemplateButton } from '../templates/SaveTemplateButton';
 import { requestFocus } from '../calendar/focus';
+import { Attachments } from '../attachments/Attachments';
 export function TaskEditor({
   row,
   store,
@@ -255,7 +256,10 @@ export function TaskEditor({
           </fieldset>
         </form>
         {task ? (
-          <Subtasks store={store} task={task} date={row?.date ?? null} />
+          <>
+            <Subtasks store={store} task={task} date={row?.date ?? null} />
+            <Attachments entityType="task" entityId={task.id} />
+          </>
         ) : (
           <p className="field-help">Salve a tarefa para adicionar subtarefas.</p>
         )}

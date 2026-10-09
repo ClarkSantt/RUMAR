@@ -6,7 +6,13 @@ import { Dialog } from '../../components/Dialog';
 import './attachments.css';
 
 export type AttachmentEntity =
-  'project' | 'thought' | 'objective' | 'moment' | 'finance_transaction' | 'body_progress_photo';
+  | 'task'
+  | 'project'
+  | 'thought'
+  | 'objective'
+  | 'moment'
+  | 'finance_transaction'
+  | 'body_progress_photo';
 
 export interface AttachmentRow {
   id: string;

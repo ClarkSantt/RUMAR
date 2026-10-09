@@ -11,7 +11,7 @@ use std::{
 use uuid::Uuid;
 
 const LEGACY_VERSION: i64 = 11;
-const TARGET_VERSION: i64 = 31;
+const TARGET_VERSION: i64 = 32;
 
 fn temporary_database(label: &str) -> PathBuf {
     env::temp_dir().join(format!("rumar-{label}-{}.sqlite", Uuid::new_v4()))

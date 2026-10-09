@@ -392,18 +392,75 @@ function SettingsPreview({ section = 'Geral' }: { section?: string }) {
               </>
             ) : (
               <>
-                <p>Seus dados ficam neste computador. Escolha onde guardar uma cópia.</p>
-                <div className="preference-row">
-                  <span>Backup automático</span>
-                  <select defaultValue="weekly">
-                    <option value="weekly">Semanal</option>
+                <p>O banco fica neste computador. Backups manuais são salvos onde você escolher.</p>
+                <div className="settings-data-paths">
+                  <p className="data-path">
+                    <strong>Banco local:</strong> C:\Users\Ana\AppData\Roaming\RUMAR\rumo.db
+                  </p>
+                  <p className="data-path">
+                    <strong>Backups automáticos:</strong> C:\Users\Ana\AppData\Roaming\RUMAR\backups
+                  </p>
+                  <div className="form-actions">
+                    <button className="secondary-button">Alterar pasta</button>
+                    <button className="secondary-button">Usar pasta padrão</button>
+                    <button className="text-button">Abrir pasta</button>
+                  </div>
+                </div>
+                <div className="name-field backup-preferences">
+                  <label htmlFor="preview-frequency">Backup automático</label>
+                  <select id="preview-frequency" defaultValue="daily">
+                    <option value="daily">Diário</option>
                   </select>
+                  <div className="backup-retention-grid" aria-label="Retenção de backups">
+                    <label>
+                      Diários
+                      <input type="number" defaultValue="7" />
+                    </label>
+                    <label>
+                      Semanais
+                      <input type="number" defaultValue="4" />
+                    </label>
+                    <label>
+                      Mensais
+                      <input type="number" defaultValue="6" />
+                    </label>
+                  </div>
+                  <button className="secondary-button">Salvar backup automático</button>
                 </div>
-                <div className="preference-row">
-                  <span>Manter backups</span>
-                  <input type="number" defaultValue="10" />
+                <p className="field-help">
+                  A retenção usa a data do manifest: 7 diários, 4 semanais e 6 mensais. Backups
+                  manuais e pré-migration não são removidos.
+                </p>
+                <p>Último backup automático: 09/10/2026, 08:15:00</p>
+                <p>Próximo backup: 10/10/2026, 08:15:00</p>
+                <div className="name-field">
+                  <button className="secondary-button">Criar backup agora</button>
+                  <button className="secondary-button">Restaurar backup</button>
+                  <button className="secondary-button">Verificar integridade</button>
                 </div>
-                <button className="secondary-button">Criar backup agora</button>
+                <div className="settings-health" role="status">
+                  <h3>Estado dos dados</h3>
+                  <p>SQLite: ok · Chaves estrangeiras: ok · Schema 32/32</p>
+                  <p>Anexos: 12/12 íntegros · 0 sem vínculo</p>
+                  <p>Backups encontrados: 8 · último em 09/10/2026, 08:15:00</p>
+                </div>
+                <div className="settings-restore">
+                  <p>
+                    <strong>Backup selecionado:</strong> C:\Backups\RUMAR-backup-2026-10-09.zip
+                  </p>
+                  <p>RUMAR 1.8.0 · schema 32 · criado em 09/10/2026, 08:15:00</p>
+                  <p>Banco: 4,2 MB · anexos: 12 · checksums e integridade validados</p>
+                  <p>
+                    Restaurar substituirá os dados atuais. O RUMAR criará antes um backup
+                    preventivo.
+                  </p>
+                  <label>
+                    <input type="checkbox" /> Entendo que os dados atuais serão substituídos
+                  </label>
+                  <button className="primary-button" disabled>
+                    Confirmar restauração
+                  </button>
+                </div>
               </>
             )}
           </section>

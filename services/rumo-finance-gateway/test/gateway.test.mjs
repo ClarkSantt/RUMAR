@@ -346,6 +346,23 @@ test('transient GET failures retry at most twice; POST is never blindly repeated
   assert.equal(calls, 1);
 });
 
+test('Pluggy requests abort at the configured bounded timeout', async () => {
+  const client = new PluggyClient({
+    clientId: 'test',
+    clientSecret: 'test',
+    timeoutMs: 10,
+    fetchImpl: async (url, options) => {
+      if (url.endsWith('/auth')) return Response.json({ apiKey: 'key' });
+      return new Promise((_, reject) => {
+        options.signal.addEventListener('abort', () => reject(options.signal.reason), {
+          once: true,
+        });
+      });
+    },
+  });
+  await assert.rejects(client.call('/accounts'), (error) => error.name === 'TimeoutError');
+});
+
 test('a second paired device cannot claim or read the first device Item', async () => {
   const f = fixture(),
     base = await listen(f.server);
