@@ -10,7 +10,7 @@ use std::{
 use tauri::{AppHandle, Manager};
 use zip::{write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
 
-const CURRENT_SCHEMA: i64 = 30;
+const CURRENT_SCHEMA: i64 = 31;
 const MAX_DB_BYTES: u64 = 1024 * 1024 * 1024;
 const MAX_ATTACHMENT_TOTAL: u64 = 2 * 1024 * 1024 * 1024;
 const MAX_ATTACHMENTS: usize = 10_000;

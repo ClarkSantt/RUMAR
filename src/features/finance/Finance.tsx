@@ -21,6 +21,7 @@ import type {
   Category,
   Contribution,
   Goal,
+  FinanceIntelligence,
   MonthSummary,
   Plan,
   Recurring,
@@ -84,6 +85,7 @@ interface Snapshot {
   worth: { account_cents: number; asset_cents: number; liability_cents: number; net_cents: number };
   spending: { category_id: string | null; name: string; cents: number }[];
   hidden: boolean;
+  intelligence: FinanceIntelligence;
 }
 function MoneyField({
   label,
@@ -289,6 +291,7 @@ export function Finance({
       spending,
       hidden,
       recent,
+      intelligence,
     ] = await Promise.all([
       repo.accounts(),
       repo.accounts(true),
@@ -305,6 +308,7 @@ export function Finance({
       repo.spendingByCategory(month),
       repo.hidden(),
       repo.transactions({ month, limit: 5 }),
+      repo.intelligence(month, day),
     ]);
     setData({
       accounts,
@@ -321,6 +325,7 @@ export function Finance({
       worth,
       spending,
       hidden,
+      intelligence,
     });
     setRecentRows(recent);
     setPlanForm({
@@ -525,6 +530,58 @@ export function Finance({
               </label>
             </div>
             <FinanceOverviewMetrics summary={data.summary} hidden={data.hidden} />
+            <section className="finance-panel finance-intelligence" aria-label="Inteligência local">
+              <div className="section-heading">
+                <div>
+                  <h2>Projeção local</h2>
+                  <p className="field-help">
+                    Estimativa explicável com ritmo atual e recorrências.
+                  </p>
+                </div>
+                <span className="status-badge">PROJEÇÃO</span>
+              </div>
+              {data.intelligence.hidden ? (
+                <p>Valores e padrões estão ocultos pela sua preferência de privacidade.</p>
+              ) : (
+                <>
+                  <dl className="finance-facts">
+                    <div>
+                      <dt>Gastos projetados no fim do mês</dt>
+                      <dd>{f(data.intelligence.projected_expense_cents ?? 0)}</dd>
+                    </div>
+                    <div>
+                      <dt>Saldo projetado</dt>
+                      <dd>{f(data.intelligence.projected_balance_cents ?? 0)}</dd>
+                    </div>
+                    <div>
+                      <dt>Comparação com mês anterior</dt>
+                      <dd>
+                        {data.intelligence.month_change_percent == null
+                          ? 'Sem base suficiente'
+                          : `${data.intelligence.month_change_percent > 0 ? '+' : ''}${data.intelligence.month_change_percent.toLocaleString('pt-BR')}%`}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Recorrências ainda esperadas</dt>
+                      <dd>{f(data.intelligence.pending_recurring_cents ?? 0)}</dd>
+                    </div>
+                  </dl>
+                  {data.intelligence.outliers.length > 0 && (
+                    <div>
+                      <h3>Fora do padrão histórico</h3>
+                      <ul className="finance-list">
+                        {data.intelligence.outliers.slice(0, 3).map((row) => (
+                          <li key={row.category}>
+                            <span>{row.category}</span>
+                            <strong>{row.ratio.toLocaleString('pt-BR')}× a mediana recente</strong>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
             <div className="finance-grid">
               <section className="finance-panel">
                 <h2>Planejado e realizado</h2>

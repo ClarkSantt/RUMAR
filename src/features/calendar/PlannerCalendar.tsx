@@ -836,6 +836,7 @@ export function PlannerCalendar({
                   requestFocus({
                     title: b.name,
                     taskId: b.entity_type === 'task' ? b.entity_id : null,
+                    projectId: b.source_type === 'project' ? b.source_id : null,
                     blockId: b.id,
                     occurrenceDate: b.occurrence_date ?? b.block_date,
                   });

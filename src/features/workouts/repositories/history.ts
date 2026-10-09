@@ -1,7 +1,7 @@
 import type { SqlConnection } from '../../../lib/database/connection';
 import { addDays, localDate, validDate } from '../../../lib/dates';
 import type { LoadType, WorkoutSet } from '../types';
-import type { MetricSet } from '../domain';
+import { weeklyMuscleFrequency, type MetricSet } from '../domain';
 export type HistorySet = WorkoutSet & MetricSet & { finished_at: string; exercise_name: string };
 export class WorkoutHistoryRepository {
   constructor(private readonly db: SqlConnection) {}
@@ -39,6 +39,22 @@ export class WorkoutHistoryRepository {
     return this.db.select<HistorySet[]>(
       `SELECT w.*,s.session_date,s.status AS session_status,s.finished_at,e.exercise_name FROM workout_sets w JOIN workout_sessions s ON s.id=w.workout_session_id JOIN workout_session_exercises e ON e.id=w.session_exercise_id WHERE w.exercise_id=$1 AND s.session_date BETWEEN $2 AND $3 AND s.status='completed' AND w.completed=1 ${options.loadType ? 'AND w.load_type=$4' : ''} ORDER BY s.session_date,s.started_at,w.set_number,w.id`,
       options.loadType ? [exerciseId, from, to, options.loadType] : [exerciseId, from, to],
+    );
+  }
+  async muscleFrequency(from = addDays(localDate(), -6), to = localDate()) {
+    if (!validDate(from) || !validDate(to) || from > to) throw Error('Período inválido.');
+    const rows = await this.db.select<MetricSet[]>(
+      `SELECT w.exercise_id,w.workout_session_id,w.load_type,w.load_value,w.reps,w.completed,w.set_type,
+       s.status AS session_status,s.session_date,x.muscle_group
+       FROM workout_sets w
+       JOIN workout_sessions s ON s.id=w.workout_session_id
+       JOIN exercises x ON x.id=w.exercise_id
+       WHERE s.session_date BETWEEN $1 AND $2 AND s.status='completed' AND w.completed=1
+       ORDER BY s.session_date,s.id,w.id`,
+      [from, to],
+    );
+    return weeklyMuscleFrequency(rows).sort(
+      (a, b) => b.sessions - a.sessions || a.muscleGroup.localeCompare(b.muscleGroup, 'pt-BR'),
     );
   }
   previousSession(

@@ -6,7 +6,7 @@ import { Dialog } from '../../components/Dialog';
 import './attachments.css';
 
 export type AttachmentEntity =
-  'project' | 'thought' | 'objective' | 'moment' | 'finance_transaction';
+  'project' | 'thought' | 'objective' | 'moment' | 'finance_transaction' | 'body_progress_photo';
 
 export interface AttachmentRow {
   id: string;
@@ -66,8 +66,11 @@ export function Attachments({
       directory: false,
       filters: [
         {
-          name: 'Documentos e imagens',
-          extensions: ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'csv', 'json', 'docx', 'xlsx'],
+          name: entityType === 'body_progress_photo' ? 'Imagens' : 'Documentos e imagens',
+          extensions:
+            entityType === 'body_progress_photo'
+              ? ['png', 'jpg', 'jpeg', 'webp']
+              : ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'csv', 'json', 'docx', 'xlsx'],
         },
       ],
     });
@@ -109,10 +112,14 @@ export function Attachments({
     }
   }
   return (
-    <section className="attachments-section" aria-label="Anexos">
+    <section
+      className="attachments-section"
+      aria-label={entityType === 'body_progress_photo' ? 'Foto privada' : 'Anexos'}
+    >
       <header className="attachments-header">
         <h2>
-          <Paperclip size={17} aria-hidden="true" /> Anexos
+          <Paperclip size={17} aria-hidden="true" />
+          {entityType === 'body_progress_photo' ? ' Foto privada' : ' Anexos'}
         </h2>
         <button
           type="button"
@@ -120,7 +127,8 @@ export function Attachments({
           disabled={busy}
           onClick={() => void add()}
         >
-          <Plus size={16} aria-hidden="true" /> Adicionar arquivo
+          <Plus size={16} aria-hidden="true" />
+          {entityType === 'body_progress_photo' ? ' Adicionar foto' : ' Adicionar arquivo'}
         </button>
       </header>
       {error && <p role="alert">{error}</p>}

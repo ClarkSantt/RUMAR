@@ -24,7 +24,7 @@ export interface WeeklyReviewData {
   habits: {
     done: number;
     target: number;
-    rows: { id: string; name: string; done: number; target: number }[];
+    rows: { id: string; name: string; done: number; target: number; needsAttention: boolean }[];
   };
   routines: { id: string; name: string; done: number; target: number }[];
   workouts: { completed: number; planned: number; minutes: number; estimatedCalories: number };
@@ -37,7 +37,12 @@ export interface WeeklyReviewData {
     estimatedBalance: number | null;
     balanceDays: number;
   };
-  finance: { income: number; expense: number; hidden: boolean };
+  finance: {
+    income: number;
+    expense: number;
+    hidden: boolean;
+    expenseTrendPercent: number | null;
+  };
   next: { tasks: number; workouts: number; bills: number; projectDeadlines: number };
   objectives: { id: string; name: string; activities: number }[];
   note: string;
@@ -90,6 +95,7 @@ export class WeeklyReviewRepository {
       activityRows,
       nutritionRows,
       financeRows,
+      previousFinanceRows,
       financePrivacy,
       upcomingTasks,
       upcomingRecurring,
@@ -168,6 +174,11 @@ export class WeeklyReviewRepository {
         `SELECT transaction_type,SUM(amount_cents) amount FROM finance_transactions WHERE date BETWEEN $1 AND $2 AND transaction_type!='transfer' GROUP BY transaction_type`,
         [start, end],
       ),
+      this.db.select<{ amount: number }[]>(
+        `SELECT coalesce(sum(amount_cents),0) amount FROM finance_transactions
+         WHERE date BETWEEN $1 AND $2 AND transaction_type='expense'`,
+        [addDays(start, -7), addDays(end, -7)],
+      ),
       this.db.select<{ hide_values: number }[]>(
         `SELECT hide_values FROM finance_preferences WHERE id=1`,
       ),
@@ -229,7 +240,13 @@ export class WeeklyReviewRepository {
         );
         habitDone += done;
         habitTarget += target;
-        return { id: h.id, name: h.name, done, target };
+        return {
+          id: h.id,
+          name: h.name,
+          done,
+          target,
+          needsAttention: target >= 2 && done / target < 0.5,
+        };
       })
       .filter((row) => row.target > 0);
     const routineRows = routines
@@ -345,7 +362,17 @@ export class WeeklyReviewRepository {
           : null,
         balanceDays: balanceRows.length,
       },
-      finance: { income, expense, hidden: !!financePrivacy[0]?.hide_values },
+      finance: {
+        income,
+        expense,
+        hidden: !!financePrivacy[0]?.hide_values,
+        expenseTrendPercent:
+          (previousFinanceRows[0]?.amount ?? 0) > 0
+            ? Math.round(
+                ((expense - previousFinanceRows[0].amount) / previousFinanceRows[0].amount) * 1000,
+              ) / 10
+            : null,
+      },
       next: {
         tasks: (upcomingTasks[0]?.count ?? 0) + recurringTaskCount,
         workouts: upcomingWorkouts.filter((row) => !row.session_id).length,

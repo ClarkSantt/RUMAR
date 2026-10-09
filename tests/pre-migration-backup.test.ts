@@ -13,7 +13,7 @@ describe('pre-migration backup ordering', () => {
   it('registers the current migration and the native command', () => {
     const rust = readFileSync('src-tauri/src/lib.rs', 'utf8');
     expect(rust).toContain('backup::pre_migration_backup');
-    expect(rust).toContain('version: 30');
-    expect(rust).toContain('0030_activity_home_reviews.sql');
+    expect(rust).toContain('version: 31');
+    expect(rust).toContain('0031_productivity_intelligence.sql');
   });
 });

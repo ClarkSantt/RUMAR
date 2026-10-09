@@ -245,6 +245,7 @@ export function WeeklyReview({
                 {data.habits.rows.map((row) => (
                   <p className="review-detail" key={row.id}>
                     {row.name}: {row.done}/{row.target}
+                    {row.needsAttention ? ' · atenção: abaixo de 50% da meta' : ''}
                   </p>
                 ))}
                 <button className="review-line" onClick={() => onNavigate('routines')}>
@@ -326,6 +327,12 @@ export function WeeklyReview({
                     ? 'R$ •••••'
                     : money.format((data.finance.income - data.finance.expense) / 100)}
                 </p>
+                {!data.finance.hidden && typeof data.finance.expenseTrendPercent === 'number' && (
+                  <p>
+                    Tendência semanal: {data.finance.expenseTrendPercent > 0 ? '+' : ''}
+                    {data.finance.expenseTrendPercent.toLocaleString('pt-BR')}% em despesas
+                  </p>
+                )}
               </section>
               {data.objectives.length > 0 && (
                 <section className="review-section">

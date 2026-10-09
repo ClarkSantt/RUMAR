@@ -19,6 +19,7 @@ const browser = await chromium.launch({ headless: true, executablePath });
 
 const allScreens = [
   'nutrition-today',
+  'nutrition-meals',
   'nutrition-diet',
   'nutrition-foods',
   'finance-overview',

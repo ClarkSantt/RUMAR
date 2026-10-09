@@ -126,6 +126,7 @@ fn is_entity(db: &Connection, entity_type: &str, entity_id: &str) -> Result<bool
         "objective" => "objectives",
         "moment" => "timeline_notes",
         "finance_transaction" => "finance_transactions",
+        "body_progress_photo" => "body_progress_photos",
         _ => return Err("Tipo de vínculo não permitido.".into()),
     };
     db.query_row(

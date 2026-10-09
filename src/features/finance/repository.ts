@@ -1,5 +1,13 @@
 import type { SqlConnection } from '../../lib/database/connection';
-import { available, normalizeDescription, validCents, validDate } from './domain';
+import {
+  available,
+  detectCategoryOutliers,
+  monthChangePercent,
+  normalizeDescription,
+  projectedMonthExpense,
+  validCents,
+  validDate,
+} from './domain';
 import type { OfxDocument, OfxRow } from './ofx';
 import type {
   Account,
@@ -14,6 +22,7 @@ import type {
   Rule,
   Transaction,
   Valuation,
+  FinanceIntelligence,
 } from './types';
 
 const uuid = () => crypto.randomUUID();
@@ -268,6 +277,56 @@ export class FinanceRepository {
       WHERE t.transaction_type='expense' AND t.date BETWEEN $1 AND $2 GROUP BY t.category_id ORDER BY cents DESC`,
       [start, end],
     );
+  }
+
+  async intelligence(month: string, today: string): Promise<FinanceIntelligence> {
+    const [start, end] = monthRange(month);
+    const date = new Date(`${today}T12:00:00`);
+    const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    const elapsedDays = month === today.slice(0, 7) ? date.getDate() : daysInMonth;
+    const previousDate = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+    const previousMonth = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, '0')}`;
+    const historyDate = new Date(date.getFullYear(), date.getMonth() - 4, 1);
+    const historyStart = `${historyDate.getFullYear()}-${String(historyDate.getMonth() + 1).padStart(2, '0')}-01`;
+    const [summary, previous, recurring, history, hidden] = await Promise.all([
+      this.monthSummary(month),
+      this.monthSummary(previousMonth),
+      this.db.select<{ cents: number }[]>(
+        `SELECT coalesce(sum(r.amount_cents),0) cents FROM finance_recurring r
+         WHERE r.active=1 AND r.transaction_type='expense' AND r.day_of_month>$1
+         AND NOT EXISTS(SELECT 1 FROM finance_transactions t
+          WHERE t.recurring_id=r.id AND t.date BETWEEN $2 AND $3)`,
+        [elapsedDays, start, end],
+      ),
+      this.db.select<{ category: string; month: string; cents: number }[]>(
+        `SELECT coalesce(c.name,'Sem categoria') category,substr(t.date,1,7) month,sum(t.amount_cents) cents
+         FROM finance_transactions t LEFT JOIN finance_categories c ON c.id=t.category_id
+         WHERE t.transaction_type='expense' AND t.date BETWEEN $1 AND $2
+         GROUP BY category,month`,
+        [historyStart, end],
+      ),
+      this.hidden(),
+    ]);
+    const pending = recurring[0]?.cents ?? 0;
+    const projectedExpense = projectedMonthExpense(
+      summary.expense_cents,
+      elapsedDays,
+      daysInMonth,
+      pending,
+    );
+    return {
+      hidden,
+      projected_expense_cents: hidden ? null : projectedExpense,
+      projected_balance_cents: hidden
+        ? null
+        : summary.balance_cents - (projectedExpense - summary.expense_cents),
+      previous_expense_cents: hidden ? null : previous.expense_cents,
+      month_change_percent: hidden
+        ? null
+        : monthChangePercent(summary.expense_cents, previous.expense_cents),
+      pending_recurring_cents: hidden ? null : pending,
+      outliers: hidden ? [] : detectCategoryOutliers(history, month),
+    };
   }
 
   plan(month: string) {

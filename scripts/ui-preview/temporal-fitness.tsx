@@ -395,6 +395,37 @@ function WorkoutHistoryPreview() {
           </button>
         ))}
       </nav>
+      <section className="muscle-frequency" aria-labelledby="preview-muscle-frequency">
+        <div>
+          <h3 id="preview-muscle-frequency">Frequência muscular</h3>
+          <small>Últimos 7 dias · grupo principal de cada exercício</small>
+        </div>
+        <div className="muscle-frequency-list">
+          <span>
+            Peito <strong>2x</strong>
+          </span>
+          <span>
+            Costas <strong>2x</strong>
+          </span>
+          <span>
+            Pernas <strong>1x</strong>
+          </span>
+        </div>
+      </section>
+      <div className="evolution-records">
+        <div>
+          <span>Maior carga</span>
+          <strong>80 kg total</strong>
+        </div>
+        <div>
+          <span>Melhor e1RM estimado</span>
+          <strong>106,67 kg total</strong>
+          <small>Estimativa pela fórmula de Epley</small>
+        </div>
+      </div>
+      <p className="evolution-suggestion">
+        <strong>Sugestão:</strong> considere aumentar a carga. O plano só muda após sua confirmação.
+      </p>
       <h2>Histórico de treinos</h2>
       {[
         'Membros inferiores · 2 de outubro · 1h05',
@@ -467,12 +498,23 @@ function BodyPreview() {
         <section className="body-section">
           <div className="section-heading">
             <h3>Evolução</h3>
-            <label>
-              Métrica{' '}
-              <select defaultValue="weight">
-                <option value="weight">Peso</option>
-              </select>
-            </label>
+            <div className="body-period-controls">
+              <label>
+                Período{' '}
+                <select defaultValue="30">
+                  <option value="7">7 dias</option>
+                  <option value="30">30 dias</option>
+                  <option value="90">90 dias</option>
+                  <option value="custom">Personalizado</option>
+                </select>
+              </label>
+              <label>
+                Métrica{' '}
+                <select defaultValue="weight">
+                  <option value="weight">Peso</option>
+                </select>
+              </label>
+            </div>
           </div>
           <MetricChart points={points} label="Peso" unit="kg" />
         </section>
@@ -491,6 +533,23 @@ function BodyPreview() {
                 <small>{change}</small>
               </div>
             ))}
+          </div>
+        </section>
+        <section className="body-section body-photos" aria-label="Fotos privadas de progresso">
+          <div className="section-heading">
+            <div>
+              <h3>Fotos de progresso</h3>
+              <p className="field-help">
+                Privadas e locais. Não aparecem automaticamente na Home, Timeline ou Reviews.
+              </p>
+            </div>
+            <button className="secondary-button">Adicionar foto</button>
+          </div>
+          <div className="body-photo-list">
+            <article>
+              <strong>4 de outubro de 2026</strong>
+              <span>Frente · arquivo em armazenamento gerenciado</span>
+            </article>
           </div>
         </section>
       </section>

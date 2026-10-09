@@ -2,10 +2,11 @@ import { ArrowRight, Check, Clock3, Inbox, Play, RefreshCw } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react';
 import { QuickEntry } from '../../components/QuickEntry';
 import type { RumoStore } from '../../hooks/useRumo';
-import { fullDate, greeting, localDate } from '../../lib/dates';
+import { addDays, fullDate, greeting, localDate } from '../../lib/dates';
 import { getDatabase } from '../../lib/database/connection';
 import type { TaskOccurrence } from '../../types/models';
 import { requestFocus } from '../calendar/focus';
+import { FocusRepository } from '../calendar/planner-repository';
 import { PlanningRepository } from '../planning/repository';
 import { HomeRepository, type HomeDayData, type HomePlanningItem } from './repository';
 import './home-day.css';
@@ -52,6 +53,12 @@ export function Home({
   const [summary, setSummary] = useState<HomeDayData | null>(null);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
+  const [focusStats, setFocusStats] = useState<{
+    today: number;
+    week: number;
+    month: number;
+    sources: { source_type: 'project' | 'task'; title: string; seconds: number }[];
+  }>({ today: 0, week: 0, month: 0, sources: [] });
   useEffect(() => {
     let active = true;
     void (loadDay ? loadDay() : getDatabase().then((db) => new HomeRepository(db).day(day, time)))
@@ -68,6 +75,36 @@ export function Home({
       active = false;
     };
   }, [day, time, revision, store.data, loadDay]);
+  useEffect(() => {
+    let active = true;
+    const weekday = new Date(`${day}T12:00:00`).getDay();
+    const weekStart = addDays(day, -(weekday === 0 ? 6 : weekday - 1));
+    void getDatabase()
+      .then(async (db) => {
+        const repo = new FocusRepository(db);
+        const [today, week, month] = await Promise.all([
+          repo.seconds(day, day),
+          repo.stats(weekStart, day),
+          repo.seconds(`${day.slice(0, 7)}-01`, day),
+        ]);
+        if (active)
+          setFocusStats({
+            today,
+            week: week.totalSeconds,
+            month,
+            sources: week.sources
+              .filter(
+                (row): row is typeof row & { source_type: 'project' | 'task' } =>
+                  row.source_type === 'project' || row.source_type === 'task',
+              )
+              .slice(0, 3),
+          });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [day, revision, store.data]);
 
   async function complete(item: HomePlanningItem) {
     try {
@@ -134,6 +171,7 @@ export function Home({
                       requestFocus({
                         title: current.title,
                         taskId: current.source_type === 'task' ? current.source_id : null,
+                        projectId: current.source_type === 'project' ? current.source_id : null,
                         blockId: current.id,
                         occurrenceDate: current.block_date,
                       })
@@ -156,6 +194,22 @@ export function Home({
               </div>
             )}
           </section>
+          <p className="home-focus-summary">
+            Foco: {Math.floor(focusStats.today / 60)} min hoje · {Math.floor(focusStats.week / 60)}{' '}
+            min nesta semana · {Math.floor(focusStats.month / 60)} min neste mês
+            {focusStats.sources.length > 0 && (
+              <span>
+                {' '}
+                · Por origem:{' '}
+                {focusStats.sources
+                  .map(
+                    (source) =>
+                      `${source.title} ${Math.max(1, Math.round(source.seconds / 60))} min`,
+                  )
+                  .join(' · ')}
+              </span>
+            )}
+          </p>
 
           <section className="home-next" aria-labelledby="home-next-title">
             <div className="home-section-heading">

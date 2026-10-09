@@ -342,7 +342,10 @@ it('upgrades a populated Phase 2 file without changing existing data and resumes
       due_time: null,
       recurrence: null,
     });
-    await base.createInbox('Inbox existente');
+    const inboxStamp = new Date().toISOString();
+    db.sqlite
+      .prepare('INSERT INTO inbox_items(id,content,status,created_at,updated_at) VALUES(?,?,?,?,?)')
+      .run(crypto.randomUUID(), 'Inbox existente', 'pending', inboxStamp, inboxStamp);
     await base.saveSetting('name', 'Teste upgrade');
     await projects.create({
       name: 'Projeto existente',

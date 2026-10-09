@@ -187,12 +187,34 @@
   .body-editor .primary-button {
     justify-self: start;
   }
+  .body-photo-form {
+    display: grid;
+    grid-template-columns: minmax(140px, 180px) minmax(220px, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .body-photo-list {
+    display: grid;
+    gap: 14px;
+  }
+  .body-photo-list > article {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .body-photo-list span {
+    display: grid;
+  }
   @media (max-width: 900px) {
     .body-table-wrap table {
       min-width: 520px;
     }
     .body-editor {
       padding: 16px;
+    }
+    .body-photo-form {
+      grid-template-columns: 1fr;
     }
   }
 }

@@ -59,6 +59,12 @@ export function sumNutrients(parts: Nutrients[]): Nutrients {
     }
   return total;
 }
+export function nutrientsPerServing(total: Nutrients, servings: number): Nutrients {
+  const count = positiveNumber(servings, 'Porções');
+  return Object.fromEntries(
+    Object.entries(total).map(([key, value]) => [key, value / count]),
+  ) as Nutrients;
+}
 export function remaining(consumed: number | undefined, goal: number | null | undefined) {
   return goal == null ? null : goal - (consumed ?? 0);
 }

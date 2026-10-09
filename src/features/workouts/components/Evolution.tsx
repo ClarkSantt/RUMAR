@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getDatabase } from '../../../lib/database/connection';
 import { addDays, formatDate, localDate } from '../../../lib/dates';
-import { exerciseMetrics, loadLabels } from '../domain';
+import { exerciseMetrics, loadLabels, progressionSuggestion } from '../domain';
 import type { LoadType } from '../types';
 import { WorkoutHistoryRepository, type HistorySet } from '../repositories/history';
 import './evolution.css';
@@ -14,14 +14,25 @@ export function Evolution({ exerciseId }: { exerciseId?: string }) {
     [loadType, setLoadType] = useState<LoadType>('total'),
     [period, setPeriod] = useState(90),
     [rows, setRows] = useState<HistorySet[]>([]),
+    [frequency, setFrequency] = useState<{ muscleGroup: string; sessions: number }[]>([]),
     [error, setError] = useState(''),
     [loading, setLoading] = useState(false);
   useEffect(() => {
     let active = true;
     void getDatabase()
-      .then((db) => new WorkoutHistoryRepository(db).exerciseOptions())
-      .then((data) => {
-        if (active) setExercises(data);
+      .then(async (db) => {
+        const repository = new WorkoutHistoryRepository(db),
+          to = localDate();
+        return Promise.all([
+          repository.exerciseOptions(),
+          repository.muscleFrequency(addDays(to, -6), to),
+        ]);
+      })
+      .then(([options, weekly]) => {
+        if (active) {
+          setExercises(options);
+          setFrequency(weekly);
+        }
       })
       .catch((e) => {
         if (active) setError(String(e));
@@ -63,10 +74,28 @@ export function Evolution({ exerciseId }: { exerciseId?: string }) {
   }, [selected, period]);
   const metrics = exerciseMetrics(rows, selected, loadType),
     unit = loadLabels[loadType],
-    volumeAvailable = !['bodyweight', 'none'].includes(loadType);
+    volumeAvailable = !['bodyweight', 'none'].includes(loadType),
+    suggestion = progressionSuggestion(rows, selected, loadType, 3, 10);
   const available = [...new Set(rows.map((r) => r.load_type))];
   return (
     <section className="workout-evolution" aria-label="Evolução de exercícios">
+      <section className="muscle-frequency" aria-labelledby="muscle-frequency-title">
+        <div>
+          <h3 id="muscle-frequency-title">Frequência muscular</h3>
+          <small>Últimos 7 dias · grupo principal de cada exercício</small>
+        </div>
+        {frequency.length ? (
+          <div className="muscle-frequency-list">
+            {frequency.map((item) => (
+              <span key={item.muscleGroup}>
+                {item.muscleGroup} <strong>{item.sessions}x</strong>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">Sem treinos concluídos nesta semana.</p>
+        )}
+      </section>
       <div className="evolution-filters">
         <label>
           Exercício
@@ -138,7 +167,27 @@ export function Evolution({ exerciseId }: { exerciseId?: string }) {
                       : `${number(metrics.maxSessionVolume)} ${unit} × reps`}
                   </strong>
                 </div>
+                <div>
+                  <span>Melhor e1RM estimado</span>
+                  <strong>
+                    {metrics.bestEstimatedOneRepMax === null
+                      ? 'Não se aplica'
+                      : `${number(metrics.bestEstimatedOneRepMax)} ${unit}`}
+                  </strong>
+                  <small>Estimativa pela fórmula de Epley</small>
+                </div>
               </div>
+              {suggestion && (
+                <p className="evolution-suggestion">
+                  <strong>Sugestão:</strong>{' '}
+                  {suggestion === 'increase_load'
+                    ? 'você concluiu 3 séries de 10 reps nas duas sessões mais recentes; considere aumentar a carga.'
+                    : suggestion === 'increase_reps'
+                      ? 'mantenha a carga e tente aumentar as repetições.'
+                      : 'mantenha a progressão atual até completar a faixa proposta.'}{' '}
+                  O plano só muda após sua confirmação.
+                </p>
+              )}
               <h3>Melhores repetições por carga</h3>
               <div className="evolution-reps">
                 {[...metrics.repsByLoad.entries()]
@@ -200,7 +249,7 @@ export function Evolution({ exerciseId }: { exerciseId?: string }) {
               ? 'Volume registrado = carga informada × repetições, sem dobrar cargas por lado ou por halter.'
               : 'Peso corporal e exercícios sem carga não recebem volume de carga total.'}{' '}
             Os tipos de carga são comparados separadamente. Marcas apresentadas correspondem ao
-            período selecionado.
+            período selecionado. e1RM é uma estimativa, não um recorde real.
           </p>
         </>
       )}

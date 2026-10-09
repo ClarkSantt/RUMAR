@@ -108,3 +108,18 @@ export interface MonthSummary {
   planned_expense_cents: number;
   planned_goal_cents: number;
 }
+export interface FinanceOutlier {
+  category: string;
+  current_cents: number;
+  baseline_cents: number;
+  ratio: number;
+}
+export interface FinanceIntelligence {
+  hidden: boolean;
+  projected_expense_cents: number | null;
+  projected_balance_cents: number | null;
+  previous_expense_cents: number | null;
+  month_change_percent: number | null;
+  pending_recurring_cents: number | null;
+  outliers: FinanceOutlier[];
+}

@@ -9,6 +9,7 @@ export interface MetricSet {
   set_type: string;
   session_status: string;
   session_date: string;
+  muscle_group?: string;
 }
 export const loadLabels: Record<LoadType, string> = {
   total: 'kg total',
@@ -93,12 +94,68 @@ export function exerciseMetrics(history: MetricSet[], exerciseId: string, loadTy
     (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id),
   );
   const volumes = sessions.flatMap((s) => (s.volume === null ? [] : [s.volume]));
+  const e1rms = sets
+    .map((set) => estimatedOneRepMax(set.load_value, set.reps, set.load_type))
+    .filter((value): value is number => value !== null);
   return {
     maxLoad,
     repsByLoad,
     maxSessionVolume: volumes.length ? Math.max(...volumes) : null,
+    bestEstimatedOneRepMax: e1rms.length ? Math.max(...e1rms) : null,
     sessions,
   };
+}
+
+export function estimatedOneRepMax(
+  load: number | null,
+  reps: number | null,
+  loadType: LoadType = 'total',
+): number | null {
+  if (
+    load === null ||
+    reps === null ||
+    load <= 0 ||
+    reps <= 0 ||
+    reps > 30 ||
+    ['none', 'bodyweight'].includes(loadType)
+  )
+    return null;
+  return Math.round(load * (1 + reps / 30) * 100) / 100;
+}
+
+export function progressionSuggestion(
+  history: MetricSet[],
+  exerciseId: string,
+  loadType: LoadType,
+  targetSets: number,
+  maxReps: number,
+): 'increase_load' | 'increase_reps' | 'maintain' | null {
+  const sessions = exerciseMetrics(history, exerciseId, loadType).sessions;
+  if (!sessions.length) return null;
+  const recent = sessions.slice(-2);
+  if (
+    recent.length === 2 &&
+    recent.every((session) => session.sets >= targetSets && session.maxReps >= maxReps) &&
+    !['none', 'bodyweight'].includes(loadType)
+  )
+    return 'increase_load';
+  const latest = recent.at(-1)!;
+  if (latest.sets >= targetSets && latest.maxReps < maxReps) return 'increase_reps';
+  return 'maintain';
+}
+
+export function weeklyMuscleFrequency(history: MetricSet[]) {
+  const groups = new Map<string, Set<string>>();
+  for (const set of history.filter(countedSet)) {
+    if (!set.muscle_group) continue;
+    const sessions = groups.get(set.muscle_group) ?? new Set<string>();
+    sessions.add(set.workout_session_id);
+    groups.set(set.muscle_group, sessions);
+  }
+  return [...groups].map(([muscleGroup, sessions]) => ({
+    muscleGroup,
+    sessions: sessions.size,
+  }));
 }
 export function newRecords(current: MetricSet, history: MetricSet[]): ('load' | 'reps')[] {
   if (!current.completed || current.set_type === 'warmup' || current.reps === null) return [];

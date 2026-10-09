@@ -58,6 +58,7 @@ export interface FocusSession {
   task_id: string | null;
   time_block_id: string | null;
   objective_id: string | null;
+  project_id: string | null;
   title: string;
   started_at: string;
   ended_at: string | null;
@@ -290,6 +291,7 @@ export class FocusRepository {
     blockId: string | null = null,
     now = new Date().toISOString(),
     occurrenceDate: string | null = null,
+    projectId: string | null = null,
   ) {
     if (occurrenceDate && !validDate(occurrenceDate)) throw Error('Ocorrência inválida.');
     const existing = await this.open();
@@ -297,8 +299,8 @@ export class FocusRepository {
     const id = crypto.randomUUID();
     const recurring = blockId ? parseRecurringBlockId(blockId) : null;
     await this.db.execute(
-      `INSERT INTO focus_sessions(id,task_id,time_block_id,objective_id,title,started_at,status,last_checkpoint,created_at,occurrence_date,time_block_series_id,time_block_series_date)
- VALUES($1,$2,$3,(SELECT l.objective_id FROM objective_links l WHERE (l.entity_type='task' AND l.entity_id=$2) OR (l.entity_type='project' AND l.entity_id=(SELECT project_id FROM tasks WHERE id=$2)) ORDER BY l.created_at LIMIT 1),$4,$5,'running',$5,$5,CASE WHEN $2 IS NOT NULL THEN coalesce($6,(SELECT coalesce(occurrence_date,block_date) FROM planner_time_blocks WHERE id=$3),date($5,'localtime')) ELSE NULL END,$7,$8)`,
+      `INSERT INTO focus_sessions(id,task_id,time_block_id,objective_id,title,started_at,status,last_checkpoint,created_at,occurrence_date,time_block_series_id,time_block_series_date,project_id)
+ VALUES($1,$2,$3,(SELECT l.objective_id FROM objective_links l WHERE (l.entity_type='task' AND l.entity_id=$2) OR (l.entity_type='project' AND l.entity_id=coalesce($9,(SELECT project_id FROM tasks WHERE id=$2))) ORDER BY l.created_at LIMIT 1),$4,$5,'running',$5,$5,CASE WHEN $2 IS NOT NULL OR $9 IS NOT NULL THEN coalesce($6,(SELECT coalesce(occurrence_date,block_date) FROM planner_time_blocks WHERE id=$3),date($5,'localtime')) ELSE NULL END,$7,$8,$9)`,
       [
         id,
         taskId,
@@ -308,6 +310,7 @@ export class FocusRepository {
         occurrenceDate ?? recurring?.date ?? null,
         recurring?.seriesId ?? null,
         recurring?.date ?? null,
+        projectId,
       ],
     );
     return (await this.open())!;
@@ -349,6 +352,29 @@ export class FocusRepository {
       [from, to],
     );
     return row.seconds;
+  }
+  async stats(from: string, to: string) {
+    const totals = await this.db.select<
+      {
+        source_type: 'project' | 'task' | 'unlinked';
+        source_id: string | null;
+        title: string;
+        seconds: number;
+      }[]
+    >(
+      `SELECT CASE WHEN project_id IS NOT NULL THEN 'project' WHEN task_id IS NOT NULL THEN 'task' ELSE 'unlinked' END source_type,
+       coalesce(project_id,task_id) source_id,
+       CASE WHEN project_id IS NOT NULL THEN coalesce((SELECT name FROM projects WHERE id=project_id),title)
+            WHEN task_id IS NOT NULL THEN coalesce((SELECT title FROM tasks WHERE id=task_id),title) ELSE title END title,
+       sum(focused_seconds) seconds
+       FROM focus_sessions WHERE status='completed' AND date(ended_at,'localtime') BETWEEN $1 AND $2
+       GROUP BY source_type,source_id,title ORDER BY seconds DESC`,
+      [from, to],
+    );
+    return {
+      totalSeconds: totals.reduce((sum, row) => sum + row.seconds, 0),
+      sources: totals,
+    };
   }
   async objectiveSeconds(id: string) {
     const [row] = await this.db.select<{ seconds: number }[]>(

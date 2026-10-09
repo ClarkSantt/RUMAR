@@ -8,6 +8,7 @@ import { globalSearch } from '../src/features/search/repository';
 
 vi.mock('../src/lib/database/connection', () => ({ getDatabase: vi.fn() }));
 vi.mock('../src/features/search/repository', () => ({ globalSearch: vi.fn() }));
+vi.mock('../src/features/search/commands', () => ({ commandSuggestions: () => [] }));
 
 beforeEach(() => {
   vi.mocked(getDatabase).mockResolvedValue({} as Awaited<ReturnType<typeof getDatabase>>);
@@ -46,7 +47,9 @@ it('liga a opção ativa ao campo e preserva setas, Enter, cancelamento e foco',
   previous.focus();
   const onClose = vi.fn();
   const onNavigate = vi.fn();
-  const view = render(<GlobalSearch onClose={onClose} onNavigate={onNavigate} />);
+  const view = render(
+    <GlobalSearch onClose={onClose} onNavigate={onNavigate} onCommand={vi.fn()} />,
+  );
   const input = screen.getByRole('combobox', { name: 'Buscar no RUMAR' });
   expect(document.activeElement).toBe(input);
   await user.type(input, 'pro');

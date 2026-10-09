@@ -9,6 +9,7 @@ import {
   formatAmount,
   nutrientInfo,
   positiveNumber,
+  nutrientsPerServing,
   remaining,
   type FoodUnit,
   type NutrientKey,
@@ -391,7 +392,7 @@ export function Nutrition({
           initialFoodId={searchTarget?.group === 'Alimentos' ? searchTarget.id : undefined}
         />
       ) : tab === 'meals' ? (
-        <Meals repo={repo} run={run} revision={revision} />
+        <Meals repo={repo} run={run} revision={revision} date={date} />
       ) : tab === 'diet' ? (
         <Diet repo={repo} run={run} revision={revision} date={date} />
       ) : tab === 'diary' ? (
@@ -795,16 +796,20 @@ function Meals({
   repo,
   run,
   revision,
+  date,
 }: {
   repo: NutritionRepository;
   run: (fn: () => Promise<unknown>) => Promise<boolean>;
   revision: number;
+  date: string;
 }) {
   const [rows, setRows] = useState<Meal[]>([]),
     [selected, setSelected] = useState<Meal | null>(null),
     [items, setItems] = useState<MealItem[]>([]),
     [total, setTotal] = useState<Nutrients>({}),
     [name, setName] = useState(''),
+    [kind, setKind] = useState<Meal['kind']>('meal'),
+    [servings, setServings] = useState('1'),
     [editingMeal, setEditingMeal] = useState<string>(),
     [picked, setPicked] = useState<Food | null>(null),
     [editingItem, setEditingItem] = useState<MealItem | null>(null);
@@ -841,9 +846,13 @@ function Meals({
         className="nutrition-inline-form"
         onSubmit={(e) => {
           e.preventDefault();
-          void run(() => repo.saveMeal(name, '', editingMeal)).then((ok) => {
+          void run(() =>
+            repo.saveMeal(name, '', editingMeal, kind, positiveNumber(servings, 'Porções')),
+          ).then((ok) => {
             if (ok) {
               setName('');
+              setKind('meal');
+              setServings('1');
               setEditingMeal(undefined);
             }
           });
@@ -855,6 +864,23 @@ function Meals({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Café da manhã"
+            required
+          />
+        </label>
+        <label>
+          Tipo
+          <select value={kind} onChange={(e) => setKind(e.target.value as Meal['kind'])}>
+            <option value="meal">Refeição</option>
+            <option value="recipe">Receita</option>
+            <option value="favorite">Favorita</option>
+          </select>
+        </label>
+        <label>
+          Porções
+          <input
+            inputMode="decimal"
+            value={servings}
+            onChange={(e) => setServings(e.target.value)}
             required
           />
         </label>
@@ -874,6 +900,13 @@ function Meals({
               aria-current={selected?.id === meal.id ? 'true' : undefined}
             >
               <strong>{meal.name}</strong>
+              <small>
+                {meal.kind === 'recipe'
+                  ? `Receita · ${formatAmount(meal.servings)} porções`
+                  : meal.kind === 'favorite'
+                    ? 'Favorita'
+                    : 'Refeição'}
+              </small>
               <ChevronRight size={16} />
             </button>
           ))}
@@ -883,6 +916,32 @@ function Meals({
             <div className="section-heading">
               <h3>{selected.name}</h3>
               <div className="nutrition-actions">
+                <button
+                  className="primary-button"
+                  onClick={() =>
+                    void run(() => repo.copyMealToDiary(selected.id, date, selected.name, 1))
+                  }
+                >
+                  Registrar 1 porção
+                </button>
+                {selected.kind !== 'favorite' && (
+                  <button
+                    className="text-button"
+                    onClick={() =>
+                      void run(() =>
+                        repo.saveMeal(
+                          selected.name,
+                          selected.notes,
+                          selected.id,
+                          'favorite',
+                          selected.servings,
+                        ),
+                      )
+                    }
+                  >
+                    Salvar como favorita
+                  </button>
+                )}
                 <SaveTemplateButton
                   kind="meal"
                   sourceId={selected.id}
@@ -893,6 +952,8 @@ function Meals({
                   onClick={() => {
                     setEditingMeal(selected.id);
                     setName(selected.name);
+                    setKind(selected.kind);
+                    setServings(String(selected.servings));
                   }}
                 >
                   Editar
@@ -938,6 +999,12 @@ function Meals({
               </div>
             ))}
             <NutrientSummary values={total} title="Total da refeição" />
+            {selected.servings !== 1 && (
+              <NutrientSummary
+                values={nutrientsPerServing(total, selected.servings)}
+                title="Por porção"
+              />
+            )}
             <h4>{editingItem ? 'Editar item' : 'Adicionar alimento'}</h4>
             {picked ? (
               <QuantityForm
@@ -1211,10 +1278,18 @@ function Diary({
     <section className="nutrition-page">
       <div className="section-heading">
         <h2>Diário alimentar</h2>
-        <label>
-          Data
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </label>
+        <div className="nutrition-actions">
+          <button
+            className="secondary-button"
+            onClick={() => void run(() => repo.copyDiaryDay(addDays(date, -1), date))}
+          >
+            Copiar ontem
+          </button>
+          <label>
+            Data
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </label>
+        </div>
       </div>
       <NutrientSummary values={totals} goals={goals} title="Total registrado no dia" />
       <div className="nutrition-split">

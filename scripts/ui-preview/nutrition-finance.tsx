@@ -81,7 +81,13 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
   const nutrition = screen.startsWith('nutrition-');
   const connections = screen.startsWith('finance-connection');
   const nutritionTab =
-    screen === 'nutrition-foods' ? 'Alimentos' : screen === 'nutrition-diet' ? 'Dieta' : 'Hoje';
+    screen === 'nutrition-foods'
+      ? 'Alimentos'
+      : screen === 'nutrition-diet'
+        ? 'Dieta'
+        : screen === 'nutrition-meals'
+          ? 'Refeições'
+          : 'Hoje';
   const financeTab = connections
     ? 'Contas conectadas'
     : screen === 'finance-transactions'
@@ -141,6 +147,48 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
                   Detalhes de energia e atividade continuam disponíveis abaixo do diário.
                 </p>
               </section>
+            </section>
+          ) : screen === 'nutrition-meals' ? (
+            <section className="nutrition-page">
+              <div className="section-heading">
+                <div>
+                  <h2>Refeições</h2>
+                  <p className="field-help">
+                    Receitas, porções e refeições favoritas reutilizáveis.
+                  </p>
+                </div>
+                <button className="primary-button">Criar</button>
+              </div>
+              <div className="nutrition-split">
+                <div className="nutrition-list">
+                  <button aria-current="true">
+                    <strong>Vitamina</strong>
+                    <small>Receita · 2 porções</small>
+                  </button>
+                  <button>
+                    <strong>Café da manhã padrão</strong>
+                    <small>Favorita</small>
+                  </button>
+                </div>
+                <section className="nutrition-section">
+                  <div className="section-heading">
+                    <div>
+                      <h3>Vitamina</h3>
+                      <p className="field-help">Leite, banana, aveia e whey</p>
+                    </div>
+                    <button className="primary-button">Registrar 1 porção</button>
+                  </div>
+                  <NutrientSummary
+                    values={{ energy_kcal: 580, protein_g: 42, carbohydrate_g: 78, fat_g: 12 }}
+                    title="Total da receita"
+                  />
+                  <NutrientSummary
+                    values={{ energy_kcal: 290, protein_g: 21, carbohydrate_g: 39, fat_g: 6 }}
+                    title="Por porção"
+                  />
+                  <button className="text-button">Salvar como favorita</button>
+                </section>
+              </div>
             </section>
           ) : screen === 'nutrition-foods' ? (
             <section className="nutrition-page">
@@ -254,6 +302,42 @@ export function NutritionFinancePreview({ screen }: { screen: string }) {
                 </label>
               </div>
               <FinanceOverviewMetrics summary={summary} hidden={hidden} />
+              <section
+                className="finance-panel finance-intelligence"
+                aria-label="Inteligência local"
+              >
+                <div className="section-heading">
+                  <div>
+                    <h2>Projeção local</h2>
+                    <p className="field-help">
+                      Estimativa explicável com ritmo atual e recorrências.
+                    </p>
+                  </div>
+                  <span className="status-badge">PROJEÇÃO</span>
+                </div>
+                {hidden ? (
+                  <p>Valores e padrões estão ocultos pela sua preferência de privacidade.</p>
+                ) : (
+                  <dl className="finance-facts">
+                    <div>
+                      <dt>Gastos projetados no fim do mês</dt>
+                      <dd>R$ 2.420,00</dd>
+                    </div>
+                    <div>
+                      <dt>Comparação com mês anterior</dt>
+                      <dd>−8%</dd>
+                    </div>
+                    <div>
+                      <dt>Recorrências ainda esperadas</dt>
+                      <dd>R$ 320,00</dd>
+                    </div>
+                    <div>
+                      <dt>Fora do padrão histórico</dt>
+                      <dd>Alimentação · 38% acima da mediana</dd>
+                    </div>
+                  </dl>
+                )}
+              </section>
               <div className="finance-grid">
                 <section className="finance-panel">
                   <h2>Planejado e realizado</h2>

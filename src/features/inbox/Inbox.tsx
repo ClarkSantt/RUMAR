@@ -6,11 +6,20 @@ import { QuickEntry } from '../../components/QuickEntry';
 import type { RumoStore } from '../../hooks/useRumo';
 import type { InboxItem } from '../../types/models';
 import { getDatabase } from '../../lib/database/connection';
-import { convertInboxTo } from './conversions';
+import { convertInboxTo, inboxSuggestion, type InboxTarget } from './conversions';
 function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
   const more = useRef<HTMLDetailsElement>(null);
   const [editing, setEditing] = useState(false),
-    [draft, setDraft] = useState(item.content);
+    [draft, setDraft] = useState(item.content),
+    [notes, setNotes] = useState(item.notes);
+  const suggestion = inboxSuggestion(item.content);
+  const targets: { id: InboxTarget; label: string }[] = [
+    { id: 'planning', label: 'item planejado' },
+    { id: 'event', label: 'evento planejado' },
+    { id: 'thought', label: 'pensamento' },
+    { id: 'project', label: 'projeto' },
+    { id: 'habit', label: 'hábito' },
+  ];
   async function remove() {
     if (await store.run((repo) => repo.archiveInbox(item.id)))
       store.setNotice({
@@ -25,6 +34,13 @@ function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
       </span>
       <div className="inbox-row-body">
         <div className="inbox-content">{item.content}</div>
+        {item.notes && <p className="field-help">{item.notes}</p>}
+        {suggestion.hasSchedule && (
+          <p className="field-help inbox-suggestion">
+            Sugestão: {suggestion.title || item.content} · {suggestion.date ?? 'sem data'}
+            {suggestion.time ? ` às ${suggestion.time}` : ''}
+          </p>
+        )}
         <div className="inbox-actions">
           <button
             className="text-button convert-button"
@@ -54,21 +70,19 @@ function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
               <Ellipsis size={18} />
             </summary>
             <div className="inbox-more-menu">
-              {(['project', 'thought'] as const).map((target) => (
+              {targets.map((target) => (
                 <button
-                  key={target}
+                  key={target.id}
                   disabled={store.busy}
                   onClick={() => {
                     if (more.current) more.current.open = false;
                     void store.run(
-                      async () => convertInboxTo(await getDatabase(), item.id, target),
-                      target === 'project'
-                        ? 'Transformado em projeto.'
-                        : 'Transformado em pensamento.',
+                      async () => convertInboxTo(await getDatabase(), item.id, target.id),
+                      `Transformado em ${target.label}.`,
                     );
                   }}
                 >
-                  Transformar em {target === 'project' ? 'projeto' : 'pensamento'}
+                  Transformar em {target.label}
                 </button>
               ))}
               <button
@@ -76,6 +90,7 @@ function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
                 onClick={() => {
                   if (more.current) more.current.open = false;
                   setDraft(item.content);
+                  setNotes(item.notes);
                   setEditing(true);
                 }}
               >
@@ -106,7 +121,9 @@ function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
             className="dialog-content"
             onSubmit={async (e) => {
               e.preventDefault();
-              if (await store.run((repo) => repo.editInbox(item.id, draft), 'Captura salva.'))
+              if (
+                await store.run((repo) => repo.editInbox(item.id, draft, notes), 'Captura salva.')
+              )
                 setEditing(false);
             }}
           >
@@ -119,6 +136,15 @@ function InboxRow({ item, store }: { item: InboxItem; store: RumoStore }) {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               disabled={store.busy}
+            />
+            <label htmlFor="inbox-edit-notes">Notas opcionais</label>
+            <textarea
+              id="inbox-edit-notes"
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={store.busy}
+              maxLength={4000}
             />
             <div className="form-actions">
               <button

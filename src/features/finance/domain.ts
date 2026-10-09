@@ -16,6 +16,59 @@ export function money(cents: number, hidden = false): string {
   );
   return `${cents < 0 ? '-' : ''}R$\u00a0${whole},${String(absolute % 100).padStart(2, '0')}`;
 }
+
+export function median(values: number[]) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+export function projectedMonthExpense(
+  realizedCents: number,
+  elapsedDays: number,
+  daysInMonth: number,
+  pendingRecurringCents = 0,
+) {
+  if (elapsedDays <= 0 || daysInMonth < elapsedDays) return realizedCents + pendingRecurringCents;
+  const paceRemaining = Math.round((realizedCents / elapsedDays) * (daysInMonth - elapsedDays));
+  return realizedCents + Math.max(paceRemaining, pendingRecurringCents);
+}
+
+export function monthChangePercent(current: number, previous: number): number | null {
+  if (previous <= 0) return null;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
+
+export function detectCategoryOutliers(
+  rows: { category: string; month: string; cents: number }[],
+  currentMonth: string,
+) {
+  const byCategory = new Map<string, { current: number; history: number[] }>();
+  for (const row of rows) {
+    const value = byCategory.get(row.category) ?? { current: 0, history: [] };
+    if (row.month === currentMonth) value.current += row.cents;
+    else if (row.cents > 0) value.history.push(row.cents);
+    byCategory.set(row.category, value);
+  }
+  return [...byCategory]
+    .map(([category, value]) => {
+      const baseline = median(value.history);
+      return {
+        category,
+        current_cents: value.current,
+        baseline_cents: Math.round(baseline),
+        ratio: baseline ? Math.round((value.current / baseline) * 100) / 100 : 0,
+      };
+    })
+    .filter(
+      (row) =>
+        row.baseline_cents > 0 &&
+        row.ratio >= 1.5 &&
+        row.current_cents - row.baseline_cents >= 1000,
+    )
+    .sort((a, b) => b.ratio - a.ratio);
+}
 export function validCents(value: number, allowZero = false): number {
   if (!Number.isSafeInteger(value) || value < (allowZero ? 0 : 1))
     throw Error('Valor monetário inválido.');

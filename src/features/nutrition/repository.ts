@@ -123,17 +123,22 @@ export class NutritionRepository {
     );
   }
 
-  meals() {
-    return this.db.select<Meal[]>('SELECT * FROM meals WHERE archived_at IS NULL ORDER BY name,id');
+  meals(kind?: Meal['kind']) {
+    return this.db.select<Meal[]>(
+      'SELECT * FROM meals WHERE archived_at IS NULL AND ($1 IS NULL OR kind=$1) ORDER BY kind,name,id',
+      [kind ?? null],
+    );
   }
-  async saveMeal(name: string, notes = '', id?: string) {
+  async saveMeal(name: string, notes = '', id?: string, kind: Meal['kind'] = 'meal', servings = 1) {
+    if (!['meal', 'recipe', 'favorite'].includes(kind)) throw Error('Tipo de refeição inválido.');
+    const portionCount = positiveNumber(servings, 'Porções');
     const key = id ?? uuid(),
       now = stamp();
     const result = await this.db.execute(
       id
-        ? 'UPDATE meals SET name=$1,notes=$2,updated_at=$3 WHERE id=$4'
-        : 'INSERT INTO meals(name,notes,created_at,updated_at,id) VALUES($1,$2,$3,$3,$4)',
-      [requireName(name), notes.trim(), now, key],
+        ? 'UPDATE meals SET name=$1,notes=$2,kind=$3,servings=$4,updated_at=$5 WHERE id=$6'
+        : 'INSERT INTO meals(name,notes,kind,servings,created_at,updated_at,id) VALUES($1,$2,$3,$4,$5,$5,$6)',
+      [requireName(name), notes.trim(), kind, portionCount, now, key],
     );
     if (!result.rowsAffected) throw Error('Refeição não encontrada.');
     return key;
@@ -297,18 +302,31 @@ export class NutritionRepository {
   }
   // One SQL statement copies an entire meal and snapshots its nutrient values.
   // The statement is atomic under SQLite even with a pooled plugin connection.
-  async copyMealToDiary(mealId: string, day: string, label?: string) {
+  async copyMealToDiary(mealId: string, day: string, label?: string, portions = 1) {
+    const count = positiveNumber(portions, 'Porções');
     const now = stamp();
     return this.db.execute(
       `INSERT INTO food_diary_entries(id,entry_date,meal_label,food_id,food_name,
        quantity,unit,grams_equivalent,nutrients_json,source_meal_id,notes,created_at,updated_at)
        SELECT lower(hex(randomblob(16))),$2,COALESCE($3,m.name),f.id,f.name,
-       mi.quantity,mi.unit,mi.grams_equivalent,
-       COALESCE((SELECT json_group_object(fn.nutrient_key,fn.amount*mi.grams_equivalent/f.base_grams_equivalent)
+       mi.quantity*$5/m.servings,mi.unit,mi.grams_equivalent*$5/m.servings,
+       COALESCE((SELECT json_group_object(fn.nutrient_key,fn.amount*mi.grams_equivalent*$5/m.servings/f.base_grams_equivalent)
          FROM food_nutrients fn WHERE fn.food_id=f.id AND fn.amount IS NOT NULL),'{}'),
        m.id,mi.notes,$4,$4 FROM meal_items mi
        JOIN meals m ON m.id=mi.meal_id JOIN foods f ON f.id=mi.food_id WHERE mi.meal_id=$1`,
-      [mealId, day, label ?? null, now],
+      [mealId, day, label ?? null, now, count],
+    );
+  }
+  async copyDiaryDay(from: string, to: string) {
+    if (from === to) throw Error('Escolha outro dia para copiar.');
+    const now = stamp();
+    return this.db.execute(
+      `INSERT INTO food_diary_entries(id,entry_date,meal_label,food_id,food_name,quantity,unit,
+       grams_equivalent,nutrients_json,source_meal_id,notes,created_at,updated_at)
+       SELECT lower(hex(randomblob(16))),$2,meal_label,food_id,food_name,quantity,unit,
+       grams_equivalent,nutrients_json,source_meal_id,notes,$3,$3
+       FROM food_diary_entries WHERE entry_date=$1`,
+      [from, to, now],
     );
   }
   diaryHistory(from: string, to: string) {

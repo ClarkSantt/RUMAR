@@ -6,6 +6,7 @@ import { getDatabase } from '../../lib/database/connection';
 import { addDays, formatDate, localDate } from '../../lib/dates';
 import { comparison, formatMeasurement, metrics, type BodyRecord, type MetricKey } from './domain';
 import { BodyProgressRepository } from './repository';
+import { Attachments } from '../attachments/Attachments';
 import './body-progress.css';
 
 const formatNumber = (value: number) =>
@@ -15,6 +16,12 @@ const formatAxisValue = (value: number) =>
 const signed = (value: number, unit: string) =>
   `${value > 0 ? '+' : value < 0 ? '−' : ''}${formatNumber(Math.abs(value))} ${unit}`;
 type HistoryPoint = { date: string; value: number };
+type BodyPhoto = {
+  id: string;
+  photo_date: string;
+  note: string;
+  attachment_count: number;
+};
 export function MetricChart({
   points,
   label,
@@ -148,6 +155,13 @@ export function BodyProgress() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmDate, setConfirmDate] = useState<string | null>(null);
+  const [period, setPeriod] = useState<7 | 30 | 90 | 'custom'>(30);
+  const [customFrom, setCustomFrom] = useState(addDays(localDate(), -30));
+  const [customTo, setCustomTo] = useState(localDate());
+  const [photos, setPhotos] = useState<BodyPhoto[]>([]);
+  const [photoDate, setPhotoDate] = useState(localDate());
+  const [photoNote, setPhotoNote] = useState('');
+  const [photoEditor, setPhotoEditor] = useState(false);
   useEffect(() => {
     if (!editing) return;
     editorRef.current?.scrollIntoView({ block: 'start' });
@@ -169,11 +183,12 @@ export function BodyProgress() {
   useEffect(() => {
     if (!repo) return;
     let live = true;
-    void Promise.all([repo.records(200), repo.history(metric, 100)])
-      .then(([next, points]) => {
+    void Promise.all([repo.records(200), repo.history(metric, 100), repo.photos()])
+      .then(([next, points, photoRows]) => {
         if (live) {
           setRecords(next);
           setHistory(points);
+          setPhotos(photoRows);
           setCompareA((value) => value || next[1]?.date || next[0]?.date || '');
           setCompareB((value) => value || next[0]?.date || '');
         }
@@ -256,6 +271,8 @@ export function BodyProgress() {
   const a = records.find((record) => record.date === compareA);
   const b = records.find((record) => record.date === compareB);
   const differences = comparison(a, b);
+  const from = period === 'custom' ? customFrom : addDays(localDate(), 1 - period);
+  const visibleHistory = history.filter((point) => point.date >= from && point.date <= customTo);
   return (
     <section className="body-progress" aria-label="Progresso corporal">
       <div className="workout-section-heading">
@@ -305,21 +322,65 @@ export function BodyProgress() {
           <section className="body-section">
             <div className="section-heading">
               <h3>Evolução</h3>
-              <label>
-                Métrica{' '}
-                <select
-                  value={metric}
-                  onChange={(event) => setMetric(event.target.value as MetricKey)}
-                >
-                  {metrics.map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="body-compare-controls">
+                <label>
+                  Período{' '}
+                  <select
+                    value={period}
+                    onChange={(event) =>
+                      setPeriod(
+                        event.target.value === 'custom'
+                          ? 'custom'
+                          : (Number(event.target.value) as 7 | 30 | 90),
+                      )
+                    }
+                  >
+                    <option value={7}>7 dias</option>
+                    <option value={30}>30 dias</option>
+                    <option value={90}>90 dias</option>
+                    <option value="custom">Personalizado</option>
+                  </select>
+                </label>
+                <label>
+                  Métrica{' '}
+                  <select
+                    value={metric}
+                    onChange={(event) => setMetric(event.target.value as MetricKey)}
+                  >
+                    {metrics.map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </div>
-            <MetricChart points={history} label={selectedMetric[1]} unit={selectedMetric[2]} />
+            {period === 'custom' && (
+              <div className="body-compare-controls">
+                <label>
+                  De
+                  <input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Até
+                  <input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+            <MetricChart
+              points={visibleHistory}
+              label={selectedMetric[1]}
+              unit={selectedMetric[2]}
+            />
           </section>
           <section className="body-section">
             <h3>Medidas</h3>
@@ -392,6 +453,86 @@ export function BodyProgress() {
                 </tbody>
               </table>
             </div>
+          </section>
+          <section className="body-section">
+            <div className="section-heading">
+              <div>
+                <h3>Fotos de progresso</h3>
+                <p className="field-help">
+                  Privadas e locais. Não aparecem na Home, Timeline ou Reviews.
+                </p>
+              </div>
+              <button className="secondary-button" onClick={() => setPhotoEditor(true)}>
+                <Plus size={16} /> Adicionar foto
+              </button>
+            </div>
+            {photoEditor && (
+              <form
+                className="body-photo-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!repo) return;
+                  setBusy(true);
+                  void repo
+                    .savePhoto(photoDate, photoNote)
+                    .then(() => {
+                      setPhotoEditor(false);
+                      setPhotoNote('');
+                      setRevision((value) => value + 1);
+                    })
+                    .catch((cause) => setError(String(cause)))
+                    .finally(() => setBusy(false));
+                }}
+              >
+                <label>
+                  Data
+                  <input
+                    type="date"
+                    value={photoDate}
+                    onChange={(e) => setPhotoDate(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Observação opcional
+                  <input
+                    value={photoNote}
+                    onChange={(e) => setPhotoNote(e.target.value)}
+                    maxLength={1000}
+                  />
+                </label>
+                <button className="primary-button" disabled={busy}>
+                  Criar registro
+                </button>
+              </form>
+            )}
+            {photos.length ? (
+              <div className="body-photo-list">
+                {photos.map((photo) => (
+                  <article key={photo.id}>
+                    <div className="section-heading">
+                      <span>
+                        <strong>{formatDate(photo.photo_date)}</strong>
+                        {photo.note && <small>{photo.note}</small>}
+                      </span>
+                      <button
+                        className="text-button danger"
+                        onClick={() =>
+                          void repo
+                            ?.removePhoto(photo.id)
+                            .then(() => setRevision((value) => value + 1))
+                        }
+                      >
+                        Remover
+                      </button>
+                    </div>
+                    <Attachments entityType="body_progress_photo" entityId={photo.id} />
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="field-help">Nenhuma foto adicionada.</p>
+            )}
           </section>
           <section className="body-section">
             <h3>Registros</h3>

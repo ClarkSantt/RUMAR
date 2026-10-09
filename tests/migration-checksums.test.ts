@@ -120,6 +120,10 @@ const publishedMigrations = [
     '0029_planning_foundation.sql',
     '276745FF3C2BAD24ECCA841C7EF14B8E389B2AE9DD8B84955284D2A94F44B95449C7424EF3B5D99BAB84CDD1BEC80F97',
   ],
+  [
+    '0030_activity_home_reviews.sql',
+    'B9195984E53674EF2E66A936CF10B2B2968BDA8CB0AF24A44DE29FD783F454E7FB29C0691C193B0B76FC4B01B3713E28',
+  ],
 ] as const;
 
 describe('published migration checksums', () => {

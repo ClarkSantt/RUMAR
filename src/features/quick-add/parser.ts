@@ -38,26 +38,56 @@ function decimal(value: string): number | null {
   const result = Number(normalized);
   return Number.isFinite(result) ? result : null;
 }
-function taskDate(
+const weekdays = new Map([
+  ['domingo', 0],
+  ['segunda', 1],
+  ['terça', 2],
+  ['terca', 2],
+  ['quarta', 3],
+  ['quinta', 4],
+  ['sexta', 5],
+  ['sábado', 6],
+  ['sabado', 6],
+]);
+
+export function parseNaturalSchedule(
   input: string,
   today: string,
-): { title: string; date: string | null; time: string | null } {
+): { title: string; date: string | null; time: string | null; dayPeriod: string | null } {
   let title = input.trim();
   let date: string | null = null;
   let time: string | null = null;
-  const timeMatch = title.match(/(?:^|\s)((?:[01]\d|2[0-3]):[0-5]\d)(?=\s|$)/);
+  let dayPeriod: string | null = null;
+  const timeMatch = title.match(/(?:^|\s)((?:[01]?\d|2[0-3])(?::[0-5]\d)?h?)(?=\s|$)/i);
   if (timeMatch) {
-    time = timeMatch[1];
+    const clean = timeMatch[1].toLowerCase().replace('h', '');
+    time = clean.includes(':') ? clean.padStart(5, '0') : `${clean.padStart(2, '0')}:00`;
     title = title.replace(timeMatch[0], ' ').trim();
   }
-  const relative = title.match(/(?:^|\s)(hoje|amanhã|amanha|segunda(?:-feira)?)(?=\s|$)/i);
+  const period = title.match(
+    /(?:^|\s)(de manhã|pela manhã|à tarde|a tarde|à noite|a noite)(?=\s|$)/i,
+  );
+  if (period) {
+    const token = period[1].toLowerCase();
+    dayPeriod = token.includes('manhã')
+      ? 'morning'
+      : token.includes('tarde')
+        ? 'afternoon'
+        : 'evening';
+    time ??= dayPeriod === 'morning' ? '09:00' : dayPeriod === 'afternoon' ? '14:00' : '19:00';
+    title = title.replace(period[0], ' ').trim();
+  }
+  const relative = title.match(
+    /(?:^|\s)(hoje|amanhã|amanha|domingo|segunda|terça|terca|quarta|quinta|sexta|sábado|sabado)(?:-feira)?(?=\s|$)/i,
+  );
   if (relative) {
     const token = relative[1].toLowerCase();
     if (token === 'hoje') date = today;
     else if (token.startsWith('amanh')) date = addDays(today, 1);
     else {
       const weekday = parseDate(today).getDay();
-      const delta = (8 - weekday) % 7 || 7;
+      const target = weekdays.get(token) ?? weekday;
+      const delta = (target - weekday + 7) % 7 || 7;
       date = addDays(today, delta);
     }
     title = title.replace(relative[0], '').trim();
@@ -73,7 +103,7 @@ function taskDate(
       title = title.replace(numeric[0], ' ').trim();
     }
   }
-  return { title, date, time };
+  return { title, date, time, dayPeriod };
 }
 export function parseQuickAdd(
   raw: string,
@@ -116,7 +146,7 @@ export function parseQuickAdd(
   if (duration && (selected === 'task' || selected === 'block' || selected === 'auto'))
     text = text.slice(0, duration.index).trim();
   if (selected === 'block') {
-    const parsed = taskDate(text, today);
+    const parsed = parseNaturalSchedule(text, today);
     const start = parsed.time ? minuteOf(parsed.time) : -1;
     if (
       parsed.title &&
@@ -177,12 +207,13 @@ export function parseQuickAdd(
   if (
     selected === 'task' ||
     (selected === 'auto' &&
-      /(?:^|\s)(?:hoje|amanhã|amanha|segunda(?:-feira)?|\d{1,2}\/\d{1,2}(?:\/\d{4})?)(?=\s|$)/i.test(
+      /(?:^|\s)(?:hoje|amanhã|amanha|domingo|segunda|terça|terca|quarta|quinta|sexta|sábado|sabado)(?:-feira)?(?=\s|$)|\d{1,2}\/\d{1,2}(?:\/\d{4})?/i.test(
         text,
       ))
   ) {
-    const parsed = taskDate(text, today);
+    const parsed = parseNaturalSchedule(text, today);
     if (parsed.title && (!parsed.time || parsed.date)) {
+      const taskSchedule = { title: parsed.title, date: parsed.date, time: parsed.time };
       if (durationMinutes !== null) {
         if (
           !parsed.time ||
@@ -193,11 +224,11 @@ export function parseQuickAdd(
           return { kind: 'inbox', content: input };
         return {
           kind: 'task',
-          ...parsed,
+          ...taskSchedule,
           endTime: timeOf(minuteOf(parsed.time) + durationMinutes),
         };
       }
-      return { kind: 'task', ...parsed };
+      return { kind: 'task', ...taskSchedule };
     }
   }
   if (selected === 'inbox') return { kind: 'inbox', content: text };

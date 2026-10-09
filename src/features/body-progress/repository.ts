@@ -61,6 +61,42 @@ export class BodyProgressRepository {
     );
   }
 
+  photos() {
+    return this.db.select<
+      {
+        id: string;
+        photo_date: string;
+        note: string;
+        attachment_count: number;
+        created_at: string;
+        updated_at: string;
+      }[]
+    >(
+      `SELECT p.*,(SELECT count(*) FROM attachments a
+       WHERE a.entity_type='body_progress_photo' AND a.entity_id=p.id) attachment_count
+       FROM body_progress_photos p ORDER BY photo_date DESC,created_at DESC`,
+    );
+  }
+
+  async savePhoto(photoDate: string, note = '', id?: string) {
+    validDay(photoDate);
+    if (note.length > 1000) throw Error('Use até 1.000 caracteres na observação.');
+    const key = id ?? crypto.randomUUID();
+    const now = new Date().toISOString();
+    const result = await this.db.execute(
+      id
+        ? 'UPDATE body_progress_photos SET photo_date=$2,note=$3,updated_at=$4 WHERE id=$1'
+        : 'INSERT INTO body_progress_photos(id,photo_date,note,created_at,updated_at) VALUES($1,$2,$3,$4,$4)',
+      [key, photoDate, note.trim(), now],
+    );
+    if (!result.rowsAffected) throw Error('Foto de progresso não encontrada.');
+    return key;
+  }
+
+  removePhoto(id: string) {
+    return this.db.execute('DELETE FROM body_progress_photos WHERE id=$1', [id]);
+  }
+
   async save(
     day: string,
     changes: Partial<Record<MetricKey, string | number | null>>,

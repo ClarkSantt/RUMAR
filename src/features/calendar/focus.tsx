@@ -5,11 +5,13 @@ import type { RumoStore } from '../../hooks/useRumo';
 import { localDate } from '../../lib/dates';
 import { Subtasks } from '../tasks/Subtasks';
 import { FocusRepository, type FocusSession } from './planner-repository';
+import { PlanningRepository } from '../planning/repository';
 type FocusRequest = {
   title: string;
   taskId?: string | null;
   blockId?: string | null;
   occurrenceDate?: string | null;
+  projectId?: string | null;
 };
 export function requestFocus(request: FocusRequest) {
   window.dispatchEvent(new CustomEvent('rumo-focus-start', { detail: request }));
@@ -68,6 +70,7 @@ export function FocusHost({ store }: { store: RumoStore }) {
                 data.blockId ?? null,
                 undefined,
                 data.occurrenceDate ?? null,
+                data.projectId ?? null,
               ),
             );
           setOpen(true);
@@ -115,17 +118,25 @@ export function FocusHost({ store }: { store: RumoStore }) {
     const timer = setInterval(() => setClock(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [open, session?.status]);
-  async function action(kind: 'pause' | 'resume' | 'finish', complete = false) {
+  async function action(
+    kind: 'pause' | 'resume' | 'finish',
+    complete: 'task' | 'planning' | null = null,
+  ) {
     if (!session || lock.current) return false;
     lock.current = true;
     setBusy(true);
     try {
       const repo = new FocusRepository(await getDatabase());
-      if (kind === 'finish' && complete && session.task_id) {
+      if (kind === 'finish' && complete === 'task' && session.task_id) {
         const task = store.data?.tasks.find((t) => t.id === session.task_id);
         const date = session.occurrence_date ?? localDate();
         if (task && !(await store.run((r) => r.setComplete(task, date, true)))) return false;
       }
+      if (kind === 'finish' && complete === 'planning' && session.time_block_id)
+        await new PlanningRepository(await getDatabase()).setStatus(
+          session.time_block_id,
+          'completed',
+        );
       await repo[kind](session.id);
       await refresh();
       setRecovery(false);
@@ -208,9 +219,18 @@ export function FocusHost({ store }: { store: RumoStore }) {
                 <button
                   className="secondary-button"
                   disabled={busy || store.busy}
-                  onClick={() => void action('finish', true)}
+                  onClick={() => void action('finish', 'task')}
                 >
                   Concluir tarefa
+                </button>
+              )}
+              {session.time_block_id && (
+                <button
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() => void action('finish', 'planning')}
+                >
+                  Concluir item planejado
                 </button>
               )}
             </div>

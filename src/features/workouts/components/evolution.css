@@ -2,6 +2,35 @@
   .workout-evolution {
     min-width: 0;
   }
+  .muscle-frequency {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0 18px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .muscle-frequency h3,
+  .muscle-frequency p {
+    margin: 0;
+  }
+  .muscle-frequency small {
+    color: var(--muted);
+  }
+  .muscle-frequency-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .muscle-frequency-list span {
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: var(--secondary);
+    color: var(--color-text-secondary);
+    font-size: var(--caption);
+  }
   .evolution-filters {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr);
@@ -91,5 +120,14 @@
   .evolution-method {
     margin-top: 20px;
     max-width: 80ch;
+  }
+  @media (max-width: 720px) {
+    .muscle-frequency {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    .muscle-frequency-list {
+      justify-content: flex-start;
+    }
   }
 }

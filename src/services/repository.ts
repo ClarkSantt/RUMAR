@@ -202,16 +202,16 @@ export class Repository {
   async deleteSubtask(id: string): Promise<void> {
     await this.db.execute('DELETE FROM subtasks WHERE id=$1', [id]);
   }
-  async createInbox(content: string): Promise<void> {
+  async createInbox(content: string, notes = ''): Promise<void> {
     await this.db.execute(
-      'INSERT INTO inbox_items(id,content,created_at,updated_at) VALUES($1,$2,$3,$3)',
-      [crypto.randomUUID(), text(content), timestamp()],
+      'INSERT INTO inbox_items(id,content,notes,created_at,updated_at) VALUES($1,$2,$3,$4,$4)',
+      [crypto.randomUUID(), text(content), notes.trim().slice(0, 4000), timestamp()],
     );
   }
-  async editInbox(id: string, content: string): Promise<void> {
+  async editInbox(id: string, content: string, notes = ''): Promise<void> {
     await this.db.execute(
-      "UPDATE inbox_items SET content=$2,updated_at=$3 WHERE id=$1 AND status='pending'",
-      [id, text(content), timestamp()],
+      "UPDATE inbox_items SET content=$2,notes=$3,updated_at=$4 WHERE id=$1 AND status='pending'",
+      [id, text(content), notes.trim().slice(0, 4000), timestamp()],
     );
   }
   async archiveInbox(id: string, archived = true): Promise<void> {
@@ -231,6 +231,7 @@ export class Repository {
       [id],
     );
     if (!rows.length) throw new Error('Este item não está mais disponível para conversão.');
+    await this.db.execute("UPDATE inbox_items SET capture_type='task' WHERE id=$1", [id]);
     return rows[0].id;
   }
   async saveSetting(key: 'name' | 'theme', value: string): Promise<void> {

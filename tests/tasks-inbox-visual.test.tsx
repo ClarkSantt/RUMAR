@@ -36,6 +36,8 @@ function snapshot(): Snapshot {
       {
         id: 'capture-1',
         content: 'Revisar o plano',
+        notes: '',
+        capture_type: 'unclassified',
         status: 'pending',
         created_at: day,
         updated_at: day,

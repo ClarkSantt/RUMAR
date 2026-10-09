@@ -54,6 +54,8 @@ export interface SubtaskCompletion {
 export interface InboxItem {
   id: string;
   content: string;
+  notes: string;
+  capture_type: 'unclassified' | 'task' | 'planning' | 'thought' | 'project' | 'event' | 'habit';
   status: 'pending' | 'processed' | 'archived';
   created_at: string;
   updated_at: string;

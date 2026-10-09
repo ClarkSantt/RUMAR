@@ -216,6 +216,7 @@ export async function globalSearch(db: SqlConnection, query: string): Promise<Se
     `SELECT a.id,a.entity_type,a.entity_id,a.original_name,f.date finance_date
      FROM attachments a LEFT JOIN finance_transactions f ON f.id=a.entity_id AND a.entity_type='finance_transaction'
      WHERE instr(lower(a.original_name),lower($1))>0
+       AND a.entity_type<>'body_progress_photo'
        AND (a.entity_type<>'finance_transaction' OR $2=0)
        AND (a.entity_type<>'moment' OR $3=0)
      ORDER BY a.created_at DESC LIMIT 10`,

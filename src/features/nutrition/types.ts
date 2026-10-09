@@ -29,6 +29,8 @@ export interface Meal {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  kind: 'meal' | 'recipe' | 'favorite';
+  servings: number;
 }
 export interface MealItem {
   id: string;

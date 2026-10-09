@@ -154,6 +154,11 @@
     margin-top: var(--space-3);
     color: var(--color-warning, #9a6700);
   }
+  .home-focus-summary {
+    margin: calc(var(--space-3) * -1) 0 var(--space-5);
+    color: var(--color-text-secondary);
+    font-size: var(--caption);
+  }
   .home-capture {
     display: grid;
     grid-template-columns: minmax(280px, 1fr) auto auto;

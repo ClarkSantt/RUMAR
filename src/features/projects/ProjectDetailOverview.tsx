@@ -1,5 +1,6 @@
-import { CalendarDays, FolderKanban } from 'lucide-react';
+import { CalendarDays, FolderKanban, Play } from 'lucide-react';
 import { formatDate } from '../../lib/dates';
+import { requestFocus } from '../calendar/focus';
 import type { ProjectSummary } from './types';
 
 const statusLabel = {
@@ -31,9 +32,19 @@ export function ProjectDetailOverview({
             {project.description && <p className="project-description">{project.description}</p>}
           </div>
         </div>
-        <button className="secondary-button" onClick={onEdit}>
-          Editar projeto
-        </button>
+        <div className="form-actions">
+          {project.status === 'active' && (
+            <button
+              className="primary-button"
+              onClick={() => requestFocus({ title: project.name, projectId: project.id })}
+            >
+              <Play size={15} aria-hidden="true" /> Iniciar foco
+            </button>
+          )}
+          <button className="secondary-button" onClick={onEdit}>
+            Editar projeto
+          </button>
+        </div>
       </header>
       <div className="project-summary">
         <div className="project-summary-main">

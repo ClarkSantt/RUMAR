@@ -251,6 +251,12 @@ pub fn run() {
                             sql: include_str!("../migrations/0030_activity_home_reviews.sql"),
                             kind: MigrationKind::Up,
                         },
+                        Migration {
+                            version: 31,
+                            description: "productivity_intelligence",
+                            sql: include_str!("../migrations/0031_productivity_intelligence.sql"),
+                            kind: MigrationKind::Up,
+                        },
                     ],
                 )
                 .build(),

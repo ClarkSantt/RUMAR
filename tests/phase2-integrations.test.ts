@@ -401,7 +401,7 @@ describe('Phase 2 Home and Reviews', () => {
 
 describe('Phase 2 migration path', () => {
   it('creates a fresh database at schema 30 with valid integrity and foreign keys', () => {
-    const fresh = database();
+    const fresh = database(':memory:', 30);
     try {
       expect(
         fresh.sqlite.prepare('SELECT MAX(version) AS version FROM test_migrations').get(),

@@ -6,6 +6,7 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { Home } from '../../src/features/home/Home';
 import type { HomeDayData } from '../../src/features/home/repository';
 import { InboxPage } from '../../src/features/inbox/Inbox';
+import { GlobalSearch } from '../../src/features/search/GlobalSearch';
 import { Tasks } from '../../src/features/tasks/Tasks';
 import { ProjectCard } from '../../src/features/projects/ProjectCard';
 import { ProjectDetailOverview } from '../../src/features/projects/ProjectDetailOverview';
@@ -40,6 +41,7 @@ import '../../src/features/calendar/calendar.css';
 import '../../src/features/calendar/planner.css';
 import '../../src/features/workouts/workouts.css';
 import '../../src/features/workouts/execution.css';
+import '../../src/features/workouts/components/evolution.css';
 import '../../src/features/body-progress/body-progress.css';
 import '../../src/styles/calendar-workouts-body.css';
 import { TemporalFitnessPreview } from './temporal-fitness';
@@ -102,7 +104,9 @@ const data: Snapshot = {
   inbox: [
     {
       id: 'i1',
-      content: 'Criar um espaço para planejar a semana com menos distrações.',
+      content: 'Entrevista amanhã 14h',
+      notes: 'Confirmar o endereço antes de converter.',
+      capture_type: 'unclassified',
       status: 'pending',
       created_at: today,
       updated_at: today,
@@ -111,6 +115,8 @@ const data: Snapshot = {
     {
       id: 'i2',
       content: 'Revisar documentos antes da próxima reunião.',
+      notes: '',
+      capture_type: 'unclassified',
       status: 'pending',
       created_at: today,
       updated_at: today,
@@ -215,6 +221,7 @@ const homeDayPreview: HomeDayData = {
   projects: [],
 };
 const loadHomeDayPreview = async () => homeDayPreview;
+const loadEmptySearch = async () => [];
 const projectFixtures: ProjectSummary[] = [
   {
     id: 'p1',
@@ -583,13 +590,15 @@ function Preview() {
                       ? 'nutrition'
                       : screen.startsWith('finance-')
                         ? 'finance'
-                        : screen === 'timeline-filters'
-                          ? 'timeline'
-                          : screen === 'reviews' || screen === 'reviews-monthly'
-                            ? 'review'
-                            : screen === 'settings-data'
-                              ? 'settings'
-                              : screen
+                        : screen === 'focus-phase3'
+                          ? 'planning'
+                          : screen === 'timeline-filters'
+                            ? 'timeline'
+                            : screen === 'reviews' || screen === 'reviews-monthly'
+                              ? 'review'
+                              : screen === 'settings-data'
+                                ? 'settings'
+                                : screen
         }
         inboxCount={2}
         ready
@@ -617,24 +626,37 @@ function Preview() {
             </section>
           )}
           {screen === 'global-search' && (
-            <Dialog title="Buscar no RUMAR" onClose={() => {}}>
-              <div className="search-head">
-                <input aria-label="Buscar no RUMAR" defaultValue="projeto" />
-                <button className="icon-button" aria-label="Fechar busca">
-                  ×
-                </button>
-              </div>
-              <div className="search-results" role="listbox" aria-label="Resultados da busca">
-                <section role="group" aria-label="Projetos">
-                  <h3>Projetos</h3>
-                  <button role="option" aria-selected="true">
-                    <strong>Projeto pessoal</strong>
-                    <span>8 de 12 tarefas concluídas</span>
-                  </button>
-                </section>
-              </div>
-              <p className="search-help">↑ ↓ selecionar · Enter abrir · Esc fechar</p>
-            </Dialog>
+            <GlobalSearch
+              onClose={() => {}}
+              onNavigate={() => {}}
+              onCommand={() => {}}
+              loadResults={loadEmptySearch}
+            />
+          )}
+          {screen === 'focus-phase3' && (
+            <>
+              <header className="page-header">
+                <h1>Planejamento</h1>
+                <p>Uma sessão vinculada preserva a decisão de conclusão.</p>
+              </header>
+              <Dialog title="Modo Focus" onClose={() => {}}>
+                <div className="focus-content">
+                  <h3>Projeto RUMAR</h3>
+                  <output className="focus-timer" aria-label="Tempo de foco registrado">
+                    42:18
+                  </output>
+                  <p>Tempo realmente dedicado</p>
+                  <div className="form-actions">
+                    <button className="secondary-button">Pausar</button>
+                    <button className="primary-button">Finalizar foco</button>
+                    <button className="secondary-button">Concluir item planejado</button>
+                  </div>
+                  <p className="field-help">
+                    Finalizar preserva Task, Project e Planejamento. A conclusão é sempre explícita.
+                  </p>
+                </div>
+              </Dialog>
+            </>
           )}
           {screen === 'quick-add' && (
             <Dialog title="Adicionar ao RUMAR" onClose={() => {}}>
