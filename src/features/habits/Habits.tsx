@@ -20,19 +20,21 @@ export function HomeHabits({
 }) {
   return <HabitCollection day={day} projectId={projectId} compact summaryOnly={summaryOnly} />;
 }
-export function Habits() {
-  return <HabitCollection day={localDate()} />;
+export function Habits({ embedded = false }: { embedded?: boolean }) {
+  return <HabitCollection day={localDate()} embedded={embedded} />;
 }
 function HabitCollection({
   day,
   projectId,
   compact = false,
   summaryOnly = false,
+  embedded = false,
 }: {
   day: string;
   projectId?: string;
   compact?: boolean;
   summaryOnly?: boolean;
+  embedded?: boolean;
 }) {
   const [habits, setHabits] = useState<Habit[]>([]),
     [entries, setEntries] = useState<HabitEntry[]>([]),
@@ -114,7 +116,7 @@ function HabitCollection({
     );
   return (
     <section className={`habit-section${page ? ' habits-page' : ''}`} aria-label="Hábitos">
-      {page ? (
+      {page && !embedded ? (
         <header className="page-header header-with-action module-header">
           <div className="module-heading">
             <span className="module-heading-icon">
@@ -131,7 +133,9 @@ function HabitCollection({
         </header>
       ) : (
         <div className="habit-heading">
-          <h2>{projectId ? 'Hábitos vinculados' : 'Hábitos de hoje'}</h2>
+          <h2>
+            {projectId ? 'Hábitos vinculados' : embedded ? 'Seus hábitos' : 'Hábitos de hoje'}
+          </h2>
           {!compact && (
             <button className="primary-button" onClick={() => setEditing(null)}>
               Novo hábito

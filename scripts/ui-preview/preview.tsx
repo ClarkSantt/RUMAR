@@ -45,6 +45,8 @@ import { TemporalFitnessPreview } from './temporal-fitness';
 import { NutritionFinancePreview } from './nutrition-finance';
 import '../../src/styles/nutrition-finance-connections.css';
 import { LegacyExperiencePreview } from './legacy-experience';
+import { PlanningFoundationPreview } from './planning-foundation';
+import '../../src/features/planning/planning.css';
 
 const today = '2026-10-04';
 const emptyLabels: Record<string, string> = {
@@ -577,6 +579,7 @@ function Preview() {
           {(screen.startsWith('nutrition-') || screen.startsWith('finance-')) && (
             <NutritionFinancePreview screen={screen} />
           )}
+          {screen.startsWith('planning-') && <PlanningFoundationPreview screen={screen} />}
           {screen === 'tasks' && (
             <Tasks store={store} day={today} onOpen={() => {}} onCreate={() => {}} />
           )}

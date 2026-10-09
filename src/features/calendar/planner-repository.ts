@@ -20,6 +20,14 @@ export interface TimeBlock {
   title: string;
   notes: string;
   remind_minutes_before: number | null;
+  schedule_kind?: 'fixed' | 'period' | 'flexible';
+  day_period?: 'morning' | 'afternoon' | 'evening' | null;
+  position?: number;
+  status?: 'planned' | 'completed' | 'skipped' | 'cancelled';
+  completed_at?: string | null;
+  title_snapshot?: string;
+  source_type?: 'standalone' | 'task' | 'project' | 'habit' | 'workout' | 'event' | 'template';
+  source_id?: string | null;
   created_at: string;
   updated_at: string;
   name: string;
@@ -83,12 +91,15 @@ export class PlannerRepository {
   async range(from: string, to: string) {
     const [individual, recurring] = await Promise.all([
       this.db.select<TimeBlock[]>(
-        `SELECT b.*,coalesce(t.title,r.name,w.name,h.name,b.title) name,p.name project_name,
- CASE WHEN b.entity_type='task' THEN CASE WHEN t.recurrence IS NULL THEN t.status='completed' ELSE EXISTS(SELECT 1 FROM task_completions c WHERE c.task_id=t.id AND c.occurrence_date=coalesce(b.occurrence_date,b.block_date)) END
- WHEN b.entity_type='routine' THEN EXISTS(SELECT 1 FROM routine_occurrences o WHERE o.routine_id=r.id AND o.occurrence_date=coalesce(b.occurrence_date,b.block_date) AND o.completed_at IS NOT NULL)
- WHEN b.entity_type='workout' THEN EXISTS(SELECT 1 FROM workout_sessions s WHERE s.workout_day_id=w.id AND s.session_date=coalesce(b.occurrence_date,b.block_date) AND s.status='completed') ELSE 0 END completed
- FROM planner_time_blocks b LEFT JOIN tasks t ON b.entity_type='task' AND t.id=b.entity_id LEFT JOIN projects p ON p.id=t.project_id
- LEFT JOIN routines r ON b.entity_type='routine' AND r.id=b.entity_id LEFT JOIN workout_days w ON b.entity_type='workout' AND w.id=b.entity_id LEFT JOIN habits h ON b.entity_type='habit' AND h.id=b.entity_id
+        `SELECT b.*,coalesce(t.title,sp.name,r.name,w.name,h.name,pt.name,e.summary,nullif(b.title_snapshot,''),b.title) name,coalesce(p.name,sp.name) project_name,
+ b.status='completed' completed
+ FROM planner_time_blocks b LEFT JOIN tasks t ON b.source_type='task' AND t.id=b.source_id LEFT JOIN projects p ON p.id=t.project_id
+ LEFT JOIN projects sp ON b.source_type='project' AND sp.id=b.source_id
+ LEFT JOIN routines r ON b.entity_type='routine' AND r.id=b.entity_id
+ LEFT JOIN workout_days w ON b.source_type='workout' AND w.id=b.source_id
+ LEFT JOIN habits h ON b.source_type='habit' AND h.id=b.source_id
+ LEFT JOIN planning_templates pt ON b.source_type='template' AND pt.id=b.source_id
+ LEFT JOIN external_calendar_events e ON b.source_type='event' AND e.id=b.source_id
  WHERE b.block_date BETWEEN $1 AND $2 ORDER BY b.block_date,b.start_time,b.id`,
         [from, to],
       ),
@@ -130,7 +141,7 @@ export class PlannerRepository {
     // Source associations are immutable when editing; unlink by deleting only the block.
     if (id)
       await this.db.execute(
-        'UPDATE planner_time_blocks SET block_date=$2,start_time=$3,end_time=$4,title=$5,notes=$6,remind_minutes_before=$7,updated_at=$8 WHERE id=$1',
+        'UPDATE planner_time_blocks SET block_date=$2,start_time=$3,end_time=$4,title=$5,title_snapshot=$5,notes=$6,remind_minutes_before=$7,updated_at=$8 WHERE id=$1',
         [
           id,
           d.block_date,
@@ -144,7 +155,8 @@ export class PlannerRepository {
       );
     else
       await this.db.execute(
-        'INSERT INTO planner_time_blocks(id,block_date,start_time,end_time,entity_type,entity_id,occurrence_date,title,notes,remind_minutes_before,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)',
+        `INSERT INTO planner_time_blocks(id,block_date,start_time,end_time,entity_type,entity_id,occurrence_date,title,notes,remind_minutes_before,created_at,updated_at,title_snapshot,source_type,source_id)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11,$8,CASE WHEN $5='routine' THEN 'template' ELSE coalesce($5,'standalone') END,$6)`,
         [
           next,
           d.block_date,
@@ -218,13 +230,12 @@ export class PlannerRepository {
     return id;
   }
   async candidates(day: string) {
-    const [items, tasks, blocks] = await Promise.all([
+    const [items, tasks] = await Promise.all([
       calendarRange(this.db, day, day),
       this.db.select<{ id: string; title: string; due_date: string | null }[]>(
         `SELECT id,title,due_date FROM tasks WHERE archived_at IS NULL AND status='pending' AND recurrence IS NULL AND (due_date IS NULL OR due_date<=$1) ORDER BY due_date IS NULL,due_date LIMIT 60`,
         [addDays(day, 7)],
       ),
-      this.range(day, day),
     ]);
     const [sources, overrides] = await Promise.all([
       new CalendarPreferences(this.db).sources(),
@@ -246,9 +257,7 @@ export class PlannerRepository {
     for (const t of tasks)
       if (allowed('task', t.id) && !result.some((i) => i.id === t.id && i.type === 'task'))
         result.push({ id: t.id, type: 'task', name: t.title, date: day });
-    return result
-      .filter((i) => !blocks.some((b) => b.entity_type === i.type && b.entity_id === i.id))
-      .slice(0, 60);
+    return result.slice(0, 60);
   }
   async plannedSeconds(from: string, to: string) {
     return (await this.range(from, to)).reduce(

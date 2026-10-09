@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   CalendarDays,
+  CalendarClock,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -9,11 +10,9 @@ import {
   History,
   House,
   Inbox,
-  ListChecks,
   ListTodo,
   NotebookPen,
   Plus,
-  Repeat,
   ScrollText,
   Search,
   Settings2,
@@ -28,8 +27,7 @@ export type SidebarPage =
   | 'tasks'
   | 'projects'
   | 'objectives'
-  | 'habits'
-  | 'routines'
+  | 'planning'
   | 'calendar'
   | 'workouts'
   | 'nutrition'
@@ -48,15 +46,12 @@ const groups = [
       { id: 'tasks', label: 'Tarefas', Icon: ListTodo },
       { id: 'projects', label: 'Projetos', Icon: Folder },
       { id: 'objectives', label: 'Objetivos', Icon: Target },
+      { id: 'planning', label: 'Planejamento', Icon: CalendarClock },
     ],
   },
   {
     label: 'Rotina',
-    items: [
-      { id: 'habits', label: 'Hábitos', Icon: Repeat },
-      { id: 'routines', label: 'Rotinas', Icon: ListChecks },
-      { id: 'calendar', label: 'Calendário', Icon: CalendarDays },
-    ],
+    items: [{ id: 'calendar', label: 'Calendário', Icon: CalendarDays }],
   },
   {
     label: 'Vida',

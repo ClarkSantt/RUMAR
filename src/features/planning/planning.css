@@ -1,0 +1,324 @@
+.planning-page {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.planning-header {
+  align-items: flex-start;
+}
+.planning-header > div p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+.planning-tabs {
+  margin: 0;
+}
+.planning-datebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.planning-datebar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.planning-datebar input {
+  border: 0;
+  background: transparent;
+}
+.planning-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 14px;
+  align-items: start;
+}
+.planning-board,
+.today-planning {
+  display: grid;
+  gap: 12px;
+}
+.planning-period,
+.today-planning > section,
+.planning-sources,
+.model-list,
+.model-detail {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.planning-period > header,
+.today-planning h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+.planning-period > header span,
+.today-planning h2 span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.planning-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.planning-row:last-child {
+  border-bottom: 0;
+}
+.planning-row.status-completed {
+  opacity: 0.68;
+}
+.planning-row.status-completed strong {
+  text-decoration: line-through;
+}
+.planning-check {
+  width: 23px;
+  height: 23px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--accent);
+}
+.planning-row-main {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+}
+.planning-row-main strong,
+.planning-row-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.planning-row-main span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.planning-row-actions {
+  display: flex;
+}
+.planning-empty {
+  padding: 16px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.planning-source-tabs,
+.model-mode {
+  display: flex;
+  padding: 8px;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.planning-source-tabs button,
+.model-mode button {
+  flex: 1;
+  padding: 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+.planning-source-tabs button[aria-pressed='true'],
+.model-mode button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+.planning-source-mobile-toggle,
+.planning-source-close {
+  display: none;
+}
+.planning-search {
+  margin: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0 8px;
+}
+.planning-search input {
+  border: 0;
+  min-width: 0;
+}
+.planning-source-list {
+  max-height: 58vh;
+  overflow: auto;
+  padding: 0 8px 8px;
+}
+.planning-source-list > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 7px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  text-align: left;
+}
+.planning-source-list span {
+  display: grid;
+  gap: 2px;
+}
+.planning-source-list small,
+.model-list small {
+  color: var(--muted);
+}
+.planning-form {
+  display: grid;
+  gap: 13px;
+  padding: 16px;
+}
+.planning-form label {
+  display: grid;
+  gap: 6px;
+}
+.planning-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.planning-form textarea {
+  resize: vertical;
+}
+.models-layout {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 480px;
+}
+.model-list {
+  padding: 12px;
+}
+.model-list h2 {
+  margin: 0 0 10px;
+}
+.model-list form,
+.model-add {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.model-list form input,
+.model-add input {
+  min-width: 0;
+  flex: 1;
+}
+.model-list > button {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  text-align: left;
+  padding: 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+}
+.model-list > button[aria-current='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.model-detail {
+  padding: 16px;
+}
+.model-detail > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.model-detail h2 {
+  margin: 0;
+}
+.model-detail p {
+  color: var(--muted);
+}
+.model-items {
+  padding: 0;
+  list-style: none;
+}
+.model-items li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.model-placeholder {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 70px 20px;
+}
+.notice.error {
+  color: var(--danger);
+}
+@media (max-width: 1100px) {
+  .planning-layout {
+    grid-template-columns: 1fr;
+  }
+  .planning-source-mobile-toggle {
+    display: inline-flex;
+    justify-self: start;
+  }
+  .planning-sources {
+    display: none;
+    position: fixed;
+    z-index: 30;
+    inset: 70px 16px 16px auto;
+    width: min(360px, calc(100vw - 32px));
+    box-shadow: var(--shadow-lg);
+  }
+  .planning-sources.is-open {
+    display: block;
+  }
+  .planning-source-close {
+    display: grid;
+    position: absolute;
+    right: 9px;
+    top: 8px;
+    z-index: 1;
+  }
+  .planning-source-list {
+    max-height: 190px;
+  }
+  .models-layout {
+    grid-template-columns: 1fr;
+  }
+  .model-list {
+    max-height: 240px;
+    overflow: auto;
+  }
+}
+@media (max-width: 700px) {
+  .planning-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .planning-row-actions .icon-button:nth-child(-n + 2) {
+    display: none;
+  }
+  .planning-datebar {
+    flex-wrap: wrap;
+  }
+  .model-detail > header {
+    display: grid;
+  }
+}

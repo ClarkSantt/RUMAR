@@ -32,6 +32,34 @@ export class HabitsRepository {
     const h = validateHabit(input),
       now = new Date().toISOString(),
       key = id ?? crypto.randomUUID();
+    const hasTrackingType = (
+      await this.db.select<{ name: string }[]>('PRAGMA table_info(habits)')
+    ).some((column) => column.name === 'tracking_type');
+    if (!hasTrackingType) {
+      const legacyValues = [
+        h.name,
+        h.description,
+        h.frequency,
+        JSON.stringify(h.weekdays),
+        h.weekly_target,
+        h.kind,
+        h.target_value,
+        h.unit,
+        h.start_date,
+        h.end_date,
+        h.project_id,
+        h.active,
+        now,
+        key,
+      ];
+      await this.db.execute(
+        id
+          ? 'UPDATE habits SET name=$1,description=$2,frequency=$3,weekdays=$4,weekly_target=$5,kind=$6,target_value=$7,unit=$8,start_date=$9,end_date=$10,project_id=$11,active=$12,updated_at=$13 WHERE id=$14'
+          : 'INSERT INTO habits(name,description,frequency,weekdays,weekly_target,kind,target_value,unit,start_date,end_date,project_id,active,updated_at,id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$13)',
+        legacyValues,
+      );
+      return key;
+    }
     const values = [
       h.name,
       h.description,
@@ -39,6 +67,7 @@ export class HabitsRepository {
       JSON.stringify(h.weekdays),
       h.weekly_target,
       h.kind,
+      h.tracking_type,
       h.target_value,
       h.unit,
       h.start_date,
@@ -50,12 +79,12 @@ export class HabitsRepository {
     ];
     if (id)
       await this.db.execute(
-        'UPDATE habits SET name=$1,description=$2,frequency=$3,weekdays=$4,weekly_target=$5,kind=$6,target_value=$7,unit=$8,start_date=$9,end_date=$10,project_id=$11,active=$12,updated_at=$13 WHERE id=$14',
+        'UPDATE habits SET name=$1,description=$2,frequency=$3,weekdays=$4,weekly_target=$5,kind=$6,tracking_type=$7,target_value=$8,unit=$9,start_date=$10,end_date=$11,project_id=$12,active=$13,updated_at=$14 WHERE id=$15',
         values,
       );
     else
       await this.db.execute(
-        'INSERT INTO habits(name,description,frequency,weekdays,weekly_target,kind,target_value,unit,start_date,end_date,project_id,active,updated_at,id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$13)',
+        'INSERT INTO habits(name,description,frequency,weekdays,weekly_target,kind,tracking_type,target_value,unit,start_date,end_date,project_id,active,updated_at,id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$14)',
         values,
       );
     return key;

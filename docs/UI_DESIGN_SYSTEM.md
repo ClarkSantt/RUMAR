@@ -211,3 +211,9 @@ Photographs and large heroes are optional supporting media, never a default page
 Decorative images use `alt=""` and `aria-hidden="true"`; all information and actions remain in the DOM. Reserve image dimensions, preserve aspect ratio with `object-fit: contain`, and lazy-load imagery outside the initial task path. Use the same files in light and dark without hue inversion; adjust the surrounding semantic surface instead. Reduce or hide decorative media on compact viewports before compromising controls. Copy only referenced production files to the bundle; no remote visual assets or preview boards are shipped. Less is more.
 
 Global Final Polish: DONE. Asset Integration: DONE.
+
+## Planning foundation
+
+Planejamento is now the primary time-organization destination. Its tabs are Planejar, Hoje, Hábitos and Modelos; Hábitos and legacy Rotinas no longer occupy top-level sidebar destinations. Existing habit records and routine history remain intact. The Calendar renders the same planning occurrences, including fixed times, day periods and flexible items.
+
+The desktop layout uses a compact source panel beside the day plan. Below 1100px that panel moves above the plan instead of forcing horizontal overflow. Models preserve the existing control hierarchy and can be applied as a single checklist block or expanded occurrences. See [PLANNING_FOUNDATION.md](PLANNING_FOUNDATION.md) for data and migration invariants.

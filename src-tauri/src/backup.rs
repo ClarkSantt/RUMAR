@@ -10,7 +10,7 @@ use std::{
 use tauri::{AppHandle, Manager};
 use zip::{write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
 
-const CURRENT_SCHEMA: i64 = 28;
+const CURRENT_SCHEMA: i64 = 29;
 const MAX_DB_BYTES: u64 = 1024 * 1024 * 1024;
 const MAX_ATTACHMENT_TOTAL: u64 = 2 * 1024 * 1024 * 1024;
 const MAX_ATTACHMENTS: usize = 10_000;
@@ -499,6 +499,31 @@ pub fn automatic_backup(app: AppHandle) -> Result<Option<String>, String> {
     )
     .map_err(err)?;
     prune_automatic(&directory, keep)?;
+    Ok(Some(destination.display().to_string()))
+}
+
+#[tauri::command]
+pub fn pre_migration_backup(app: AppHandle) -> Result<Option<String>, String> {
+    let current = database_path(&app)?;
+    if !current.exists() {
+        return Ok(None);
+    }
+    let db = open_readonly(&current)?;
+    integrity(&db)?;
+    let from = schema(&db)?;
+    if from >= CURRENT_SCHEMA {
+        return Ok(None);
+    }
+    drop(db);
+    let directory = backup_directory(&app)?;
+    fs::create_dir_all(&directory).map_err(err)?;
+    let destination = directory.join(format!(
+        "RUMAR-pre-migration-v{from}-to-v{CURRENT_SCHEMA}-{}.zip",
+        now()
+    ));
+    let workdir = app.path().app_config_dir().map_err(err)?;
+    create_archive(&current, &destination, &workdir, "pre_migration")?;
+    validated_archive(&destination, &workdir)?;
     Ok(Some(destination.display().to_string()))
 }
 fn backup_due(frequency: &str, last: Option<&str>, now: i64) -> bool {

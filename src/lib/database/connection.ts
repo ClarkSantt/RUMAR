@@ -12,8 +12,9 @@ export async function closeDatabase(): Promise<void> {
 }
 let connection: Promise<SqlConnection> | undefined;
 export function getDatabase(): Promise<SqlConnection> {
-  connection ??= import('@tauri-apps/plugin-sql')
-    .then(async ({ default: Database }) => {
+  connection ??= Promise.all([import('@tauri-apps/api/core'), import('@tauri-apps/plugin-sql')])
+    .then(async ([{ invoke }, { default: Database }]) => {
+      await invoke('pre_migration_backup');
       const database = await Database.load('sqlite:rumo.db');
       const calendarWrite =
         /\b(?:tasks|routines|planner_time_blocks|planner_time_block_series|planner_time_block_exceptions|workout_days|workout_day_weekdays|workout_plans|objectives|objective_milestones|calendar_visibility_overrides|calendar_source_preferences|google_calendar_item_preferences|automation_executions)\b/i;

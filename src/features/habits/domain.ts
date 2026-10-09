@@ -6,6 +6,7 @@ export interface HabitInput {
   weekdays: number[];
   weekly_target: number;
   kind: 'boolean' | 'quantity';
+  tracking_type?: 'check' | 'quantity' | 'duration' | 'frequency';
   target_value: number;
   unit: string;
   start_date: string;
@@ -76,16 +77,25 @@ export function habitProgress(h: Habit, entries: HabitEntry[], day: string) {
   };
 }
 export function validateHabit(input: HabitInput): HabitInput {
+  const trackingType =
+    input.tracking_type ??
+    (input.kind === 'quantity'
+      ? 'quantity'
+      : input.frequency === 'weekly_target'
+        ? 'frequency'
+        : 'check');
   const h = {
     ...input,
     name: input.name.trim(),
     unit: input.unit.trim(),
     weekdays: [...new Set(input.weekdays)].sort(),
+    tracking_type: trackingType,
   };
   if (!h.name || h.name.length > 500) throw Error('Informe um nome de até 500 caracteres.');
   if (
     !['daily', 'weekdays', 'weekly_target'].includes(h.frequency) ||
-    !['boolean', 'quantity'].includes(h.kind)
+    !['boolean', 'quantity'].includes(h.kind) ||
+    !['check', 'quantity', 'duration', 'frequency'].includes(trackingType)
   )
     throw Error('Tipo de hábito inválido.');
   if (
@@ -106,10 +116,14 @@ export function validateHabit(input: HabitInput): HabitInput {
     h.target_value <= 0
   )
     throw Error('Meta inválida.');
-  if (h.kind === 'quantity' && !h.unit) throw Error('Informe a unidade da meta.');
+  const quantitative = trackingType === 'quantity' || trackingType === 'duration';
+  if (quantitative && !h.unit) throw Error('Informe a unidade da meta.');
   return {
     ...h,
-    target_value: h.kind === 'boolean' ? 1 : h.target_value,
+    frequency: trackingType === 'frequency' ? 'weekly_target' : h.frequency,
+    kind: quantitative ? 'quantity' : 'boolean',
+    target_value: quantitative ? h.target_value : 1,
+    unit: trackingType === 'frequency' ? 'vezes' : h.unit,
     active: h.active ? 1 : 0,
   };
 }

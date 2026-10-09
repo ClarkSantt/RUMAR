@@ -14,8 +14,9 @@ import { TaskEditor } from '../features/tasks/TaskEditor';
 import type { TaskOccurrence } from '../types/models';
 import { localDate } from '../lib/dates';
 import { Projects } from '../features/projects/Projects';
-import { Habits, HomeHabits } from '../features/habits/Habits';
-import { Routines, HomeRoutines } from '../features/routines/Routines';
+import { HomeHabits } from '../features/habits/Habits';
+import { HomeRoutines } from '../features/routines/Routines';
+import { Planning } from '../features/planning/Planning';
 import { Thoughts } from '../features/thoughts/Thoughts';
 import { flushThoughts } from '../features/thoughts/autosave';
 import { PlannerCalendar } from '../features/calendar/PlannerCalendar';
@@ -53,6 +54,7 @@ type Page =
   | 'tasks'
   | 'settings'
   | 'projects'
+  | 'planning'
   | 'habits'
   | 'routines'
   | 'thoughts'
@@ -407,10 +409,10 @@ export default function App() {
                 onOpen={openTask}
                 initialProjectId={searchTarget?.page === 'projects' ? searchTarget.id : undefined}
               />
-            ) : page === 'habits' ? (
-              <Habits />
-            ) : page === 'routines' ? (
-              <Routines />
+            ) : page === 'planning' || page === 'habits' || page === 'routines' ? (
+              <Planning
+                initialTab={page === 'habits' ? 'habits' : page === 'routines' ? 'models' : 'plan'}
+              />
             ) : page === 'thoughts' ? (
               <Thoughts
                 key={searchTarget?.page === 'thoughts' ? searchTarget.id : 'thoughts'}

@@ -78,7 +78,7 @@ describe('Daily planning and durable focus', () => {
     });
     expect(db.sqlite.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
   });
-  it('reflects task completion across duplicated blocks without duplicating the task', async () => {
+  it('keeps planning completion separate from duplicated task occurrences', async () => {
     const id = await planner.createTaskBlock('Concluir', '2026-09-28', '09:00', '10:00');
     const block = (await planner.range('2026-09-28', '2026-09-28'))[0];
     await planner.duplicate(block, '2026-09-29');
@@ -86,13 +86,13 @@ describe('Daily planning and durable focus', () => {
       task = (await repo.snapshot()).tasks.find((t) => t.id === id)!;
     await repo.setComplete(task, null, true);
     expect((await planner.range('2026-09-28', '2026-09-29')).map((b) => b.completed)).toEqual([
-      1, 1,
+      0, 0,
     ]);
     expect((await repo.snapshot()).tasks).toHaveLength(1);
   });
   it('keeps routine schedules and workout weekdays independent of occurrence planning', async () => {
     db.sqlite.exec(
-      "INSERT INTO routines(id,name,frequency,time_of_day,created_at,updated_at) VALUES('routine','Rotina da noite','daily','21:00','2026','2026'); INSERT INTO workout_plans(id,name,active,created_at,updated_at) VALUES('plan','Plano',1,'2026','2026'); INSERT INTO workout_days(id,workout_plan_id,name,created_at,updated_at) VALUES('upper','plan','Upper','2026','2026'); INSERT INTO workout_day_weekdays VALUES('upper',1)",
+      "INSERT INTO routines(id,name,frequency,time_of_day,created_at,updated_at) VALUES('routine','Rotina da noite','daily','21:00','2026','2026'); INSERT INTO planning_templates(id,name,legacy_routine_id,created_at,updated_at) VALUES('routine','Rotina da noite','routine','2026','2026'); INSERT INTO workout_plans(id,name,active,created_at,updated_at) VALUES('plan','Plano',1,'2026','2026'); INSERT INTO workout_days(id,workout_plan_id,name,created_at,updated_at) VALUES('upper','plan','Upper','2026','2026'); INSERT INTO workout_day_weekdays VALUES('upper',1)",
     );
     const routine = await planner.save({
       ...defaultBlock('2026-09-28', '20:00'),

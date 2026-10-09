@@ -30,6 +30,8 @@ import { BlockRecurrenceFields } from './BlockRecurrenceFields';
 import { GoogleMirrorControl } from '../integrations/google-calendar/GoogleMirrorControl';
 import { BlockSeriesRepository } from './block-series-repository';
 import { recurrenceSummary, type BlockRecurrence } from './block-recurrence';
+import { PlanningRepository } from '../planning/repository';
+import { periodLabels } from '../planning/domain';
 type View = 'day' | 'workweek' | 'week' | 'month';
 const labels: Record<CalendarSource, string> = {
   task: 'Tarefas',
@@ -264,17 +266,21 @@ export function PlannerCalendar({
   }
   const openSource = (b: TimeBlock) => {
     setSelected(null);
-    if (b.entity_type === 'task') {
-      const task = store.data?.tasks.find((t) => t.id === b.entity_id);
+    const type = b.source_type ?? b.entity_type;
+    const id = b.source_id ?? b.entity_id;
+    if (type === 'task') {
+      const task = store.data?.tasks.find((t) => t.id === id);
       if (task) onOpen({ task, date: b.occurrence_date ?? b.block_date, completed: !!b.completed });
-    } else if (b.entity_type)
+    } else if (type && type !== 'standalone' && type !== 'event')
       onNavigate(
-        b.entity_type === 'workout'
+        type === 'workout'
           ? 'workouts'
-          : b.entity_type === 'routine'
+          : type === 'template'
             ? 'routines'
-            : 'habits',
-        b.entity_id ?? undefined,
+            : type === 'project'
+              ? 'projects'
+              : 'habits',
+        id ?? undefined,
       );
   };
   const scheduled = (i: CalendarItem) =>
@@ -460,6 +466,22 @@ export function PlannerCalendar({
                 <small>Dia todo</small>
                 {days.map((d) => (
                   <div key={d}>
+                    {blocks
+                      .filter(
+                        (block) =>
+                          block.block_date === d &&
+                          block.schedule_kind &&
+                          block.schedule_kind !== 'fixed',
+                      )
+                      .map((block) => (
+                        <button key={block.id} onClick={() => setSelected(block)}>
+                          {block.completed ? '✓ ' : ''}
+                          {block.name} ·{' '}
+                          {block.schedule_kind === 'period'
+                            ? periodLabels[block.day_period ?? 'morning']
+                            : 'Flexível'}
+                        </button>
+                      ))}
                     {items
                       .filter((i) => i.date === d && !i.time && !scheduled(i))
                       .map((i) => (
@@ -502,7 +524,9 @@ export function PlannerCalendar({
                   ))}
                 </div>
                 {days.map((d) => {
-                  const dayBlocks = blocks.filter((b) => b.block_date === d);
+                  const dayBlocks = blocks.filter(
+                    (b) => b.block_date === d && (!b.schedule_kind || b.schedule_kind === 'fixed'),
+                  );
                   const all: TimeBlock[] = [
                     ...dayBlocks,
                     ...derived
@@ -753,10 +777,15 @@ export function PlannerCalendar({
         >
           <div className="drawer-body">
             <p>
-              {fullDate(selected.block_date)} · {selected.start_time}–{selected.end_time}
+              {fullDate(selected.block_date)} ·{' '}
+              {selected.schedule_kind === 'period'
+                ? periodLabels[selected.day_period ?? 'morning']
+                : selected.schedule_kind === 'flexible'
+                  ? 'Flexível'
+                  : `${selected.start_time}–${selected.end_time}`}
             </p>
             <p>
-              Origem: {selected.entity_type ?? 'Bloco livre'}
+              Origem: {selected.source_type ?? selected.entity_type ?? 'Bloco livre'}
               {selected.project_name ? ` · ${selected.project_name}` : ''}
             </p>
             {selected.notes && <p>{selected.notes}</p>}
@@ -777,11 +806,12 @@ export function PlannerCalendar({
               <p className="field-help">Conflito de horário. Os dois blocos permanecem válidos.</p>
             )}
             <div className="review-actions">
-              {selected.entity_type && (
-                <button className="secondary-button" onClick={() => openSource(selected)}>
-                  Abrir origem
-                </button>
-              )}
+              {(selected.source_type ?? selected.entity_type) &&
+                (selected.source_type ?? selected.entity_type) !== 'standalone' && (
+                  <button className="secondary-button" onClick={() => openSource(selected)}>
+                    Abrir origem
+                  </button>
+                )}
               <button
                 className="secondary-button"
                 onClick={() => {
@@ -814,6 +844,24 @@ export function PlannerCalendar({
                 <Play size={14} />
                 Iniciar foco
               </button>
+              {!selected.series_id && selected.status && selected.status !== 'completed' && (
+                <button
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() => {
+                    const id = selected.id;
+                    void getDatabase()
+                      .then((db) => new PlanningRepository(db).setStatus(id, 'completed'))
+                      .then(() => {
+                        setSelected(null);
+                        setRevision((value) => value + 1);
+                      })
+                      .catch((reason) => setError(String(reason)));
+                  }}
+                >
+                  Concluir planejamento
+                </button>
+              )}
               <button
                 className="secondary-button"
                 disabled={busy}

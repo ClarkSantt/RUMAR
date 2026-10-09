@@ -25,6 +25,7 @@ export function HabitEditor({
         weekdays: [1, 3, 5],
         weekly_target: 3,
         kind: 'boolean',
+        tracking_type: 'check',
         target_value: 1,
         unit: '',
         start_date: day,
@@ -188,14 +189,20 @@ export function HabitEditor({
           <label>
             Registro
             <select
-              value={draft.kind}
-              onChange={(e) => change('kind', e.target.value as HabitInput['kind'])}
+              value={draft.tracking_type ?? (draft.kind === 'quantity' ? 'quantity' : 'check')}
+              onChange={(e) =>
+                change('tracking_type', e.target.value as HabitInput['tracking_type'])
+              }
             >
-              <option value="boolean">Feito / não feito</option>
+              <option value="check">Feito / não feito</option>
               <option value="quantity">Quantidade</option>
+              <option value="duration">Duração</option>
+              <option value="frequency">Frequência semanal</option>
             </select>
           </label>
-          {draft.kind === 'quantity' && (
+          {['quantity', 'duration'].includes(
+            draft.tracking_type ?? (draft.kind === 'quantity' ? 'quantity' : 'check'),
+          ) && (
             <div className="habit-columns">
               <label>
                 Meta
@@ -212,7 +219,7 @@ export function HabitEditor({
                 Unidade
                 <input
                   required
-                  placeholder="minutos, páginas…"
+                  placeholder={draft.tracking_type === 'duration' ? 'minutos' : 'páginas, copos…'}
                   value={draft.unit}
                   onChange={(e) => change('unit', e.target.value)}
                 />
