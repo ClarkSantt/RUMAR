@@ -237,5 +237,5 @@ describe('Recurring time reservations', () => {
       unlinkSync(path);
       rmdirSync(folder);
     }
-  });
+  }, 10_000); // Windows CI can heavily contend on file-backed SQLite while Vitest workers run in parallel.
 });
