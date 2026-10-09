@@ -314,6 +314,7 @@ function PlanningRow({
         <span>
           {planningTimeLabel(item)} ·{' '}
           {item.source_type === 'standalone' ? 'Item avulso' : item.source_type}
+          {!item.source_active && item.source_type !== 'standalone' ? ' · origem concluída' : ''}
         </span>
       </button>
       <div className="planning-row-actions">

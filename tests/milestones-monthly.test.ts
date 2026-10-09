@@ -344,7 +344,7 @@ describe('Revisão mensal', () => {
         await new TimelineRepository(connection).page({
           from: '2026-09-01',
           to: '2026-09-30',
-          source: 'milestone',
+          source: 'financial_goal',
         })
       ).events[0].summary,
     ).toBe('');

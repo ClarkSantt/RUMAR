@@ -5,11 +5,21 @@ import userEvent from '@testing-library/user-event';
 import { AppSidebar } from '../src/components/AppSidebar';
 import { EmptyState } from '../src/components/EmptyState';
 import { Home } from '../src/features/home/Home';
+import { HomeRepository, type HomeDayData } from '../src/features/home/repository';
+import { getDatabase } from '../src/lib/database/connection';
 import type { RumoStore } from '../src/hooks/useRumo';
-import type { Snapshot, Task } from '../src/types/models';
+import type { Snapshot } from '../src/types/models';
 
-beforeEach(() => window.localStorage.clear());
-afterEach(() => cleanup());
+vi.mock('../src/lib/database/connection', () => ({ getDatabase: vi.fn() }));
+
+beforeEach(() => {
+  window.localStorage.clear();
+  vi.mocked(getDatabase).mockResolvedValue({} as Awaited<ReturnType<typeof getDatabase>>);
+});
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 it('mantém a navegação agrupada e o item ativo identificável', async () => {
   const onNavigate = vi.fn();
@@ -125,39 +135,62 @@ it('mantém ilustração de estado vazio decorativa e conteúdo textual acessív
   expect(screen.getByText('Crie seu primeiro projeto.')).toBeTruthy();
 });
 
-function task(id: string, date: string, status: Task['status']): Task {
+function homeDay(overrides: Partial<HomeDayData> = {}): HomeDayData {
   return {
-    id,
-    title: id,
-    description: '',
-    priority: 'normal',
-    due_date: date,
-    due_time: null,
-    status,
-    recurrence: null,
-    created_at: date,
-    updated_at: date,
-    completed_at: status === 'completed' ? date : null,
-    archived_at: null,
-    sort_order: 0,
-    source_inbox_id: null,
+    planning: { now: null, next: [], total: 0, completed: 0, pending: 0, skipped: 0 },
+    overdue: { count: 0, rows: [] },
+    habits: [],
+    workout: null,
+    nutrition: { calories: 0, protein: 0, calorieGoal: 2200 },
+    finance: { hidden: false, expense: 0 },
+    projects: [],
+    ...overrides,
   };
 }
 
-it('prioriza tarefas do dia e preserva Inbox, pendências e revisão', async () => {
+const homeStore = {
+  tasks: [],
+  subtasks: [],
+  completions: [],
+  subtaskCompletions: [],
+  inbox: [],
+  settings: { name: 'Pessoa', theme: 'light' },
+} satisfies Snapshot;
+
+it('prioriza Agora e preserva Inbox, pendências e revisão', async () => {
+  vi.spyOn(HomeRepository.prototype, 'day').mockResolvedValue(
+    homeDay({
+      planning: {
+        now: {
+          id: 'now',
+          block_date: '2026-10-04',
+          start_time: '09:30',
+          end_time: '10:30',
+          schedule_kind: 'fixed',
+          day_period: null,
+          status: 'planned',
+          source_type: 'project',
+          source_id: 'project',
+          title: 'TESTE RUMAR - Projeto',
+        },
+        next: [],
+        total: 3,
+        completed: 1,
+        pending: 2,
+        skipped: 0,
+      },
+      overdue: {
+        count: 1,
+        rows: [{ id: 'late', title: 'TESTE RUMAR - atrasada', due_date: '2026-10-03' }],
+      },
+    }),
+  );
   const data: Snapshot = {
-    tasks: [
-      task('Hoje importante', '2026-10-04', 'pending'),
-      task('Ontem', '2026-10-03', 'pending'),
-    ],
-    subtasks: [],
-    completions: [],
-    subtaskCompletions: [],
-    inbox: [],
-    settings: { name: 'Pessoa', theme: 'light' },
+    ...homeStore,
   };
   const onInbox = vi.fn();
   const onReview = vi.fn();
+  const onTasks = vi.fn();
   render(
     <Home
       store={{ data, busy: false, run: vi.fn(async () => true) } as unknown as RumoStore}
@@ -165,65 +198,97 @@ it('prioriza tarefas do dia e preserva Inbox, pendências e revisão', async () 
       onOpen={vi.fn()}
       onInbox={onInbox}
       onReview={onReview}
+      onTasks={onTasks}
     />,
   );
-  expect(screen.getByRole('heading', { name: 'Hoje' })).toBeTruthy();
-  expect(screen.getByText('Hoje importante')).toBeTruthy();
+  expect(await screen.findByRole('heading', { name: 'TESTE RUMAR - Projeto' })).toBeTruthy();
+  expect(screen.getByText(/planejados concluídos/).textContent).toContain('1 de 3');
+  expect(screen.getByText('TESTE RUMAR - atrasada')).toBeTruthy();
   const user = userEvent.setup();
-  await user.click(screen.getByRole('button', { name: /Para retomar/ }));
-  expect(screen.getByText('Ontem')).toBeTruthy();
-  await user.click(screen.getByRole('button', { name: /^Inbox 0/ }));
+  await user.click(screen.getByRole('button', { name: /TESTE RUMAR - atrasada/ }));
+  expect(onTasks).toHaveBeenCalledOnce();
+  await user.click(screen.getByRole('button', { name: /Uma ideia para depois/ }));
   expect(onInbox).toHaveBeenCalledOnce();
-  await user.click(screen.getByRole('button', { name: /REVISÃO SEMANAL/ }));
+  await user.click(screen.getByRole('button', { name: /Revisar a semana/ }));
   expect(onReview).toHaveBeenCalledOnce();
 });
 
-it('mostra um dia vazio sem barra de progresso fictícia', () => {
-  const data: Snapshot = {
-    tasks: [],
-    subtasks: [],
-    completions: [],
-    subtaskCompletions: [],
-    inbox: [],
-    settings: { name: 'Pessoa', theme: 'light' },
-  };
+it('mostra um dia livre sem barra de progresso fictícia', async () => {
+  vi.spyOn(HomeRepository.prototype, 'day').mockResolvedValue(homeDay());
   render(
     <Home
-      store={{ data, busy: false, run: vi.fn(async () => true) } as unknown as RumoStore}
+      store={{ data: homeStore, busy: false, run: vi.fn(async () => true) } as unknown as RumoStore}
       now={new Date(2026, 9, 4, 10)}
       onOpen={vi.fn()}
       onInbox={vi.fn()}
       onReview={vi.fn()}
     />,
   );
-  expect(screen.getByText('Sem tarefas previstas')).toBeTruthy();
-  expect(screen.getByText('Nada para hoje.')).toBeTruthy();
+  expect(await screen.findByText('Seu tempo está livre agora.')).toBeTruthy();
+  expect(screen.getByText('Nada mais planejado por enquanto.')).toBeTruthy();
   expect(screen.queryByRole('progressbar')).toBeNull();
 });
 
-it('resume o dia antes da lista e mantém a continuidade visível', () => {
-  const data: Snapshot = {
-    tasks: [task('Preparar apresentação', '2026-10-04', 'pending')],
-    subtasks: [],
-    completions: [],
-    subtaskCompletions: [],
-    inbox: [],
-    settings: { name: 'Pessoa', theme: 'light' },
-  };
+it('resume Agora, Depois e os indicadores compactos do dia', async () => {
+  vi.spyOn(HomeRepository.prototype, 'day').mockResolvedValue(
+    homeDay({
+      planning: {
+        now: {
+          id: 'current',
+          block_date: '2026-10-04',
+          start_time: '10:00',
+          end_time: '11:00',
+          schedule_kind: 'fixed',
+          day_period: null,
+          status: 'planned',
+          source_type: 'task',
+          source_id: 'task',
+          title: 'Preparar apresentação',
+        },
+        next: [
+          {
+            id: 'next',
+            block_date: '2026-10-04',
+            start_time: '13:00',
+            end_time: '13:30',
+            schedule_kind: 'fixed',
+            day_period: null,
+            status: 'planned',
+            source_type: 'habit',
+            source_id: 'habit',
+            title: 'TESTE RUMAR - Leitura',
+          },
+        ],
+        total: 2,
+        completed: 0,
+        pending: 2,
+        skipped: 0,
+      },
+      habits: [
+        {
+          id: 'habit',
+          name: 'Água',
+          value: 3,
+          target: 5,
+          unit: 'L',
+          tracking_type: 'quantity',
+          reached: 0,
+        },
+      ],
+      workout: { id: 'workout', name: 'Push', finished_at: '2026-10-04T09:00:00' },
+    }),
+  );
   render(
     <Home
-      store={{ data, busy: false, run: vi.fn(async () => true) } as unknown as RumoStore}
+      store={{ data: homeStore, busy: false, run: vi.fn(async () => true) } as unknown as RumoStore}
       now={new Date(2026, 9, 4, 10)}
       onOpen={vi.fn()}
       onInbox={vi.fn()}
       onReview={vi.fn()}
-      quickSummary={<section>Treino real de hoje</section>}
-      continuation={<section>Próximo compromisso</section>}
     />,
   );
-  expect(screen.getByRole('region', { name: 'Resumo do dia' })).toBeTruthy();
-  expect(screen.getByText('0 de 1 concluídas')).toBeTruthy();
-  expect(screen.getByText('Treino real de hoje')).toBeTruthy();
-  expect(screen.getByText('Preparar apresentação')).toBeTruthy();
-  expect(screen.getByText('Próximo compromisso')).toBeTruthy();
+  expect(await screen.findByText('Preparar apresentação')).toBeTruthy();
+  expect(screen.getByText('TESTE RUMAR - Leitura')).toBeTruthy();
+  expect(screen.getByText('3/5 L')).toBeTruthy();
+  expect(screen.getByText('Push concluído')).toBeTruthy();
 });

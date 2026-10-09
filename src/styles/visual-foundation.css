@@ -709,7 +709,7 @@
   .home-more > section:nth-child(2) {
     border-top: 0;
   }
-  .content:has(.home-experience) {
+  .content:has(.home-experience, .home-day-page) {
     max-width: var(--page-width-wide);
   }
   .home-experience .home-header {

@@ -320,6 +320,6 @@ describe('Daily planning and durable focus', () => {
     });
     expect(timeline.events).toHaveLength(1);
     const review = await new WeeklyReviewRepository(db.connection).load('2026-09-28');
-    expect(review.planning).toEqual({ plannedSeconds: 1800, focusedSeconds: 15 });
+    expect(review.planning).toMatchObject({ plannedSeconds: 1800, focusedSeconds: 15 });
   });
 });

@@ -14,22 +14,15 @@ import { TaskEditor } from '../features/tasks/TaskEditor';
 import type { TaskOccurrence } from '../types/models';
 import { localDate } from '../lib/dates';
 import { Projects } from '../features/projects/Projects';
-import { HomeHabits } from '../features/habits/Habits';
-import { HomeRoutines } from '../features/routines/Routines';
 import { Planning } from '../features/planning/Planning';
 import { Thoughts } from '../features/thoughts/Thoughts';
 import { flushThoughts } from '../features/thoughts/autosave';
 import { PlannerCalendar } from '../features/calendar/PlannerCalendar';
 import { FocusHost, pauseOpenFocus, requestFocus } from '../features/calendar/focus';
-import { HomeAgenda } from '../features/calendar/HomeAgenda';
-import { HomeProjects } from '../features/home/HomeProjects';
 import { Workouts } from '../features/workouts/Workouts';
-import { HomeWorkouts } from '../features/workouts/components/HomeWorkouts';
 import { flushWorkouts } from '../features/workouts/persistence';
 import { Nutrition } from '../features/nutrition/Nutrition';
-import { HomeNutrition } from '../features/nutrition/HomeNutrition';
 import { Finance } from '../features/finance/Finance';
-import { HomeFinance } from '../features/finance/HomeFinance';
 import { FirstRun } from '../features/home/FirstRun';
 import { closeDatabase, getDatabase } from '../lib/database/connection';
 import { PageErrorBoundary } from '../components/PageErrorBoundary';
@@ -38,7 +31,6 @@ import type { SearchPage, SearchResult } from '../features/search/repository';
 import { WeeklyReview } from '../features/weekly-review/WeeklyReview';
 import { suspendLocalNotifications } from '../features/notifications/scheduler';
 import { Objectives } from '../features/objectives/Objectives';
-import { HomeObjectives } from '../features/objectives/HomeObjectives';
 import { Timeline } from '../features/timeline/Timeline';
 import { suspendAutomations } from '../features/automations/runtime';
 import { MonthlyReview } from '../features/monthly-review/MonthlyReview';
@@ -319,41 +311,12 @@ export default function App() {
                     onOpen={openTask}
                     onInbox={() => void navigate('inbox')}
                     onReview={() => void navigate('review')}
-                    quickSummary={
-                      <>
-                        <HomeWorkouts
-                          day={localDate(now)}
-                          onNavigate={() => void navigate('workouts')}
-                          compact
-                        />
-                        <HomeNutrition
-                          day={localDate(now)}
-                          onNavigate={() => void navigate('nutrition')}
-                          compact
-                        />
-                        <HomeHabits day={localDate(now)} summaryOnly />
-                      </>
-                    }
-                    continuation={
-                      <>
-                        <HomeAgenda
-                          day={localDate(now)}
-                          now={now}
-                          onOpen={() => void navigate('calendar')}
-                        />
-                        <HomeProjects
-                          revision={store.data}
-                          day={localDate(now)}
-                          onNavigate={() => void navigate('projects')}
-                        />
-                        <HomeObjectives onNavigate={(id) => void navigate('objectives', id)} />
-                        <HomeRoutines day={localDate(now)} />
-                      </>
-                    }
+                    onPlanning={() => void navigate('planning')}
+                    onTasks={() => void navigate('tasks')}
+                    onWorkouts={() => void navigate('workouts')}
+                    onNutrition={() => void navigate('nutrition')}
+                    onFinance={() => void navigate('finance')}
                   />
-                  <div className="home-more" aria-label="Outras áreas">
-                    <HomeFinance day={localDate(now)} onNavigate={() => void navigate('finance')} />
-                  </div>
                 </div>
               </>
             ) : page === 'review' ? (

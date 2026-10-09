@@ -27,27 +27,39 @@ const groups: { value: TimelineGroup | 'all'; label: string }[] = [
   { value: 'personal', label: 'Pessoal' },
 ];
 const sources: { value: string; label: string }[] = [
-  { value: 'focus', label: 'Foco' },
   { value: '', label: 'Todos os módulos' },
+  { value: 'planning', label: 'Planejamento' },
   { value: 'task', label: 'Tarefas' },
   { value: 'project', label: 'Projetos' },
   { value: 'habit', label: 'Hábitos' },
-  { value: 'routine', label: 'Rotinas' },
   { value: 'workout', label: 'Treinos' },
-  { value: 'body', label: 'Progresso corporal' },
-  { value: 'steps', label: 'Passos' },
-  { value: 'nutrition', label: 'Alimentação' },
+  { value: 'nutrition', label: 'Nutrição' },
+  { value: 'body', label: 'Corpo' },
   { value: 'finance', label: 'Finanças' },
-  { value: 'financial_goal', label: 'Metas financeiras' },
+  { value: 'thought', label: 'Pensamentos' },
+  { value: 'focus', label: 'Focus' },
+  { value: 'routine', label: 'Rotinas' },
   { value: 'objective', label: 'Objetivos' },
   { value: 'milestone', label: 'Marcos' },
-  { value: 'objective_update', label: 'Atualizações' },
-  { value: 'thought', label: 'Pensamentos' },
+  { value: 'steps', label: 'Passos' },
   { value: 'moment', label: 'Momentos' },
 ];
-const quickSources = ['', 'task', 'project', 'habit', 'workout', 'thought'];
+const quickSources = [
+  '',
+  'planning',
+  'task',
+  'project',
+  'habit',
+  'workout',
+  'nutrition',
+  'body',
+  'finance',
+  'thought',
+  'focus',
+];
 const sourceLabels = Object.fromEntries(sources.map((item) => [item.value, item.label]));
 const icons: Record<string, typeof ListTodo> = {
+  planning: CalendarDays,
   task: ListTodo,
   project: Folder,
   habit: HeartPulse,
@@ -64,6 +76,7 @@ const icons: Record<string, typeof ListTodo> = {
   moment: BookOpen,
 };
 type Page =
+  | 'planning'
   | 'tasks'
   | 'projects'
   | 'habits'
@@ -74,6 +87,7 @@ type Page =
   | 'thoughts'
   | 'calendar'
   | 'objectives';
+type Period = 'today' | '7days' | '30days' | 'custom';
 function dayLabel(day: string) {
   const today = localDate();
   if (day === today) return 'Hoje';
@@ -90,8 +104,9 @@ export function Timeline({
   initialQuery?: string;
   onNavigate: (page: Page, id?: string) => void;
 }) {
-  const [from, setFrom] = useState(() => addDays(localDate(), -90));
+  const [from, setFrom] = useState(() => addDays(localDate(), -29));
   const [to, setTo] = useState(() => localDate());
+  const [period, setPeriod] = useState<Period>('30days');
   const [group, setGroup] = useState<TimelineGroup | 'all'>('all');
   const [source, setSource] = useState('');
   const [objective, setObjective] = useState(objectiveId ?? '');
@@ -217,10 +232,19 @@ export function Timeline({
       setError('Não foi possível salvar a preferência de privacidade.');
     }
   }
+  function choosePeriod(next: Period) {
+    setPeriod(next);
+    const today = localDate();
+    if (next === 'today') setFrom(today);
+    if (next === '7days') setFrom(addDays(today, -6));
+    if (next === '30days') setFrom(addDays(today, -29));
+    if (next !== 'custom') setTo(today);
+  }
   const grouped = new Map<string, TimelineEvent[]>();
   for (const event of events)
     grouped.set(event.event_date, [...(grouped.get(event.event_date) ?? []), event]);
   const destination: Record<string, Page> = {
+    planning: 'planning',
     task: 'tasks',
     project: 'projects',
     habit: 'habits',
@@ -270,6 +294,25 @@ export function Timeline({
           />
         </label>
       </div>
+      <div className="timeline-periods" role="group" aria-label="Período da Timeline">
+        {(
+          [
+            ['today', 'Hoje'],
+            ['7days', '7 dias'],
+            ['30days', '30 dias'],
+            ['custom', 'Personalizado'],
+          ] as [Period, string][]
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            className={period === value ? 'active' : ''}
+            aria-pressed={period === value}
+            onClick={() => choosePeriod(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <details className="timeline-advanced">
         <summary>Período e filtros avançados</summary>
         <div className="timeline-filters">
@@ -287,11 +330,27 @@ export function Timeline({
           </div>
           <label>
             Período inicial
-            <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
+            <input
+              type="date"
+              value={from}
+              max={to}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPeriod('custom');
+              }}
+            />
           </label>
           <label>
             Período final
-            <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
+            <input
+              type="date"
+              value={to}
+              min={from}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPeriod('custom');
+              }}
+            />
           </label>
           <label>
             Módulo

@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { SqlConnection } from '../src/lib/database/connection';
-export function database(path = ':memory:', version = 29) {
+export function database(path = ':memory:', version = 30) {
   const sqlite = new DatabaseSync(path);
   sqlite.exec('PRAGMA foreign_keys = ON');
   sqlite.exec('CREATE TABLE IF NOT EXISTS test_migrations(version INTEGER PRIMARY KEY)');
@@ -36,6 +36,7 @@ export function database(path = ':memory:', version = 29) {
     '0027_google_calendar_bootstrap.sql',
     '0028_financial_connections.sql',
     '0029_planning_foundation.sql',
+    '0030_activity_home_reviews.sql',
   ].entries()) {
     if (
       index + 1 > version ||

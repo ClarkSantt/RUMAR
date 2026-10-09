@@ -116,6 +116,10 @@ const publishedMigrations = [
     '0028_financial_connections.sql',
     '1A9974A94E71B447A7E913CEF6AEBA629115E75E4ACC8F9308BBE7803EB304FB65160FA3404EAB061523172619555616',
   ],
+  [
+    '0029_planning_foundation.sql',
+    '276745FF3C2BAD24ECCA841C7EF14B8E389B2AE9DD8B84955284D2A94F44B95449C7424EF3B5D99BAB84CDD1BEC80F97',
+  ],
 ] as const;
 
 describe('published migration checksums', () => {

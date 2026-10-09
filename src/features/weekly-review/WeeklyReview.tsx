@@ -29,7 +29,12 @@ export function WeeklyReview({
   const [week, setWeek] = useState(() => weekStart(localDate()));
   const [data, setData] = useState<WeeklyReviewData | null>(null);
   const [error, setError] = useState('');
-  const [note, setNote] = useState('');
+  const [reflection, setReflection] = useState<WeeklyReviewData['reflection']>({
+    workedWell: '',
+    didNotWork: '',
+    changeNext: '',
+    prioritiesNext: '',
+  });
   useEffect(() => {
     let active = true;
     void getDatabase()
@@ -37,7 +42,7 @@ export function WeeklyReview({
       .then((result) => {
         if (active) {
           setData(result);
-          setNote(result.note);
+          setReflection(result.reflection);
           setError('');
         }
       })
@@ -48,13 +53,27 @@ export function WeeklyReview({
       active = false;
     };
   }, [week]);
-  async function saveNote() {
+  async function saveReflection() {
     try {
-      await new WeeklyReviewRepository(await getDatabase()).saveNote(week, note);
-      setData((current) => (current ? { ...current, note } : current));
+      await new WeeklyReviewRepository(await getDatabase()).saveReflection(week, reflection);
+      setData((current) => (current ? { ...current, reflection } : current));
       setError('');
     } catch {
-      setError('A nota não foi salva. Tente novamente.');
+      setError('A reflexão não foi salva. Tente novamente.');
+    }
+  }
+  async function finalizeReview() {
+    if (!data) return;
+    try {
+      const repo = new WeeklyReviewRepository(await getDatabase());
+      await repo.saveReflection(week, reflection);
+      await repo.finalize(week, { ...data, reflection });
+      const saved = await repo.load(week, localDate());
+      setData(saved);
+      setReflection(saved.reflection);
+      setError('');
+    } catch {
+      setError('A revisão não pôde ser finalizada. Tente novamente.');
     }
   }
   return (
@@ -95,46 +114,79 @@ export function WeeklyReview({
               <p className="field-help">Nenhum registro nesta semana.</p>
             )}
           <section className="review-story" aria-label="Resumo da semana">
-            <h2>O que aconteceu</h2>
+            <div className="review-story-title">
+              <div>
+                <h2>O que aconteceu</h2>
+                <p>Resumo preparado automaticamente a partir dos seus registros.</p>
+              </div>
+              {data.finalizedAt && <span className="review-finalized">Snapshot salvo</span>}
+            </div>
             <div className="review-story-summary">
+              <p>
+                <strong>
+                  {data.planning.completed}/{data.planning.planned}
+                </strong>
+                <span>planejamentos concluídos</span>
+              </p>
               <p>
                 <strong>{data.tasks.completed}</strong>
                 <span>tarefas concluídas</span>
               </p>
               <p>
-                <strong>{data.habits.done}</strong>
-                <span>registros de hábitos</span>
+                <strong>
+                  {data.habits.done}/{data.habits.target}
+                </strong>
+                <span>consistência de hábitos</span>
               </p>
               <p>
                 <strong>{data.workouts.completed}</strong>
                 <span>treinos realizados</span>
               </p>
-              <p>
-                <strong>{data.nutrition.days}</strong>
-                <span>dias de alimentação</span>
-              </p>
             </div>
+            <p className="review-planning-detail">
+              {data.planning.skipped} pulados · {data.planning.cancelled} cancelados ·{' '}
+              {Math.floor(data.planning.focusedSeconds / 60)} min de foco
+            </p>
           </section>
           <section className="review-story review-writing">
-            <h2>O que aprendi nesta semana?</h2>
-            <p>O que funcionou bem? O que merece ajuste no próximo período?</p>
-            <label className="sr-only" htmlFor="review-note">
-              Reflexão opcional
-            </label>
-            <textarea
-              id="review-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={5}
-              placeholder="Registre sua reflexão…"
-            />
-            <button
-              className="secondary-button"
-              onClick={() => void saveNote()}
-              disabled={note === data.note}
-            >
-              Salvar reflexão
-            </button>
+            <h2>Reflexão</h2>
+            <p>
+              Os números preparam o contexto. As respostas registram o que você quer levar adiante.
+            </p>
+            {(
+              [
+                ['workedWell', 'O que funcionou bem?'],
+                ['didNotWork', 'O que não funcionou?'],
+                ['changeNext', 'O que quero mudar?'],
+                ['prioritiesNext', 'Quais são as prioridades da próxima semana?'],
+              ] as [keyof WeeklyReviewData['reflection'], string][]
+            ).map(([key, label]) => (
+              <label className="review-question" key={key}>
+                <span>{label}</span>
+                <textarea
+                  value={reflection[key]}
+                  onChange={(event) =>
+                    setReflection((current) => ({ ...current, [key]: event.target.value }))
+                  }
+                  rows={3}
+                  maxLength={4000}
+                />
+              </label>
+            ))}
+            <div className="review-writing-actions">
+              <button
+                className="secondary-button"
+                onClick={() => void saveReflection()}
+                disabled={JSON.stringify(reflection) === JSON.stringify(data.reflection)}
+              >
+                Salvar respostas
+              </button>
+              {!data.finalizedAt && (
+                <button className="primary-button" onClick={() => void finalizeReview()}>
+                  Finalizar revisão
+                </button>
+              )}
+            </div>
           </section>
           <section className="review-story review-next">
             <h2>O que vem a seguir</h2>

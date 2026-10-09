@@ -4,6 +4,7 @@ import { AppSidebar } from '../../src/components/AppSidebar';
 import { Dialog } from '../../src/components/Dialog';
 import { EmptyState } from '../../src/components/EmptyState';
 import { Home } from '../../src/features/home/Home';
+import type { HomeDayData } from '../../src/features/home/repository';
 import { InboxPage } from '../../src/features/inbox/Inbox';
 import { Tasks } from '../../src/features/tasks/Tasks';
 import { ProjectCard } from '../../src/features/projects/ProjectCard';
@@ -47,8 +48,10 @@ import '../../src/styles/nutrition-finance-connections.css';
 import { LegacyExperiencePreview } from './legacy-experience';
 import { PlanningFoundationPreview } from './planning-foundation';
 import '../../src/features/planning/planning.css';
+import { addDays, localDate } from '../../src/lib/dates';
 
 const today = '2026-10-04';
+const homeToday = localDate();
 const emptyLabels: Record<string, string> = {
   tasks: 'Nenhuma tarefa ainda',
   projects: 'Nenhum projeto ainda',
@@ -117,6 +120,101 @@ const data: Snapshot = {
   settings: { name: 'Ana', theme: 'light' },
 };
 const store = { data, busy: false, run: async () => true } as unknown as RumoStore;
+const homeDayPreview: HomeDayData = {
+  planning: {
+    now: {
+      id: 'now',
+      block_date: homeToday,
+      start_time: '09:30',
+      end_time: '11:00',
+      schedule_kind: 'fixed',
+      day_period: null,
+      status: 'planned',
+      source_type: 'project',
+      source_id: 'project-1',
+      title: 'Avançar o RUMAR',
+    },
+    next: [
+      {
+        id: 'next-1',
+        block_date: homeToday,
+        start_time: '13:30',
+        end_time: '14:00',
+        schedule_kind: 'fixed',
+        day_period: null,
+        status: 'planned',
+        source_type: 'habit',
+        source_id: 'habit-1',
+        title: 'Leitura',
+      },
+      {
+        id: 'next-2',
+        block_date: addDays(homeToday, 1),
+        start_time: '09:00',
+        end_time: '10:00',
+        schedule_kind: 'fixed',
+        day_period: null,
+        status: 'planned',
+        source_type: 'task',
+        source_id: 'task-1',
+        title: 'Revisar prioridades',
+      },
+    ],
+    total: 7,
+    completed: 3,
+    pending: 3,
+    skipped: 1,
+  },
+  overdue: {
+    count: 2,
+    rows: [
+      {
+        id: 'late-1',
+        title: 'Responder mensagem importante',
+        due_date: addDays(homeToday, -1),
+      },
+      {
+        id: 'late-2',
+        title: 'Organizar referências',
+        due_date: addDays(homeToday, -2),
+      },
+    ],
+  },
+  habits: [
+    {
+      id: 'water',
+      name: 'Água',
+      value: 3.8,
+      target: 5,
+      unit: 'L',
+      tracking_type: 'quantity',
+      reached: 0,
+    },
+    {
+      id: 'read',
+      name: 'Leitura',
+      value: 12,
+      target: 20,
+      unit: 'páginas',
+      tracking_type: 'quantity',
+      reached: 0,
+    },
+    {
+      id: 'gym',
+      name: 'Academia',
+      value: 1,
+      target: 1,
+      unit: '',
+      tracking_type: 'check',
+      reached: 1,
+    },
+  ],
+  workout: { id: 'workout', name: 'Push', finished_at: `${homeToday}T08:42:00` },
+  nutrition: { calories: 1640, protein: 98, calorieGoal: 2200 },
+  finance: { hidden: false, expense: 6890 },
+  projects: [],
+};
+const loadHomeDayPreview = async () => homeDayPreview;
 const projectFixtures: ProjectSummary[] = [
   {
     id: 'p1',
@@ -841,82 +939,19 @@ function Preview() {
             </div>
           )}
           {screen === 'home' && (
-            <div className="home-experience">
-              <Home
-                store={store}
-                now={new Date(2026, 9, 4, 10)}
-                onOpen={() => {}}
-                onInbox={() => {}}
-                onReview={() => {}}
-                quickSummary={
-                  <>
-                    <section className="home-pulse-item home-workout-pulse">
-                      <span className="summary-label">Treino de hoje</span>
-                      <strong>Treino de força</strong>
-                      <span className="summary-caption">5 exercícios no plano</span>
-                      <button className="text-button">Ver treinos</button>
-                    </section>
-                    <section className="home-pulse-item home-nutrition-pulse">
-                      <span className="summary-label">Alimentação</span>
-                      <strong>1.640 / 2.200 kcal</strong>
-                      <span className="summary-caption">Proteínas 98 g · Carboidratos 175 g</span>
-                      <button className="text-button">Ver alimentação</button>
-                    </section>
-                    <section className="home-pulse-item home-habit-pulse">
-                      <span className="summary-label">Hábitos de hoje</span>
-                      <strong>1 de 2 feitos</strong>
-                      <progress max={2} value={1} aria-label="Hábitos concluídos hoje" />
-                      <span className="summary-caption">1 por registrar</span>
-                    </section>
-                  </>
-                }
-                continuation={
-                  <>
-                    <section className="secondary-section">
-                      <div className="section-heading">
-                        <h2>Agenda de hoje</h2>
-                        <button className="text-button">Ver dia</button>
-                      </div>
-                      <button className="review-line">
-                        <span>11:30</span>
-                        <strong>Próximo · Planejar a semana</strong>
-                      </button>
-                      <button className="review-line">
-                        <span>16:00</span>
-                        <strong>Próximo · Caminhada</strong>
-                      </button>
-                    </section>
-                    <section className="secondary-section">
-                      <div className="section-heading">
-                        <h2>Em andamento</h2>
-                      </div>
-                      <button className="review-line">
-                        <strong>Projeto pessoal</strong>
-                        <span>2 de 4 tarefas concluídas</span>
-                      </button>
-                      <button className="review-line">
-                        <strong>Objetivo de leitura</strong>
-                        <span>Próximo marco: 10 livros</span>
-                      </button>
-                    </section>
-                    <section className="secondary-section">
-                      <div className="section-heading">
-                        <h2>Rotinas de hoje</h2>
-                      </div>
-                      <p>Rotina da manhã · 3 de 4 etapas</p>
-                    </section>
-                  </>
-                }
-              />
-              <div className="home-more">
-                <section className="secondary-section">
-                  <div className="section-heading">
-                    <h2>Em andamento</h2>
-                  </div>
-                  <p>Projeto pessoal · próxima etapa</p>
-                </section>
-              </div>
-            </div>
+            <Home
+              store={store}
+              now={new Date()}
+              onOpen={() => {}}
+              onInbox={() => {}}
+              onReview={() => {}}
+              onPlanning={() => {}}
+              onTasks={() => {}}
+              onWorkouts={() => {}}
+              onNutrition={() => {}}
+              onFinance={() => {}}
+              loadDay={loadHomeDayPreview}
+            />
           )}
         </div>
       </main>

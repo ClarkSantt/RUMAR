@@ -60,7 +60,7 @@ it('keeps Timeline quick filters and advanced filters accessible without losing 
   expect(screen.getByLabelText('Período inicial')).toBeTruthy();
   const event = await screen.findByRole(
     'button',
-    { name: /Pensamentos.*Pensamento criado.*Registro de teste/ },
+    { name: /Pensamentos.*Pensamento registrado/ },
     { timeout: 5000 },
   );
   await user.click(event);
@@ -71,7 +71,9 @@ it('opens the review narrative before secondary metrics and retains its details'
   render(<WeeklyReview onNavigate={vi.fn()} onTimeline={vi.fn()} />);
   const user = userEvent.setup();
   expect(await screen.findByRole('heading', { name: 'O que aconteceu' })).toBeTruthy();
-  expect(screen.getByRole('heading', { name: /O que aprendi nesta semana/ })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Reflexão' })).toBeTruthy();
+  expect(screen.getByLabelText('O que funcionou bem?')).toBeTruthy();
+  expect(screen.getByLabelText('O que não funcionou?')).toBeTruthy();
   const details = screen.getByText('Explorar registros por área').closest('details');
   expect(details?.open).toBe(false);
   await user.click(screen.getByText('Explorar registros por área'));

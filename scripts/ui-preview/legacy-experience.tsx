@@ -100,6 +100,13 @@ function ThoughtsPreview() {
 }
 const timelineEvents = [
   {
+    time: '11:17',
+    icon: CalendarDays,
+    source: 'Planejamento',
+    title: 'Planejamento concluído',
+    summary: 'Sessão no Projeto RUMAR',
+  },
+  {
     time: '10:24',
     icon: ListTodo,
     source: 'Tarefas',
@@ -110,22 +117,22 @@ const timelineEvents = [
     time: '09:17',
     icon: HeartPulse,
     source: 'Hábitos',
-    title: 'Hábito registrado',
-    summary: 'Beber água',
+    title: 'Hábito concluído',
+    summary: 'Leitura · 20 páginas',
   },
   {
     time: '07:52',
     icon: CalendarDays,
     source: 'Treinos',
-    title: 'Treino iniciado',
+    title: 'Treino Push concluído',
     summary: 'Força · membros superiores',
   },
   {
     time: '07:36',
     icon: NotebookPen,
     source: 'Pensamentos',
-    title: 'Pensamento criado',
-    summary: 'Uma ideia para o projeto',
+    title: 'Pensamento registrado',
+    summary: '',
   },
 ];
 function TimelinePreview({ filters = false }: { filters?: boolean }) {
@@ -142,18 +149,34 @@ function TimelinePreview({ filters = false }: { filters?: boolean }) {
       </header>
       <div className="timeline-primary-filters">
         <div className="timeline-quick-filters" role="group" aria-label="Módulos da Timeline">
-          {['Todos', 'Tarefas', 'Projetos', 'Hábitos', 'Treinos', 'Pensamentos'].map(
-            (label, index) => (
-              <button key={label} className={index === 0 ? 'active' : ''}>
-                {label}
-              </button>
-            ),
-          )}
+          {[
+            'Todos',
+            'Planejamento',
+            'Tarefas',
+            'Projetos',
+            'Hábitos',
+            'Treinos',
+            'Nutrição',
+            'Corpo',
+            'Finanças',
+            'Pensamentos',
+            'Focus',
+          ].map((label, index) => (
+            <button key={label} className={index === 0 ? 'active' : ''}>
+              {label}
+            </button>
+          ))}
         </div>
         <label className="timeline-search">
           <span className="sr-only">Buscar</span>
           <input type="search" placeholder="Buscar no histórico…" />
         </label>
+      </div>
+      <div className="timeline-periods" role="group" aria-label="Período da Timeline">
+        <button>Hoje</button>
+        <button>7 dias</button>
+        <button className="active">30 dias</button>
+        <button>Personalizado</button>
       </div>
       <details className="timeline-advanced" open={filters}>
         <summary>Período e filtros avançados</summary>
@@ -214,7 +237,7 @@ function TimelinePreview({ filters = false }: { filters?: boolean }) {
               <span className="timeline-event-copy">
                 <small className="timeline-event-source">Pensamentos</small>
                 <strong>Pensamento criado</strong>
-                <small>Primeiros passos</small>
+                <small />
               </span>
               <span aria-hidden="true">→</span>
             </button>
@@ -245,34 +268,42 @@ function ReviewsPreview({ monthly = false }: { monthly?: boolean }) {
         <h2>O que aconteceu</h2>
         <div className="review-story-summary">
           <p>
+            <strong>3/7</strong>
+            <span>planejamentos concluídos</span>
+          </p>
+          <p>
             <strong>7</strong>
             <span>tarefas concluídas</span>
           </p>
           <p>
-            <strong>5</strong>
-            <span>registros de hábitos</span>
+            <strong>5/7</strong>
+            <span>consistência de hábitos</span>
           </p>
           <p>
             <strong>2</strong>
-            <span>treinos</span>
-          </p>
-          <p>
-            <strong>4</strong>
-            <span>dias de alimentação</span>
+            <span>treinos realizados</span>
           </p>
         </div>
+        <p className="review-planning-detail">1 pulado · 0 cancelados · 185 min de foco</p>
       </section>
       <section className="review-story review-writing">
-        <h2>O que aprendi neste {monthly ? 'mês' : 'semana'}?</h2>
-        <p>O que funcionou bem? O que merece ajuste no próximo período?</p>
-        <label className="sr-only" htmlFor="review-preview-note">
-          Reflexão pessoal
-        </label>
-        <textarea
-          id="review-preview-note"
-          defaultValue="Manter a rotina simples ajudou a avançar no projeto e a cuidar do que importa."
-        />
-        <button className="secondary-button">Salvar reflexão</button>
+        <h2>Reflexão</h2>
+        <p>Os números preparam o contexto. As respostas registram o que você quer levar adiante.</p>
+        {[
+          ['worked', 'O que funcionou bem?', 'Manter poucos blocos claros.'],
+          ['failed', 'O que não funcionou?', 'Interrupções no fim da tarde.'],
+          ['change', 'O que quero mudar?', 'Proteger o primeiro bloco do dia.'],
+          ['priorities', 'Quais são as prioridades da próxima semana?', 'RUMAR, saúde e leitura.'],
+        ].map(([id, label, value]) => (
+          <label className="review-question" key={id} htmlFor={`review-${id}`}>
+            <span>{label}</span>
+            <textarea id={`review-${id}`} defaultValue={value} rows={3} />
+          </label>
+        ))}
+        <div className="review-writing-actions">
+          <button className="secondary-button">Salvar respostas</button>
+          <button className="primary-button">Finalizar revisão</button>
+        </div>
       </section>
       {!monthly && (
         <section className="review-story review-next">

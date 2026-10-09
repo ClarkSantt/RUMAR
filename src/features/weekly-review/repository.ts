@@ -41,9 +41,32 @@ export interface WeeklyReviewData {
   next: { tasks: number; workouts: number; bills: number; projectDeadlines: number };
   objectives: { id: string; name: string; activities: number }[];
   note: string;
-  planning: { plannedSeconds: number; focusedSeconds: number };
+  planning: {
+    plannedSeconds: number;
+    focusedSeconds: number;
+    planned: number;
+    completed: number;
+    skipped: number;
+    cancelled: number;
+  };
   milestones: Milestone[];
+  reflection: {
+    workedWell: string;
+    didNotWork: string;
+    changeNext: string;
+    prioritiesNext: string;
+  };
+  finalizedAt: string | null;
 }
+
+type SnapshotRow = {
+  snapshot_json: string;
+  worked_well: string;
+  did_not_work: string;
+  change_next: string;
+  priorities_next: string;
+  finalized_at: string | null;
+};
 
 export class WeeklyReviewRepository {
   constructor(private db: SqlConnection) {}
@@ -80,6 +103,8 @@ export class WeeklyReviewRepository {
       plannedSeconds,
       focusedSeconds,
       milestones,
+      planningStatuses,
+      snapshotRows,
     ] = await Promise.all([
       this.db.select<Count[]>(
         `SELECT (SELECT COUNT(*) FROM task_completions WHERE occurrence_date BETWEEN $1 AND $2)+(SELECT COUNT(*) FROM tasks WHERE recurrence IS NULL AND status='completed' AND date(completed_at,'localtime') BETWEEN $1 AND $2) count`,
@@ -172,6 +197,18 @@ export class WeeklyReviewRepository {
       new PlannerRepository(this.db).plannedSeconds(start, end),
       new FocusRepository(this.db).seconds(start, end),
       new MilestonesRepository(this.db).completedRange(start, end),
+      this.db.select<{ planned: number; completed: number; skipped: number; cancelled: number }[]>(
+        `SELECT COUNT(*) planned,
+          SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) completed,
+          SUM(CASE WHEN status='skipped' THEN 1 ELSE 0 END) skipped,
+          SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) cancelled
+         FROM planner_time_blocks WHERE block_date BETWEEN $1 AND $2`,
+        [start, end],
+      ),
+      this.db.select<SnapshotRow[]>(
+        'SELECT snapshot_json,worked_well,did_not_work,change_next,priorities_next,finalized_at FROM weekly_review_snapshots WHERE week_start=$1',
+        [start],
+      ),
     ]);
     const effectiveEnd = today < end ? today : end;
     let habitDone = 0,
@@ -234,8 +271,22 @@ export class WeeklyReviewRepository {
       },
       0,
     );
-    return {
-      planning: { plannedSeconds, focusedSeconds },
+    const snapshot = snapshotRows[0];
+    const reflection = {
+      workedWell: snapshot?.worked_well ?? noteRows[0]?.content ?? '',
+      didNotWork: snapshot?.did_not_work ?? '',
+      changeNext: snapshot?.change_next ?? '',
+      prioritiesNext: snapshot?.priorities_next ?? '',
+    };
+    const live: WeeklyReviewData = {
+      planning: {
+        plannedSeconds,
+        focusedSeconds,
+        planned: planningStatuses[0]?.planned ?? 0,
+        completed: planningStatuses[0]?.completed ?? 0,
+        skipped: planningStatuses[0]?.skipped ?? 0,
+        cancelled: planningStatuses[0]?.cancelled ?? 0,
+      },
       milestones,
       start,
       end,
@@ -303,7 +354,26 @@ export class WeeklyReviewRepository {
       },
       note: noteRows[0]?.content ?? '',
       objectives: objectiveRows,
+      reflection,
+      finalizedAt: snapshot?.finalized_at ?? null,
     };
+    if (!snapshot?.finalized_at) return live;
+    try {
+      const frozen = JSON.parse(snapshot.snapshot_json) as WeeklyReviewData;
+      return {
+        ...frozen,
+        reflection,
+        finalizedAt: snapshot.finalized_at,
+        finance: {
+          ...frozen.finance,
+          hidden: live.finance.hidden,
+          income: live.finance.hidden ? 0 : frozen.finance.income,
+          expense: live.finance.hidden ? 0 : frozen.finance.expense,
+        },
+      };
+    } catch {
+      return live;
+    }
   }
 
   async saveNote(week: string, content: string) {
@@ -311,6 +381,58 @@ export class WeeklyReviewRepository {
     await this.db.execute(
       `INSERT INTO weekly_review_notes(week_start,content,updated_at) VALUES($1,$2,$3) ON CONFLICT(week_start) DO UPDATE SET content=excluded.content,updated_at=excluded.updated_at`,
       [start, content, new Date().toISOString()],
+    );
+  }
+
+  async saveReflection(week: string, reflection: WeeklyReviewData['reflection']): Promise<void> {
+    const start = weekStart(week);
+    const end = addDays(start, 6);
+    const now = new Date().toISOString();
+    for (const value of Object.values(reflection))
+      if (value.length > 4000) throw Error('Cada resposta deve ter até 4.000 caracteres.');
+    await this.db.execute(
+      `INSERT INTO weekly_review_snapshots(
+        week_start,week_end,worked_well,did_not_work,change_next,priorities_next,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,$5,$6,$7,$7)
+       ON CONFLICT(week_start) DO UPDATE SET worked_well=excluded.worked_well,
+        did_not_work=excluded.did_not_work,change_next=excluded.change_next,
+        priorities_next=excluded.priorities_next,updated_at=excluded.updated_at`,
+      [
+        start,
+        end,
+        reflection.workedWell.trim(),
+        reflection.didNotWork.trim(),
+        reflection.changeNext.trim(),
+        reflection.prioritiesNext.trim(),
+        now,
+      ],
+    );
+  }
+
+  async finalize(week: string, data: WeeklyReviewData): Promise<void> {
+    const start = weekStart(week);
+    const end = addDays(start, 6);
+    const now = new Date().toISOString();
+    const frozen = { ...data, finalizedAt: now };
+    await this.db.execute(
+      `INSERT INTO weekly_review_snapshots(
+        week_start,week_end,snapshot_json,worked_well,did_not_work,change_next,priorities_next,
+        finalized_at,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8,$8)
+       ON CONFLICT(week_start) DO UPDATE SET snapshot_json=excluded.snapshot_json,
+        worked_well=excluded.worked_well,did_not_work=excluded.did_not_work,
+        change_next=excluded.change_next,priorities_next=excluded.priorities_next,
+        finalized_at=excluded.finalized_at,updated_at=excluded.updated_at`,
+      [
+        start,
+        end,
+        JSON.stringify(frozen),
+        data.reflection.workedWell.trim(),
+        data.reflection.didNotWork.trim(),
+        data.reflection.changeNext.trim(),
+        data.reflection.prioritiesNext.trim(),
+        now,
+      ],
     );
   }
 }

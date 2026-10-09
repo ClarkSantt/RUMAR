@@ -10,10 +10,10 @@ describe('pre-migration backup ordering', () => {
     expect(load).toBeGreaterThan(invoke);
   });
 
-  it('registers migration 29 and the native command', () => {
+  it('registers the current migration and the native command', () => {
     const rust = readFileSync('src-tauri/src/lib.rs', 'utf8');
     expect(rust).toContain('backup::pre_migration_backup');
-    expect(rust).toContain('version: 29');
-    expect(rust).toContain('0029_planning_foundation.sql');
+    expect(rust).toContain('version: 30');
+    expect(rust).toContain('0030_activity_home_reviews.sql');
   });
 });

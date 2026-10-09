@@ -28,6 +28,26 @@
     margin: 0 0 var(--space-3);
     font-size: var(--heading);
   }
+  .review-story-title {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  .review-story-title p,
+  .review-planning-detail {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+  .review-finalized {
+    flex: none;
+    padding: var(--space-1) var(--space-2);
+    border-radius: 999px;
+    background: var(--color-success-soft, color-mix(in srgb, #16a36a 14%, transparent));
+    color: var(--color-success, #087a4c);
+    font-size: var(--caption);
+    font-weight: 600;
+  }
   .review-story > p {
     margin: 0 0 var(--space-4);
     color: var(--color-text-secondary);
@@ -62,6 +82,21 @@
     min-height: 140px;
     margin-bottom: var(--space-3);
     line-height: 1.65;
+  }
+  .review-question {
+    display: grid;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    font-weight: 600;
+  }
+  .review-question textarea {
+    margin: 0;
+    font-weight: 400;
+  }
+  .review-writing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
   .review-next .review-line {
     max-width: 760px;
