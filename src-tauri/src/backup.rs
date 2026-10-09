@@ -354,7 +354,7 @@ fn validated_archive(path: &Path, workdir: &Path) -> Result<(Manifest, StagedBac
         }
         let target = staged.attachments.join(relative);
         fs::create_dir_all(target.parent().ok_or("Caminho inválido.")?).map_err(err)?;
-        let mut input = archive.by_name(&item.relative_path).map_err(err)?;
+        let input = archive.by_name(&item.relative_path).map_err(err)?;
         if input.size() != item.size {
             return Err("Tamanho de anexo divergente.".into());
         }
