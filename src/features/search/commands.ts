@@ -10,7 +10,10 @@ export type CommandKind =
   | 'start-focus'
   | 'record-weight'
   | 'start-workout'
-  | 'toggle-theme';
+  | 'toggle-theme'
+  | 'create-objective'
+  | 'create-wish'
+  | 'open-trash';
 
 export interface AppCommand {
   id: string;
@@ -86,6 +89,24 @@ const actions: AppCommand[] = [
     title: 'Trocar tema',
     detail: 'Alternar claro e escuro',
     kind: 'toggle-theme',
+  },
+  {
+    id: 'new-objective',
+    title: 'Novo Objective',
+    detail: 'Definir algo que você quer alcançar',
+    kind: 'create-objective',
+  },
+  {
+    id: 'new-wish',
+    title: 'Novo desejo',
+    detail: 'Planejar uma compra dentro de Objectives',
+    kind: 'create-wish',
+  },
+  {
+    id: 'open-trash',
+    title: 'Abrir Lixeira',
+    detail: 'Configurações · Backup e dados',
+    kind: 'open-trash',
   },
 ];
 

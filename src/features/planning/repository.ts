@@ -40,18 +40,27 @@ export interface PlanningChecklistItem {
   completed: number;
 }
 
-const itemSelect = `SELECT b.*,
+const itemSelect = (phase5: boolean) => `SELECT b.*,
  coalesce(nullif(t.title,''),nullif(sp.name,''),nullif(h.name,''),nullif(w.name,''),nullif(pt.name,''),nullif(e.summary,''),nullif(b.title_snapshot,''),nullif(b.title,''),'Planejamento') display_title,
  coalesce(tp.name,sp.name) project_name,
  CASE b.source_type
   WHEN 'standalone' THEN 1
-  WHEN 'task' THEN coalesce(t.archived_at IS NULL AND t.status='pending',0)
-  WHEN 'project' THEN coalesce(sp.archived_at IS NULL AND sp.status='active',0)
+  WHEN 'task' THEN coalesce(t.archived_at IS NULL${phase5 ? ' AND t.deleted_at IS NULL' : ''} AND t.status='pending',0)
+  WHEN 'project' THEN coalesce(sp.archived_at IS NULL${phase5 ? ' AND sp.deleted_at IS NULL' : ''} AND sp.status='active',0)
   WHEN 'habit' THEN coalesce(h.archived_at IS NULL AND h.active=1,0)
   WHEN 'workout' THEN coalesce(w.id IS NOT NULL,0)
   WHEN 'template' THEN coalesce(pt.archived_at IS NULL AND pt.active=1,0)
   WHEN 'event' THEN coalesce(e.id IS NOT NULL,0)
-  ELSE 0 END source_active
+  ELSE 0 END source_active,
+ ${
+   phase5
+     ? `CASE b.source_type
+  WHEN 'task' THEN EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks predecessor ON predecessor.id=d.predecessor_id WHERE d.task_id=t.id AND predecessor.status!='completed' AND predecessor.deleted_at IS NULL)
+  WHEN 'project' THEN EXISTS(SELECT 1 FROM project_dependencies d JOIN projects predecessor ON predecessor.id=d.predecessor_id WHERE d.project_id=sp.id AND predecessor.status!='completed' AND predecessor.deleted_at IS NULL)
+    OR EXISTS(SELECT 1 FROM project_blockers blocker WHERE blocker.project_id=sp.id AND blocker.resolved_at IS NULL)
+  ELSE 0 END`
+     : '0'
+ } source_blocked
  FROM planner_time_blocks b
  LEFT JOIN tasks t ON b.source_type='task' AND t.id=b.source_id
  LEFT JOIN projects tp ON tp.id=t.project_id
@@ -63,10 +72,18 @@ const itemSelect = `SELECT b.*,
 
 export class PlanningRepository {
   constructor(private db: SqlConnection) {}
+  private phase5Support?: Promise<boolean>;
+  private supportsPhase5() {
+    this.phase5Support ??= this.db
+      .select<{ name: string }[]>('PRAGMA table_info(tasks)')
+      .then((rows) => rows.some((row) => row.name === 'deleted_at'));
+    return this.phase5Support;
+  }
 
-  list(from: string, to: string) {
+  async list(from: string, to: string) {
+    const phase5 = await this.supportsPhase5();
     return this.db.select<PlanningItem[]>(
-      `${itemSelect} WHERE b.block_date BETWEEN $1 AND $2
+      `${itemSelect(phase5)} WHERE b.block_date BETWEEN $1 AND $2
        ORDER BY b.block_date,
        CASE b.schedule_kind WHEN 'fixed' THEN 0 WHEN 'period' THEN 1 ELSE 2 END,
        b.start_time,b.position,b.created_at,b.id`,
@@ -75,17 +92,21 @@ export class PlanningRepository {
   }
 
   async get(id: string) {
-    return (await this.db.select<PlanningItem[]>(`${itemSelect} WHERE b.id=$1`, [id]))[0] ?? null;
+    const phase5 = await this.supportsPhase5();
+    return (
+      (await this.db.select<PlanningItem[]>(`${itemSelect(phase5)} WHERE b.id=$1`, [id]))[0] ?? null
+    );
   }
 
   async sourceOptions(type: 'task' | 'project', query = ''): Promise<PlanningSourceOption[]> {
     const search = `%${query.trim()}%`;
+    const phase5 = await this.supportsPhase5();
     if (type === 'task')
       return (
         await this.db.select<{ id: string; name: string; detail: string }[]>(
           `SELECT t.id,t.title name,coalesce(p.name,'Sem projeto') detail FROM tasks t
            LEFT JOIN projects p ON p.id=t.project_id
-           WHERE t.archived_at IS NULL AND t.status='pending' AND t.title LIKE $1
+           WHERE t.archived_at IS NULL${phase5 ? ' AND t.deleted_at IS NULL' : ''} AND t.status='pending' AND t.title LIKE $1
            ORDER BY t.priority='high' DESC,t.due_date IS NULL,t.due_date,t.sort_order,t.created_at LIMIT 100`,
           [search],
         )
@@ -93,7 +114,7 @@ export class PlanningRepository {
     return (
       await this.db.select<{ id: string; name: string; detail: string }[]>(
         `SELECT id,name,coalesce(target_date,'Sem prazo') detail FROM projects
-         WHERE archived_at IS NULL AND status='active' AND name LIKE $1
+         WHERE archived_at IS NULL${phase5 ? ' AND deleted_at IS NULL' : ''} AND status='active' AND name LIKE $1
          ORDER BY sort_order,created_at LIMIT 100`,
         [search],
       )

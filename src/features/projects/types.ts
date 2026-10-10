@@ -10,6 +10,7 @@ export interface Project {
   updated_at: string;
   completed_at: string | null;
   archived_at: string | null;
+  deleted_at?: string | null;
   sort_order: number;
 }
 export type ProjectInput = Pick<Project, 'name' | 'description' | 'start_date' | 'target_date'>;
@@ -25,4 +26,5 @@ export interface ProjectSummary extends Project {
   task_count: number;
   completed_count: number;
   next_task: string | null;
+  blocked?: number;
 }

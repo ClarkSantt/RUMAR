@@ -99,7 +99,7 @@ export class MilestonesRepository {
   async deadlines(start: string, end: string) {
     return this.redact(
       await this.db.select<Milestone[]>(
-        `${milestoneReadSql} SELECT * FROM milestone_read WHERE target_date BETWEEN $1 AND $2 AND objective_id IN(SELECT id FROM objectives WHERE status!='archived') ORDER BY target_date,sort_order`,
+        `${milestoneReadSql} SELECT * FROM milestone_read WHERE target_date BETWEEN $1 AND $2 AND objective_id IN(SELECT id FROM objectives WHERE lifecycle_status!='archived' AND deleted_at IS NULL) ORDER BY target_date,sort_order`,
         [start, end],
       ),
     );
@@ -107,7 +107,7 @@ export class MilestonesRepository {
   async next() {
     return this.redact(
       await this.db.select<Milestone[]>(
-        `${milestoneReadSql} SELECT * FROM milestone_read WHERE effective_status='pending' AND objective_id IN(SELECT id FROM objectives WHERE status='active') ORDER BY COALESCE(target_date,'9999-12-31'),sort_order LIMIT 3`,
+        `${milestoneReadSql} SELECT * FROM milestone_read WHERE effective_status='pending' AND objective_id IN(SELECT id FROM objectives WHERE lifecycle_status='active' AND deleted_at IS NULL) ORDER BY COALESCE(target_date,'9999-12-31'),sort_order LIMIT 3`,
       ),
     );
   }

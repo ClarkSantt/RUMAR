@@ -29,6 +29,8 @@ const project: ProjectSummary = {
   task_count: 10,
   completed_count: 7,
   next_task: 'Revisar o plano',
+  blocked: 0,
+  deleted_at: null,
 };
 const objective: Objective & { link_count: number } = {
   id: 'o1',
@@ -49,6 +51,18 @@ const objective: Objective & { link_count: number } = {
   updated_at: '2026-01-01',
   completed_at: null,
   archived_at: null,
+  objective_kind: 'objective',
+  horizon: 'year',
+  horizon_label: '2026',
+  lifecycle_status: 'active',
+  progress_strategy: 'manual',
+  progress_direction: 'increase',
+  numeric_start: 0,
+  numeric_current: 70,
+  numeric_target: 100,
+  numeric_unit: '%',
+  next_step: 'Revisar o plano',
+  deleted_at: null,
   link_count: 2,
 };
 

@@ -11,7 +11,7 @@ export function HomeObjectives({ onNavigate }: { onNavigate: (id: string) => voi
     let active = true;
     void getDatabase()
       .then(async (db) => ({
-        objectives: await new ObjectivesRepository(db).recent(),
+        objectives: await new ObjectivesRepository(db).recent(2),
         milestones: await new MilestonesRepository(db).next(),
       }))
       .then((found) => {

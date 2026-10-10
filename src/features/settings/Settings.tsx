@@ -17,6 +17,7 @@ import { AutomationsSettings } from '../automations/AutomationsSettings';
 import { suspendAutomations } from '../automations/runtime';
 import { suspendLocalNotifications } from '../notifications/scheduler';
 import { DataCenter } from '../data/DataCenter';
+import { Trash } from '../trash/Trash';
 import { GoogleCalendarSettings } from '../integrations/google-calendar/GoogleCalendarSettings';
 import { WindowsSettings } from '../windows/WindowsSettings';
 import { suspendGoogleCalendar } from '../integrations/google-calendar/runtime';
@@ -100,6 +101,11 @@ export function Settings({ store }: { store: RumoStore }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
+  useEffect(() => {
+    const openData = () => setActiveSection('data');
+    window.addEventListener('rumar-open-settings-data', openData);
+    return () => window.removeEventListener('rumar-open-settings-data', openData);
+  }, []);
   useEffect(() => {
     let active = true;
     void Promise.all([
@@ -588,6 +594,7 @@ export function Settings({ store }: { store: RumoStore }) {
                   {error}
                 </p>
               )}
+              <Trash store={store} />
             </section>
           )}
           {activeSection === 'privacy' && (

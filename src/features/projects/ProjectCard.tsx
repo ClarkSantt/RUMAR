@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, CheckCheck, FolderKanban } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarDays, CheckCheck, FolderKanban } from 'lucide-react';
 import { formatDate } from '../../lib/dates';
 import type { ProjectSummary } from './types';
 
@@ -20,7 +20,13 @@ export function ProjectCard({ project, onOpen }: { project: ProjectSummary; onOp
           <FolderKanban size={20} />
         </span>
         <span className={`project-status project-status-${project.status}`}>
-          {statusLabel[project.status]}
+          {project.blocked ? (
+            <>
+              <AlertTriangle size={13} /> Bloqueado
+            </>
+          ) : (
+            statusLabel[project.status]
+          )}
         </span>
         <ArrowRight className="project-card-arrow" size={17} aria-hidden="true" />
       </span>

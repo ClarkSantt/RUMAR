@@ -24,10 +24,12 @@ export class ProjectsRepository {
   list(status?: ProjectStatus) {
     return this.db.select<ProjectSummary[]>(
       `SELECT p.*,
-      (SELECT COUNT(*) FROM tasks t WHERE t.project_id=p.id AND t.archived_at IS NULL) task_count,
-      (SELECT COUNT(*) FROM tasks t WHERE t.project_id=p.id AND t.archived_at IS NULL AND t.status='completed') completed_count,
-      (SELECT t.title FROM tasks t LEFT JOIN project_sections s ON s.id=t.project_section_id WHERE t.project_id=p.id AND t.archived_at IS NULL AND t.status='pending' ORDER BY COALESCE(s.sort_order,-1),t.sort_order,t.created_at,t.id LIMIT 1) next_task
-      FROM projects p WHERE ($1 IS NULL AND p.archived_at IS NULL) OR p.status=$1 ORDER BY p.sort_order,p.created_at,p.id`,
+      (SELECT COUNT(*) FROM tasks t WHERE t.project_id=p.id AND t.archived_at IS NULL AND t.deleted_at IS NULL) task_count,
+      (SELECT COUNT(*) FROM tasks t WHERE t.project_id=p.id AND t.archived_at IS NULL AND t.deleted_at IS NULL AND t.status='completed') completed_count,
+      (SELECT t.title FROM tasks t LEFT JOIN project_sections s ON s.id=t.project_section_id WHERE t.project_id=p.id AND t.archived_at IS NULL AND t.deleted_at IS NULL AND t.status='pending' ORDER BY COALESCE(s.sort_order,-1),t.sort_order,t.created_at,t.id LIMIT 1) next_task,
+      (EXISTS(SELECT 1 FROM project_dependencies d JOIN projects predecessor ON predecessor.id=d.predecessor_id WHERE d.project_id=p.id AND predecessor.status!='completed' AND predecessor.deleted_at IS NULL)
+        OR EXISTS(SELECT 1 FROM project_blockers b WHERE b.project_id=p.id AND b.resolved_at IS NULL)) blocked
+      FROM projects p WHERE p.deleted_at IS NULL AND (($1 IS NULL AND p.archived_at IS NULL) OR p.status=$1) ORDER BY p.sort_order,p.created_at,p.id`,
       [status ?? null],
     );
   }
@@ -43,29 +45,49 @@ export class ProjectsRepository {
   async update(id: string, input: ProjectInput) {
     const v = validate(input);
     await this.db.execute(
-      'UPDATE projects SET name=$2,description=$3,start_date=$4,target_date=$5,updated_at=$6 WHERE id=$1',
+      'UPDATE projects SET name=$2,description=$3,start_date=$4,target_date=$5,updated_at=$6 WHERE id=$1 AND deleted_at IS NULL',
       [id, v.name, v.description, v.start_date, v.target_date, now()],
     );
   }
   async setStatus(id: string, status: ProjectStatus, confirmPending = false) {
     if (!['active', 'paused', 'completed', 'archived'].includes(status))
       throw new Error('Status inválido.');
+    if (status === 'completed') {
+      const [blocked] = await this.db.select<{ value: number }[]>(
+        `SELECT (EXISTS(SELECT 1 FROM project_dependencies d JOIN projects p ON p.id=d.predecessor_id
+          WHERE d.project_id=$1 AND p.status!='completed' AND p.deleted_at IS NULL)
+          OR EXISTS(SELECT 1 FROM project_blockers WHERE project_id=$1 AND resolved_at IS NULL)) value`,
+        [id],
+      );
+      if (blocked?.value) throw new Error('Resolva as dependências e bloqueios antes de concluir.');
+    }
     // The pending-task guard belongs to the same SQL statement as the mutation.
     const result = await this.db.execute(
-      `UPDATE projects SET status=$2,completed_at=CASE WHEN $2='completed' THEN $3 ELSE NULL END,archived_at=CASE WHEN $2='archived' THEN $3 ELSE NULL END,updated_at=$3 WHERE id=$1 AND ($2!='completed' OR $4=1 OR NOT EXISTS(SELECT 1 FROM tasks WHERE project_id=$1 AND archived_at IS NULL AND status='pending'))`,
+      `UPDATE projects SET status=$2,completed_at=CASE WHEN $2='completed' THEN $3 ELSE NULL END,archived_at=CASE WHEN $2='archived' THEN $3 ELSE NULL END,updated_at=$3 WHERE id=$1 AND deleted_at IS NULL AND ($2!='completed' OR $4=1 OR NOT EXISTS(SELECT 1 FROM tasks WHERE project_id=$1 AND archived_at IS NULL AND deleted_at IS NULL AND status='pending'))`,
       [id, status, now(), Number(confirmPending)],
     );
     if (!result.rowsAffected)
       throw new Error('Confirme a conclusão do projeto com tarefas pendentes.');
   }
   async remove(id: string, deleteTasks = false) {
-    // Migration triggers keep deletion and optional task deletion in one atomic statement.
+    const deletedAt = now();
     await this.db.execute(
-      deleteTasks
-        ? 'UPDATE projects SET delete_tasks=1 WHERE id=$1'
-        : 'DELETE FROM projects WHERE id=$1',
-      [id],
+      'UPDATE projects SET trash_tasks=$2,deleted_at=$3,updated_at=$3 WHERE id=$1 AND deleted_at IS NULL',
+      [id, Number(deleteTasks), deletedAt],
     );
+    return deletedAt;
+  }
+  async restore(id: string, restoreTasks = false, deletedAt?: string) {
+    const restoredAt = now();
+    await this.db.execute('UPDATE projects SET deleted_at=NULL,updated_at=$2 WHERE id=$1', [
+      id,
+      restoredAt,
+    ]);
+    if (restoreTasks && deletedAt)
+      await this.db.execute(
+        'UPDATE tasks SET deleted_at=NULL,updated_at=$3 WHERE project_id=$1 AND deleted_at=$2',
+        [id, deletedAt, restoredAt],
+      );
   }
   sections(projectId: string) {
     return this.db.select<ProjectSection[]>(

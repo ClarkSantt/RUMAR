@@ -233,8 +233,8 @@ export default function App() {
     }
   }
   useEffect(() => {
-    if (!notice || notice.error || notice.undo) return;
-    const timer = setTimeout(() => setNotice(null), 4500);
+    if (!notice || notice.error) return;
+    const timer = setTimeout(() => setNotice(null), notice.undo ? 8000 : 4500);
     return () => clearTimeout(timer);
   }, [notice, setNotice]);
   const openTask = (row: TaskOccurrence) => setEditor({ row });
@@ -264,6 +264,24 @@ export default function App() {
     }
     if (command.kind === 'start-workout') {
       await navigate('workouts');
+      return;
+    }
+    if (command.kind === 'create-objective' || command.kind === 'create-wish') {
+      await navigate('objectives');
+      setTimeout(
+        () =>
+          window.dispatchEvent(
+            new CustomEvent('rumar-new-objective', {
+              detail: command.kind === 'create-wish' ? 'wish' : 'objective',
+            }),
+          ),
+        0,
+      );
+      return;
+    }
+    if (command.kind === 'open-trash') {
+      await navigate('settings');
+      setTimeout(() => window.dispatchEvent(new Event('rumar-open-settings-data')), 0);
       return;
     }
     if (command.kind === 'record-weight' && !command.payload) {
@@ -462,6 +480,7 @@ export default function App() {
                 }
                 onNavigate={openRelated}
                 onTimeline={(id) => void navigate('timeline', id)}
+                store={store}
               />
             ) : page === 'timeline' ? (
               <Timeline

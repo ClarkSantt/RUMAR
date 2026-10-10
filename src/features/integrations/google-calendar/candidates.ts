@@ -146,7 +146,7 @@ export async function collectGoogleCandidates(
       [from, to],
     ),
     db.select<Deadline[]>(
-      'SELECT id,name,target_date FROM objectives WHERE target_date BETWEEN $1 AND $2 AND archived_at IS NULL',
+      "SELECT id,name,target_date FROM objectives WHERE target_date BETWEEN $1 AND $2 AND deleted_at IS NULL AND lifecycle_status!='archived'",
       [from, to],
     ),
     db.select<Deadline[]>(

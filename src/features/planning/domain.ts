@@ -38,6 +38,7 @@ export interface PlanningItem {
   display_title: string;
   project_name: string | null;
   source_active: number;
+  source_blocked: number;
 }
 
 export interface PlanningSourceOption {

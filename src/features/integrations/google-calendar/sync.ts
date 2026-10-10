@@ -430,7 +430,7 @@ export class GoogleSync {
         'SELECT 1 present FROM workout_days d JOIN workout_plans p ON p.id=d.workout_plan_id WHERE d.id=$1 AND p.active=1 AND p.archived_at IS NULL',
       task: 'SELECT 1 present FROM tasks WHERE id=$1 AND due_date IS NOT NULL AND archived_at IS NULL',
       objective:
-        'SELECT 1 present FROM objectives WHERE id=$1 AND target_date IS NOT NULL AND archived_at IS NULL',
+        "SELECT 1 present FROM objectives WHERE id=$1 AND target_date IS NOT NULL AND deleted_at IS NULL AND lifecycle_status!='archived'",
       milestone:
         'SELECT 1 present FROM objective_milestones m JOIN objectives o ON o.id=m.objective_id WHERE m.id=$1 AND m.target_date IS NOT NULL AND o.archived_at IS NULL',
     };

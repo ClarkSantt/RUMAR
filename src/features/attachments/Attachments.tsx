@@ -33,9 +33,15 @@ const formatSize = (bytes: number) =>
 export function Attachments({
   entityType,
   entityId,
+  imagesOnly = false,
+  title,
+  maxFiles,
 }: {
   entityType: AttachmentEntity;
   entityId: string;
+  imagesOnly?: boolean;
+  title?: string;
+  maxFiles?: number;
 }) {
   const [rows, setRows] = useState<AttachmentRow[]>([]);
   const [busy, setBusy] = useState(false);
@@ -68,13 +74,14 @@ export function Attachments({
 
   async function add() {
     const selected = await open({
-      multiple: true,
+      multiple: maxFiles !== 1,
       directory: false,
       filters: [
         {
-          name: entityType === 'body_progress_photo' ? 'Imagens' : 'Documentos e imagens',
+          name:
+            imagesOnly || entityType === 'body_progress_photo' ? 'Imagens' : 'Documentos e imagens',
           extensions:
-            entityType === 'body_progress_photo'
+            imagesOnly || entityType === 'body_progress_photo'
               ? ['png', 'jpg', 'jpeg', 'webp']
               : ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'csv', 'json', 'docx', 'xlsx'],
         },
@@ -84,8 +91,12 @@ export function Attachments({
     setBusy(true);
     setError('');
     try {
-      for (const source of Array.isArray(selected) ? selected : [selected]) {
-        await invoke('attachment_add', { entityType, entityId, source });
+      const sources = Array.isArray(selected) ? selected : [selected];
+      for (const source of sources.slice(0, maxFiles ?? sources.length)) {
+        await invoke<AttachmentRow>('attachment_add', { entityType, entityId, source });
+      }
+      if (maxFiles === 1) {
+        for (const row of rows) await invoke('attachment_remove', { id: row.id });
       }
       await refresh();
     } catch (cause) {
@@ -120,12 +131,12 @@ export function Attachments({
   return (
     <section
       className="attachments-section"
-      aria-label={entityType === 'body_progress_photo' ? 'Foto privada' : 'Anexos'}
+      aria-label={title ?? (entityType === 'body_progress_photo' ? 'Foto privada' : 'Anexos')}
     >
       <header className="attachments-header">
         <h2>
           <Paperclip size={17} aria-hidden="true" />
-          {entityType === 'body_progress_photo' ? ' Foto privada' : ' Anexos'}
+          {title ? ` ${title}` : entityType === 'body_progress_photo' ? ' Foto privada' : ' Anexos'}
         </h2>
         <button
           type="button"
@@ -134,7 +145,11 @@ export function Attachments({
           onClick={() => void add()}
         >
           <Plus size={16} aria-hidden="true" />
-          {entityType === 'body_progress_photo' ? ' Adicionar foto' : ' Adicionar arquivo'}
+          {maxFiles === 1 && rows.length
+            ? ' Trocar foto'
+            : imagesOnly || entityType === 'body_progress_photo'
+              ? ' Adicionar foto'
+              : ' Adicionar arquivo'}
         </button>
       </header>
       {error && <p role="alert">{error}</p>}

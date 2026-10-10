@@ -22,31 +22,44 @@ function text(value: string): string {
 export class Repository {
   constructor(private readonly db: SqlConnection) {}
   private reminderSupport?: Promise<boolean>;
+  private phase5Support?: Promise<boolean>;
   private supportsReminder() {
     this.reminderSupport ??= this.db
       .select<{ name: string }[]>('PRAGMA table_info(tasks)')
       .then((rows) => rows.some((row) => row.name === 'remind_minutes_before'));
     return this.reminderSupport;
   }
+  private supportsPhase5() {
+    this.phase5Support ??= this.db
+      .select<{ name: string }[]>('PRAGMA table_info(tasks)')
+      .then((rows) => rows.some((row) => row.name === 'deleted_at'));
+    return this.phase5Support;
+  }
   async snapshot(history = false): Promise<Snapshot> {
     // The initial app state only needs recent/current occurrences. Older history is
     // explicitly requested by the completed-tasks view, never on every mutation.
     const range = history ? [] : [addDays(localDate(), -30), addDays(localDate(), 30)];
     const dateFilter = history ? '' : ' AND c.occurrence_date BETWEEN $1 AND $2';
+    const phase5 = await this.supportsPhase5();
+    const activeTask = `t.archived_at IS NULL${phase5 ? ' AND t.deleted_at IS NULL' : ''}`;
     const [rows, subtasks, completions, subtaskCompletions, inbox, settings] = await Promise.all([
       this.db.select<TaskRow[]>(
-        'SELECT * FROM tasks WHERE archived_at IS NULL ORDER BY sort_order, created_at',
+        phase5
+          ? `SELECT t.*,EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks p ON p.id=d.predecessor_id
+             WHERE d.task_id=t.id AND p.status!='completed' AND p.deleted_at IS NULL) blocked
+             FROM tasks t WHERE ${activeTask} ORDER BY t.sort_order,t.created_at`
+          : `SELECT t.*,0 blocked FROM tasks t WHERE ${activeTask} ORDER BY t.sort_order,t.created_at`,
       ),
       this.db.select<Subtask[]>(
-        'SELECT s.* FROM subtasks s JOIN tasks t ON t.id=s.task_id WHERE t.archived_at IS NULL ORDER BY s.sort_order, s.created_at',
+        `SELECT s.* FROM subtasks s JOIN tasks t ON t.id=s.task_id WHERE ${activeTask} ORDER BY s.sort_order, s.created_at`,
       ),
       this.db.select<Completion[]>(
-        'SELECT c.* FROM task_completions c JOIN tasks t ON t.id=c.task_id WHERE t.archived_at IS NULL' +
+        `SELECT c.* FROM task_completions c JOIN tasks t ON t.id=c.task_id WHERE ${activeTask}` +
           dateFilter,
         range,
       ),
       this.db.select<SubtaskCompletion[]>(
-        'SELECT c.* FROM subtask_completions c JOIN subtasks s ON s.id=c.subtask_id JOIN tasks t ON t.id=s.task_id WHERE t.archived_at IS NULL' +
+        `SELECT c.* FROM subtask_completions c JOIN subtasks s ON s.id=c.subtask_id JOIN tasks t ON t.id=s.task_id WHERE ${activeTask}` +
           dateFilter,
         range,
       ),
@@ -107,8 +120,9 @@ export class Repository {
   async updateTask(id: string, input: TaskInput): Promise<void> {
     const value = validateTask(input);
     const reminder = await this.supportsReminder();
+    const phase5 = await this.supportsPhase5();
     await this.db.execute(
-      `UPDATE tasks SET title=$2,description=$3,priority=$4,due_date=$5,due_time=$6,recurrence=$7,updated_at=$8,project_id=$9,project_section_id=$10,${reminder ? 'remind_minutes_before=$11,' : ''}status=CASE WHEN $7 IS NOT NULL THEN 'pending' ELSE status END,completed_at=CASE WHEN $7 IS NOT NULL THEN NULL ELSE completed_at END WHERE id=$1 AND archived_at IS NULL`,
+      `UPDATE tasks SET title=$2,description=$3,priority=$4,due_date=$5,due_time=$6,recurrence=$7,updated_at=$8,project_id=$9,project_section_id=$10,${reminder ? 'remind_minutes_before=$11,' : ''}status=CASE WHEN $7 IS NOT NULL THEN 'pending' ELSE status END,completed_at=CASE WHEN $7 IS NOT NULL THEN NULL ELSE completed_at END WHERE id=$1 AND archived_at IS NULL${phase5 ? ' AND deleted_at IS NULL' : ''}`,
       [
         id,
         value.title,
@@ -131,12 +145,29 @@ export class Repository {
       timestamp(),
     ]);
   }
+  async trashTask(id: string, deleted = true): Promise<void> {
+    const now = timestamp();
+    await this.db.execute('UPDATE tasks SET deleted_at=$2,updated_at=$3 WHERE id=$1', [
+      id,
+      deleted ? now : null,
+      now,
+    ]);
+  }
   async setComplete(
     task: Task,
     date: string | null,
     completed: boolean,
     historical = false,
   ): Promise<void> {
+    const phase5 = await this.supportsPhase5();
+    if (completed && phase5) {
+      const [blocked] = await this.db.select<{ value: number }[]>(
+        `SELECT EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks p ON p.id=d.predecessor_id
+         WHERE d.task_id=$1 AND p.status!='completed' AND p.deleted_at IS NULL) value`,
+        [task.id],
+      );
+      if (blocked?.value) throw new Error('Conclua primeiro as dependências desta tarefa.');
+    }
     // Historical occurrences remain independently undoable even after a series becomes a one-off.
     if (task.recurrence || historical) {
       if (!date || (!occursOn(task, date) && completed))
@@ -155,7 +186,7 @@ export class Repository {
         );
     } else {
       await this.db.execute(
-        'UPDATE tasks SET status=$2,completed_at=$3,updated_at=$4 WHERE id=$1 AND archived_at IS NULL',
+        `UPDATE tasks SET status=$2,completed_at=$3,updated_at=$4 WHERE id=$1 AND archived_at IS NULL${phase5 ? ' AND deleted_at IS NULL' : ''}`,
         [task.id, completed ? 'completed' : 'pending', completed ? timestamp() : null, timestamp()],
       );
     }

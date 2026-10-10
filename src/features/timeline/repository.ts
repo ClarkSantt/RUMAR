@@ -39,7 +39,7 @@ const eventReadModel = `
           WHEN a.source_type='thought' THEN 'personal'
           ELSE 'organization'
         END group_name,
-        CASE WHEN a.related_type='objective' THEN a.related_id ELSE NULL END objective_id,
+        CASE WHEN a.source_type='objective' THEN a.source_id WHEN a.related_type='objective' THEN a.related_id ELSE NULL END objective_id,
         CASE
           WHEN a.source_type='planning' THEN a.related_type
           WHEN a.source_type='focus' THEN a.related_type
@@ -77,7 +77,7 @@ const compatibilityReadModel = `
  SELECT 'objective:'||o.id||':completed','objective.completed','objective',o.id,
         date(o.completed_at,'localtime'),replace(datetime(o.completed_at,'localtime'),' ','T'),
         'Objetivo concluído',o.name,'organization',o.id,'objective',o.id
- FROM objectives o WHERE o.completed_at IS NOT NULL
+ FROM objectives o WHERE o.completed_at IS NOT NULL AND o.deleted_at IS NULL
  UNION ALL
  SELECT 'steps:'||d.entry_date,'activity.steps','steps',d.entry_date,d.entry_date,
         d.entry_date||'T00:00:00','Passos registrados',CAST(d.steps AS TEXT)||' passos',

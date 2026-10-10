@@ -9,6 +9,7 @@ import { ProjectFields } from './ProjectFields';
 import { SaveTemplateButton } from '../templates/SaveTemplateButton';
 import { requestFocus } from '../calendar/focus';
 import { Attachments } from '../attachments/Attachments';
+import { DependenciesPanel } from '../dependencies/DependenciesPanel';
 export function TaskEditor({
   row,
   store,
@@ -62,10 +63,10 @@ export function TaskEditor({
   }
   async function remove() {
     if (!task) return;
-    if (await store.run((repo) => repo.archiveTask(task.id))) {
+    if (await store.run((repo) => repo.trashTask(task.id))) {
       store.setNotice({
-        message: 'Tarefa excluída.',
-        undo: () => store.run((repo) => repo.archiveTask(task.id, false), 'Tarefa restaurada.'),
+        message: 'Tarefa movida para a Lixeira.',
+        undo: () => store.run((repo) => repo.trashTask(task.id, false), 'Tarefa restaurada.'),
       });
       onClose();
     }
@@ -258,6 +259,7 @@ export function TaskEditor({
         {task ? (
           <>
             <Subtasks store={store} task={task} date={row?.date ?? null} />
+            <DependenciesPanel type="task" entityId={task.id} onChanged={store.retry} />
             <Attachments entityType="task" entityId={task.id} />
           </>
         ) : (
@@ -267,7 +269,7 @@ export function TaskEditor({
           <div className="confirmation" role="alert">
             <p>
               {confirm === 'delete'
-                ? 'Excluir a tarefa e suas subtarefas da lista?'
+                ? 'Mover a tarefa para a Lixeira? Ela poderá ser restaurada em Configurações.'
                 : 'Descartar as alterações não salvas?'}
             </p>
             <div>
@@ -276,7 +278,7 @@ export function TaskEditor({
                 disabled={store.busy}
                 onClick={() => (confirm === 'delete' ? void remove() : onClose())}
               >
-                {confirm === 'delete' ? 'Excluir tarefa' : 'Descartar'}
+                {confirm === 'delete' ? 'Mover para a Lixeira' : 'Descartar'}
               </button>
               <button className="text-button" onClick={() => setConfirm(null)}>
                 Continuar editando

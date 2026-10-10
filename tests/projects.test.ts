@@ -118,19 +118,21 @@ describe('Projetos e relações no SQLite real', () => {
       project_section_id: null,
     });
   });
-  it('exclusão padrão desvincula tarefas e remove seções', async () => {
+  it('exclusão padrão move o projeto para a Lixeira e preserva relações', async () => {
     const id = await repo.create(input),
       section = await repo.createSection(id, 'Casa');
     await task(id, section);
     await repo.remove(id);
     expect(await repo.list()).toEqual([]);
-    expect(await repo.sections(id)).toEqual([]);
+    expect(await repo.sections(id)).toHaveLength(1);
     expect((await tasks.snapshot()).tasks[0]).toMatchObject({
-      project_id: null,
-      project_section_id: null,
+      project_id: id,
+      project_section_id: section,
     });
+    await repo.restore(id);
+    expect(await repo.list()).toHaveLength(1);
   });
-  it('exclusão explícita remove tarefas e subtarefas atomicamente', async () => {
+  it('exclusão explícita move tarefas relacionadas para a Lixeira atomicamente', async () => {
     const id = await repo.create(input),
       tid = await task(id);
     await tasks.addSubtask(tid, 'Etapa');
@@ -143,7 +145,7 @@ describe('Projetos e relações no SQLite real', () => {
     const id = await repo.create(input);
     await task(id);
     db.sqlite.exec(
-      "CREATE TRIGGER reject_project_delete AFTER DELETE ON projects BEGIN SELECT RAISE(ABORT,'forced failure'); END",
+      "CREATE TRIGGER reject_project_delete AFTER UPDATE OF deleted_at ON projects WHEN NEW.deleted_at IS NOT NULL BEGIN SELECT RAISE(ABORT,'forced failure'); END",
     );
     await expect(repo.remove(id, true)).rejects.toThrow('forced failure');
     expect(await repo.list()).toHaveLength(1);

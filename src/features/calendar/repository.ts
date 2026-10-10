@@ -59,7 +59,7 @@ export async function calendarRange(
     ),
     new WorkoutScheduleRepository(db).range(from, to),
     db.select<{ id: string; name: string; target_date: string; status: string }[]>(
-      'SELECT id,name,target_date,status FROM objectives WHERE archived_at IS NULL AND target_date BETWEEN $1 AND $2',
+      "SELECT id,name,target_date,status FROM objectives WHERE deleted_at IS NULL AND lifecycle_status!='archived' AND target_date BETWEEN $1 AND $2",
       [from, to],
     ),
     new MilestonesRepository(db).deadlines(from, to),

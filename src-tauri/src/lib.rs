@@ -267,6 +267,12 @@ pub fn run() {
                             sql: include_str!("../migrations/0032_advanced_hardening.sql"),
                             kind: MigrationKind::Up,
                         },
+                        Migration {
+                            version: 33,
+                            description: "objectives_projects_safety",
+                            sql: include_str!("../migrations/0033_objectives_projects_safety.sql"),
+                            kind: MigrationKind::Up,
+                        },
                     ],
                 )
                 .build(),

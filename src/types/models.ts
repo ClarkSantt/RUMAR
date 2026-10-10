@@ -19,10 +19,12 @@ export interface Task {
   updated_at: string;
   completed_at: string | null;
   archived_at: string | null;
+  deleted_at?: string | null;
   sort_order: number;
   source_inbox_id: string | null;
   project_id?: string | null;
   project_section_id?: string | null;
+  blocked?: number;
 }
 export type TaskInput = Pick<
   Task,

@@ -128,6 +128,10 @@ const publishedMigrations = [
     '0031_productivity_intelligence.sql',
     '5F9DD2BEBE49CA637C3F895EEAFDCF609F91EBD471D01ABDEE70679BB4F21DD6CF1F4B3BDBD79D0B0138C6842BAA3F06',
   ],
+  [
+    '0032_advanced_hardening.sql',
+    '8E926C4BFAFA2EE1E11A29D26F38866886974A3785A5541D23F26DD2EA7121E05DF55F4FF0D30CE16DA6F73A74D36639',
+  ],
 ] as const;
 
 describe('published migration checksums', () => {

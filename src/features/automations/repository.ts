@@ -248,7 +248,7 @@ export class AutomationsRepository {
       }
       if (r.trigger_type === 'objective_due')
         entities = await this.db.select(
-          `SELECT id,NULL project_id,target_date date FROM objectives WHERE target_date BETWEEN $1 AND $2 AND status='active' AND archived_at IS NULL LIMIT 1000`,
+          `SELECT id,NULL project_id,target_date date FROM objectives WHERE target_date BETWEEN $1 AND $2 AND lifecycle_status='active' AND deleted_at IS NULL LIMIT 1000`,
           [firstDate, date],
         );
       if (r.trigger_type === 'finance_due') {

@@ -5,7 +5,7 @@ import { database } from './database';
 
 describe('Phase 4 migration and hardening contracts', () => {
   it('creates schema 32 with healthy foreign keys and the 7/4/6 retention defaults', () => {
-    const current = database();
+    const current = database(':memory:', 32);
     expect(
       current.sqlite.prepare('SELECT max(version) version FROM test_migrations').get(),
     ).toEqual({

@@ -7,21 +7,34 @@ export interface Thought {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  deleted_at: string | null;
 }
 export type ThoughtDraft = Pick<Thought, 'title' | 'content'>;
 export class ThoughtsRepository {
   constructor(private db: SqlConnection) {}
-  list(search = ''): Promise<Thought[]> {
+  private trashSupport?: Promise<boolean>;
+  private supportsTrash() {
+    this.trashSupport ??= this.db
+      .select<{ name: string }[]>('PRAGMA table_info(thoughts)')
+      .then((rows) => rows.some((row) => row.name === 'deleted_at'));
+    return this.trashSupport;
+  }
+  async list(search = ''): Promise<Thought[]> {
+    const trash = await this.supportsTrash();
     return this.db.select<Thought[]>(
       `SELECT id,title,substr(content,1,180) AS content,created_at,updated_at,archived_at
-       FROM thoughts WHERE archived_at IS NULL AND
+       FROM thoughts WHERE archived_at IS NULL${trash ? ' AND deleted_at IS NULL' : ''} AND
        ($1='' OR instr(lower(title),lower($1))>0 OR instr(lower(content),lower($1))>0)
        ORDER BY updated_at DESC,id LIMIT 100`,
       [search.trim()],
     );
   }
   async get(id: string): Promise<Thought> {
-    const rows = await this.db.select<Thought[]>('SELECT * FROM thoughts WHERE id=$1', [id]);
+    const trash = await this.supportsTrash();
+    const rows = await this.db.select<Thought[]>(
+      `SELECT * FROM thoughts WHERE id=$1${trash ? ' AND deleted_at IS NULL' : ''}`,
+      [id],
+    );
     if (!rows[0]) throw new Error('Pensamento não encontrado.');
     return rows[0];
   }
@@ -35,8 +48,9 @@ export class ThoughtsRepository {
     return this.get(id);
   }
   async save(id: string, draft: ThoughtDraft): Promise<void> {
+    const trash = await this.supportsTrash();
     const result = await this.db.execute(
-      'UPDATE thoughts SET title=$2,content=$3,updated_at=$4 WHERE id=$1 AND archived_at IS NULL',
+      `UPDATE thoughts SET title=$2,content=$3,updated_at=$4 WHERE id=$1 AND archived_at IS NULL${trash ? ' AND deleted_at IS NULL' : ''}`,
       [id, draft.title, draft.content, new Date().toISOString()],
     );
     if (!result.rowsAffected) throw new Error('Pensamento indisponível para salvar.');
@@ -47,7 +61,16 @@ export class ThoughtsRepository {
       new Date().toISOString(),
     ]);
   }
+  async trash(id: string, deleted = true): Promise<void> {
+    const now = new Date().toISOString();
+    await this.db.execute('UPDATE thoughts SET deleted_at=$2,updated_at=$3 WHERE id=$1', [
+      id,
+      deleted ? now : null,
+      now,
+    ]);
+  }
   async convert(id: string, target: 'task' | 'project' | 'inbox'): Promise<string> {
+    const trash = await this.supportsTrash();
     const destination = { task: 'tasks', project: 'projects', inbox: 'inbox_items' }[target];
     const newId = crypto.randomUUID(),
       now = new Date().toISOString();
@@ -63,7 +86,7 @@ export class ThoughtsRepository {
         : `${title},${description}`;
     await this.db.execute(
       `INSERT INTO ${destination}(id,${columns},created_at,updated_at,source_thought_id)
-      SELECT $2,${values},$3,$3,id FROM thoughts WHERE id=$1 AND archived_at IS NULL AND (trim(title)<>'' OR trim(content)<>'')
+      SELECT $2,${values},$3,$3,id FROM thoughts WHERE id=$1 AND archived_at IS NULL${trash ? ' AND deleted_at IS NULL' : ''} AND (trim(title)<>'' OR trim(content)<>'')
       ON CONFLICT(source_thought_id) DO NOTHING`,
       [id, newId, now],
     );

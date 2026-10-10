@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, Target } from 'lucide-react';
+import { CalendarDays, ShoppingBag, Target } from 'lucide-react';
 import { durationLabel } from '../calendar/planner-domain';
 import type { Objective, ObjectiveProgress } from './repository';
 
@@ -22,7 +22,7 @@ export function ObjectiveDetailOverview({
     <section className="objective-detail-hero">
       <div className="objective-detail-top">
         <span className="objective-detail-symbol" aria-hidden="true">
-          <Target size={24} />
+          {objective.objective_kind === 'wish' ? <ShoppingBag size={24} /> : <Target size={24} />}
         </span>
         <div>
           <p className="objective-kicker">
@@ -35,6 +35,7 @@ export function ObjectiveDetailOverview({
         </div>
       </div>
       <div className="objective-detail-meta">
+        {objective.horizon_label && <span>{objective.horizon_label}</span>}
         <span>Desde {objective.start_date.split('-').reverse().join('/')}</span>
         {objective.target_date && (
           <span>

@@ -705,3 +705,110 @@
     }
   }
 }
+
+@layer components {
+  .wish-fields,
+  .dependency-panel,
+  .project-blockers,
+  .version-list {
+    display: grid;
+    gap: 12px;
+  }
+  .wish-detail {
+    border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+  }
+  .objective-list-controls {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-block: 12px;
+  }
+  .objective-list-controls label {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .objective-list-controls select {
+    width: auto;
+    min-width: 140px;
+  }
+  .version-snapshot {
+    display: grid;
+    gap: 8px;
+    max-width: 560px;
+    margin: 8px 0 0;
+  }
+  .version-snapshot > div {
+    display: grid;
+    gap: 2px;
+  }
+  .version-snapshot dt {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .version-snapshot dd {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .version-list .review-line,
+  .project-blockers .review-line {
+    align-items: flex-start;
+  }
+  .version-list .review-line > div:first-child,
+  .project-blockers .review-line > div:first-child {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+  }
+  .version-list .review-line > button {
+    align-self: flex-start;
+  }
+  .version-list details {
+    margin-top: 4px;
+  }
+  .dependency-panel {
+    margin-block: 22px;
+    padding-block: 18px;
+    border-block: 1px solid var(--color-border);
+  }
+  .dependency-panel > h3,
+  .project-blockers > h3 {
+    margin: 0;
+  }
+  .dependency-warning {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--color-warning-text, var(--color-text-secondary));
+  }
+  .dependency-panel .objective-link > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex: 1;
+    min-width: 0;
+    padding: 8px 4px;
+  }
+  .danger-zone {
+    color: var(--color-text-secondary);
+  }
+  .danger-zone h2 {
+    color: var(--color-text);
+  }
+  @media (max-width: 700px) {
+    .objective-list-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .objective-list-controls select {
+      width: 100%;
+    }
+    .objectives-page .module-header .review-actions {
+      width: 100%;
+    }
+    .objectives-page .module-header .review-actions button {
+      flex: 1;
+    }
+  }
+}

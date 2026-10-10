@@ -113,15 +113,15 @@ export class WeeklyReviewRepository {
       snapshotRows,
     ] = await Promise.all([
       this.db.select<Count[]>(
-        `SELECT (SELECT COUNT(*) FROM task_completions WHERE occurrence_date BETWEEN $1 AND $2)+(SELECT COUNT(*) FROM tasks WHERE recurrence IS NULL AND status='completed' AND date(completed_at,'localtime') BETWEEN $1 AND $2) count`,
+        `SELECT (SELECT COUNT(*) FROM task_completions c JOIN tasks t ON t.id=c.task_id WHERE c.occurrence_date BETWEEN $1 AND $2 AND t.deleted_at IS NULL)+(SELECT COUNT(*) FROM tasks WHERE recurrence IS NULL AND deleted_at IS NULL AND status='completed' AND date(completed_at,'localtime') BETWEEN $1 AND $2) count`,
         [start, end],
       ),
       this.db.select<{ pending: number; overdue: number }[]>(
-        `SELECT COUNT(*) pending,SUM(CASE WHEN due_date<$1 AND recurrence IS NULL THEN 1 ELSE 0 END) overdue FROM tasks WHERE archived_at IS NULL AND status='pending'`,
+        `SELECT COUNT(*) pending,SUM(CASE WHEN due_date<$1 AND recurrence IS NULL THEN 1 ELSE 0 END) overdue FROM tasks WHERE archived_at IS NULL AND deleted_at IS NULL AND status='pending'`,
         [today],
       ),
       this.db.select<{ title: string; due_date: string | null }[]>(
-        `SELECT title,due_date FROM tasks WHERE archived_at IS NULL AND status='pending' AND recurrence IS NULL AND due_date<=$1 ORDER BY due_date LIMIT 5`,
+        `SELECT title,due_date FROM tasks WHERE archived_at IS NULL AND deleted_at IS NULL AND status='pending' AND recurrence IS NULL AND due_date<=$1 ORDER BY due_date LIMIT 5`,
         [end],
       ),
       this.db.select<
@@ -134,7 +134,7 @@ export class WeeklyReviewRepository {
           activeWeek: number;
         }[]
       >(
-        `SELECT p.id,p.name,COUNT(t.id) total,SUM(CASE WHEN t.status='completed' THEN 1 ELSE 0 END) completed,SUM(CASE WHEN date(t.completed_at,'localtime') BETWEEN $1 AND $2 THEN 1 ELSE 0 END) completedWeek,MAX(CASE WHEN date(t.updated_at,'localtime') BETWEEN $1 AND $2 THEN 1 ELSE 0 END) activeWeek FROM projects p LEFT JOIN tasks t ON t.project_id=p.id AND t.archived_at IS NULL WHERE p.archived_at IS NULL AND p.status='active' GROUP BY p.id ORDER BY activeWeek DESC,p.name`,
+        `SELECT p.id,p.name,COUNT(t.id) total,SUM(CASE WHEN t.status='completed' THEN 1 ELSE 0 END) completed,SUM(CASE WHEN date(t.completed_at,'localtime') BETWEEN $1 AND $2 THEN 1 ELSE 0 END) completedWeek,MAX(CASE WHEN date(t.updated_at,'localtime') BETWEEN $1 AND $2 THEN 1 ELSE 0 END) activeWeek FROM projects p LEFT JOIN tasks t ON t.project_id=p.id AND t.archived_at IS NULL AND t.deleted_at IS NULL WHERE p.archived_at IS NULL AND p.deleted_at IS NULL AND p.status='active' GROUP BY p.id ORDER BY activeWeek DESC,p.name`,
         [start, end],
       ),
       this.db.select<(Omit<Habit, 'weekdays'> & { weekdays: string })[]>(
@@ -183,15 +183,15 @@ export class WeeklyReviewRepository {
         `SELECT hide_values FROM finance_preferences WHERE id=1`,
       ),
       this.db.select<Count[]>(
-        `SELECT COUNT(*) count FROM tasks WHERE recurrence IS NULL AND due_date BETWEEN $1 AND $2 AND status='pending' AND archived_at IS NULL`,
+        `SELECT COUNT(*) count FROM tasks WHERE recurrence IS NULL AND due_date BETWEEN $1 AND $2 AND status='pending' AND archived_at IS NULL AND deleted_at IS NULL`,
         [nextStart, nextEnd],
       ),
       this.db.select<(Omit<Task, 'recurrence'> & { recurrence: string })[]>(
-        `SELECT * FROM tasks WHERE recurrence IS NOT NULL AND due_date<=$1 AND status='pending' AND archived_at IS NULL`,
+        `SELECT * FROM tasks WHERE recurrence IS NOT NULL AND due_date<=$1 AND status='pending' AND archived_at IS NULL AND deleted_at IS NULL`,
         [nextEnd],
       ),
       this.db.select<Count[]>(
-        `SELECT COUNT(*) count FROM projects WHERE target_date BETWEEN $1 AND $2 AND archived_at IS NULL`,
+        `SELECT COUNT(*) count FROM projects WHERE target_date BETWEEN $1 AND $2 AND archived_at IS NULL AND deleted_at IS NULL`,
         [nextStart, nextEnd],
       ),
       this.db.select<{ day_of_month: number }[]>(

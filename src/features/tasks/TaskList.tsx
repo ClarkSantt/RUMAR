@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Flag, ListChecks, Repeat2 } from 'lucide-react';
+import { AlertTriangle, Flag, ListChecks, Repeat2 } from 'lucide-react';
 import type { RumoStore } from '../../hooks/useRumo';
 import { formatDate, localDate } from '../../lib/dates';
 import type { TaskOccurrence } from '../../types/models';
@@ -41,7 +41,8 @@ function TaskRow({
         aria-label={`${checked ? 'Desfazer conclusão de' : 'Concluir'} ${task.title}`}
         title={future ? 'Disponível no dia da ocorrência' : undefined}
         checked={checked}
-        disabled={store.busy || future}
+        disabled={store.busy || future || Boolean(task.blocked)}
+        aria-describedby={task.blocked ? `task-blocked-${task.id}` : undefined}
         onChange={() => void toggle()}
       />
       <button className="task-open" onClick={() => onOpen(row)}>
@@ -63,6 +64,11 @@ function TaskRow({
             <span className={`priority ${task.priority}`}>
               <Flag size={12} />
               {task.priority === 'high' ? 'Alta' : 'Baixa'}
+            </span>
+          )}
+          {Boolean(task.blocked) && (
+            <span className="priority high" id={`task-blocked-${task.id}`}>
+              <AlertTriangle size={12} /> Bloqueada
             </span>
           )}
           {showDate && row.date && <span>{formatDate(row.date)}</span>}

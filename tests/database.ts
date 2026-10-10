@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { SqlConnection } from '../src/lib/database/connection';
-export function database(path = ':memory:', version = 32) {
+export function database(path = ':memory:', version = 33) {
   const sqlite = new DatabaseSync(path);
   sqlite.exec('PRAGMA foreign_keys = ON');
   sqlite.exec('CREATE TABLE IF NOT EXISTS test_migrations(version INTEGER PRIMARY KEY)');
@@ -39,6 +39,7 @@ export function database(path = ':memory:', version = 32) {
     '0030_activity_home_reviews.sql',
     '0031_productivity_intelligence.sql',
     '0032_advanced_hardening.sql',
+    '0033_objectives_projects_safety.sql',
   ].entries()) {
     if (
       index + 1 > version ||

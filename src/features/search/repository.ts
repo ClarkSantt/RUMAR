@@ -36,31 +36,32 @@ const sources: {
     detail:
       "CASE WHEN $2=1 AND (mode='financial_goal' OR unit='BRL') THEN '' ELSE (SELECT name FROM objectives WHERE id=objective_id) END",
     context: 'objective_id',
-    condition: "objective_id IN(SELECT id FROM objectives WHERE status!='archived')",
+    condition:
+      "objective_id IN(SELECT id FROM objectives WHERE lifecycle_status!='archived' AND deleted_at IS NULL)",
     group: 'Marcos',
     page: 'objectives',
   },
   {
     table: 'tasks',
     title: 'title',
-    detail: 'description',
-    condition: 'archived_at IS NULL',
+    detail: `CASE WHEN EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks predecessor ON predecessor.id=d.predecessor_id WHERE d.task_id=tasks.id AND predecessor.status!='completed' AND predecessor.deleted_at IS NULL) THEN 'Bloqueada · '||description ELSE description END`,
+    condition: 'archived_at IS NULL AND deleted_at IS NULL',
     group: 'Tarefas',
     page: 'tasks',
   },
   {
     table: 'projects',
     title: 'name',
-    detail: 'description',
-    condition: 'archived_at IS NULL',
+    detail: `CASE WHEN EXISTS(SELECT 1 FROM project_dependencies d JOIN projects predecessor ON predecessor.id=d.predecessor_id WHERE d.project_id=projects.id AND predecessor.status!='completed' AND predecessor.deleted_at IS NULL) OR EXISTS(SELECT 1 FROM project_blockers b WHERE b.project_id=projects.id AND b.resolved_at IS NULL) THEN 'Bloqueado · '||description ELSE description END`,
+    condition: 'archived_at IS NULL AND deleted_at IS NULL',
     group: 'Projetos',
     page: 'projects',
   },
   {
     table: 'objectives',
     title: 'name',
-    detail: 'description',
-    condition: "status<>'archived'",
+    detail: `CASE WHEN objective_kind='wish' THEN 'Desejo · '||description ELSE description END`,
+    condition: "lifecycle_status<>'archived' AND deleted_at IS NULL",
     group: 'Objetivos',
     page: 'objectives',
   },
@@ -100,7 +101,7 @@ const sources: {
     table: 'thoughts',
     title: "COALESCE(NULLIF(title,''),substr(content,1,80))",
     detail: 'content',
-    condition: 'archived_at IS NULL',
+    condition: 'archived_at IS NULL AND deleted_at IS NULL',
     group: 'Pensamentos',
     page: 'thoughts',
   },
@@ -180,8 +181,25 @@ export async function globalSearch(db: SqlConnection, query: string): Promise<Se
     "SELECT value FROM settings WHERE key='timeline_private'",
   );
   const hidden = Boolean(privacy[0]?.hide_values) || privateRows[0]?.value === '1';
+  const objectiveColumns = await db.select<{ name: string }[]>('PRAGMA table_info(objectives)');
+  const phase5 = objectiveColumns.some((column) => column.name === 'lifecycle_status');
+  const activeSources = phase5
+    ? sources
+    : sources.map((source) => {
+        if (source.table === 'objective_milestones')
+          return {
+            ...source,
+            condition: "objective_id IN(SELECT id FROM objectives WHERE status!='archived')",
+          };
+        if (source.table === 'tasks' || source.table === 'projects')
+          return { ...source, detail: 'description', condition: 'archived_at IS NULL' };
+        if (source.table === 'objectives')
+          return { ...source, detail: 'description', condition: "status<>'archived'" };
+        if (source.table === 'thoughts') return { ...source, condition: 'archived_at IS NULL' };
+        return source;
+      });
   const batches = await Promise.all(
-    sources.map(async (source) => {
+    activeSources.map(async (source) => {
       const rows = await db.select<
         { id: string; title: string; detail: string; contextId?: string }[]
       >(

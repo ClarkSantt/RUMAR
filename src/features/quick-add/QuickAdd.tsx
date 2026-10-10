@@ -43,7 +43,7 @@ export function QuickAdd({ store, onClose }: { store: RumoStore; onClose: () => 
     void getDatabase()
       .then((db) =>
         db.select<{ id: string; name: string }[]>(
-          "SELECT id,name FROM objectives WHERE status IN('active','paused') ORDER BY name",
+          "SELECT id,name FROM objectives WHERE lifecycle_status IN('active','paused') AND deleted_at IS NULL ORDER BY name",
         ),
       )
       .then((rows) => {

@@ -17,6 +17,8 @@ import { ProjectActionMenu } from './ProjectActionMenu';
 import { ProjectsRepository } from './repository';
 import { SaveTemplateButton } from '../templates/SaveTemplateButton';
 import { Attachments } from '../attachments/Attachments';
+import { DependenciesPanel } from '../dependencies/DependenciesPanel';
+import { VersionHistory } from '../versions/VersionHistory';
 import type { ProjectInput, ProjectSection, ProjectStatus, ProjectSummary } from './types';
 import './projects.css';
 
@@ -233,6 +235,7 @@ export function Projects({
               </button>
             )}
             <SaveTemplateButton kind="project" sourceId={project.id} initialName={project.name} />
+            <VersionHistory type="project" entityId={project.id} onRestored={() => store.retry()} />
             <ProjectActionMenu label="Mais ações do projeto">
               {project.status !== 'completed' && (
                 <button disabled={store.busy} onClick={() => status('completed')}>
@@ -268,6 +271,7 @@ export function Projects({
             <h2>Hábitos ligados</h2>
             <HomeHabits day={localDate()} projectId={project.id} />
           </section>
+          <DependenciesPanel type="project" entityId={project.id} onChanged={store.retry} />
           <Attachments entityType="project" entityId={project.id} />
         </>
       ) : (
@@ -334,7 +338,7 @@ export function Projects({
       )}
       {confirm && project && (
         <Dialog
-          title={confirm === 'complete' ? 'Concluir projeto?' : 'Excluir projeto?'}
+          title={confirm === 'complete' ? 'Concluir projeto?' : 'Mover projeto para a Lixeira?'}
           busy={store.busy}
           onClose={() => setConfirm(null)}
         >
@@ -347,8 +351,8 @@ export function Projects({
             ) : (
               <>
                 <p>
-                  O projeto e suas seções serão excluídos. Você também pode arquivar para preservar
-                  a organização.
+                  O projeto continuará disponível na Lixeira para restauração. Arquivar continua
+                  sendo a opção para mantê-lo fora da lista ativa sem removê-lo.
                 </p>
                 <label htmlFor="delete-project-tasks">Tarefas do projeto</label>
                 <select
@@ -357,7 +361,7 @@ export function Projects({
                   onChange={(e) => setDeleteTasks(e.target.value === 'delete')}
                 >
                   <option value="keep">Manter tarefas sem projeto</option>
-                  <option value="delete">Excluir também todas as tarefas do projeto</option>
+                  <option value="delete">Mover também as tarefas para a Lixeira</option>
                 </select>
               </>
             )}
@@ -375,19 +379,33 @@ export function Projects({
               disabled={store.busy}
               onClick={() => {
                 if (confirm === 'complete') status('completed', true);
-                else
-                  void run(
-                    (repo) => repo.remove(project.id, deleteTasks),
-                    'Projeto excluído.',
-                  ).then((ok) => {
+                else {
+                  let deletedAt = '';
+                  const removeTasks = deleteTasks;
+                  void run(async (repo) => {
+                    deletedAt = await repo.remove(project.id, removeTasks);
+                  }).then((ok) => {
                     if (ok) {
+                      store.setNotice({
+                        message: 'Projeto movido para a Lixeira.',
+                        undo: async () => {
+                          await new ProjectsRepository(await getDatabase()).restore(
+                            project.id,
+                            removeTasks,
+                            deletedAt,
+                          );
+                          await store.retry();
+                          return true;
+                        },
+                      });
                       setConfirm(null);
                       setSelected(null);
                     }
                   });
+                }
               }}
             >
-              {confirm === 'complete' ? 'Concluir mesmo assim' : 'Confirmar exclusão'}
+              {confirm === 'complete' ? 'Concluir mesmo assim' : 'Mover para a Lixeira'}
             </button>
           </footer>
         </Dialog>

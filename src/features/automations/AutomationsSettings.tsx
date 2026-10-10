@@ -44,7 +44,7 @@ export function AutomationsSettings() {
         const [r, o, p] = await Promise.all([
           new AutomationsRepository(db).list(),
           db.select<{ id: string; name: string }[]>(
-            'SELECT id,name FROM objectives WHERE archived_at IS NULL ORDER BY name',
+            "SELECT id,name FROM objectives WHERE deleted_at IS NULL AND lifecycle_status!='archived' ORDER BY name",
           ),
           db.select<{ id: string; name: string }[]>(
             'SELECT id,name FROM projects WHERE archived_at IS NULL ORDER BY name',

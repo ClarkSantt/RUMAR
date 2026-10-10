@@ -1,11 +1,12 @@
 import type { CSSProperties } from 'react';
-import { ArrowRight, CalendarDays, Flag, Link2, Target } from 'lucide-react';
+import { ArrowRight, CalendarDays, Flag, Link2, ShoppingBag, Target } from 'lucide-react';
 import type { Objective, ObjectiveProgress } from './repository';
 
 const statusLabel = {
   active: 'Em andamento',
   paused: 'Em pausa',
   completed: 'Concluído',
+  cancelled: 'Cancelado',
   archived: 'Arquivado',
 } as const;
 
@@ -31,13 +32,13 @@ export function ObjectiveCard({
       aria-label={`Abrir objetivo ${objective.name}`}
     >
       <span className="objective-card-symbol" aria-hidden="true">
-        <Target size={21} />
+        {objective.objective_kind === 'wish' ? <ShoppingBag size={21} /> : <Target size={21} />}
       </span>
       <span className="objective-card-main">
         <span className="objective-card-kicker">
           <span>{category}</span>
           <span>·</span>
-          <span>{statusLabel[objective.status]}</span>
+          <span>{statusLabel[objective.lifecycle_status]}</span>
         </span>
         <strong>{objective.name}</strong>
         {objective.description && (
@@ -50,6 +51,7 @@ export function ObjectiveCard({
               {objective.target_date.split('-').reverse().join('/')}
             </span>
           )}
+          {objective.horizon_label && <span>{objective.horizon_label}</span>}
           {milestones && milestones.total > 0 && (
             <span>
               <Flag size={14} aria-hidden="true" /> {milestones.completed} de {milestones.total}{' '}

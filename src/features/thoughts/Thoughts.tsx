@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Plus, Archive, Search } from 'lucide-react';
+import { Plus, Archive, Search, Trash2 } from 'lucide-react';
 import { getDatabase } from '../../lib/database/connection';
 import { addDays, formatDate, localDate } from '../../lib/dates';
 import type { RumoStore } from '../../hooks/useRumo';
 import { ThoughtsRepository, type Thought } from './repository';
 import { ThoughtAutosave, flushThoughts, type SaveStatus } from './autosave';
 import { Attachments } from '../attachments/Attachments';
+import { VersionHistory } from '../versions/VersionHistory';
 import './thoughts.css';
 
 function inline(text: string): ReactNode[] {
@@ -166,6 +167,7 @@ function Editor({
               {target === 'task' ? 'Tarefa' : target === 'project' ? 'Projeto' : 'Inbox'}
             </button>
           ))}
+          <VersionHistory type="thought" entityId={thought.id} onRestored={onChange} />
           <button
             className="icon-button"
             aria-label="Arquivar pensamento"
@@ -183,6 +185,35 @@ function Editor({
             }}
           >
             <Archive size={17} />
+          </button>
+          <button
+            className="icon-button"
+            aria-label="Mover pensamento para a Lixeira"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await flushThoughts();
+                await repo.trash(thought.id);
+                await onChange();
+                if (store) {
+                  await store.retry();
+                  store.setNotice({
+                    message: 'Pensamento movido para a Lixeira.',
+                    undo: async () => {
+                      await repo.trash(thought.id, false);
+                      await store.retry();
+                      return true;
+                    },
+                  });
+                }
+              } catch (cause) {
+                setMessage(cause instanceof Error ? cause.message : 'Não foi possível remover.');
+                setBusy(false);
+              }
+            }}
+          >
+            <Trash2 size={17} />
           </button>
         </div>
       </details>
