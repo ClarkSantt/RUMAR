@@ -28,6 +28,7 @@ import {
   projectedMonthExpense,
 } from '../src/features/finance/domain';
 import { FinanceRepository } from '../src/features/finance/repository';
+import { addDays, localDate } from '../src/lib/dates';
 
 const day = '2026-10-09';
 const databases: ReturnType<typeof database>[] = [];
@@ -82,6 +83,7 @@ describe('Phase 3 Inbox universal and local parsing', () => {
     });
 
     const planningInbox = await capture(db, 'estudar Python amanhã 14h');
+    const expectedPlanningDate = addDays(localDate(), 1);
     const planning = await convertInboxTo(db.connection, planningInbox, 'planning');
     expect(
       db.sqlite
@@ -90,7 +92,7 @@ describe('Phase 3 Inbox universal and local parsing', () => {
         )
         .get(planning),
     ).toEqual({
-      block_date: '2026-10-10',
+      block_date: expectedPlanningDate,
       start_time: '14:00',
       title: 'estudar Python',
       source_inbox_id: planningInbox,
