@@ -378,8 +378,7 @@ describe('Revisão mensal', () => {
     } finally {
       rmSync(folder, { recursive: true, force: true });
     }
-  }, // This test runs every migration and performs real close/reopen disk I/O on Windows CI.
-  10_000);
+  }, 10_000); // This test runs every migration and performs real close/reopen disk I/O on Windows CI.
   it('upgrade 16→19 mantém linhas e preferências antigas, com integridade referencial', () => {
     const { sqlite } = database(':memory:', 16);
     fixture(sqlite);
